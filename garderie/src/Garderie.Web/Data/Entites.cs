@@ -13,6 +13,7 @@ public enum TypeDocument
     [Display(Name = "Fiche santé")] FicheSante = 3,
     [Display(Name = "Autorisation")] Autorisation = 4,
     [Display(Name = "Photo")] Photo = 5,
+    [Display(Name = "Fiche d'assiduité signée")] FicheAssiduite = 6,
     [Display(Name = "Autre")] Autre = 99,
 }
 
@@ -199,4 +200,80 @@ public class Parametres
     [MaxLength(200)] public string? NomBureauCoordonnateur { get; set; }
     public TimeOnly? HeureOuverture { get; set; }
     public TimeOnly? HeureFermeture { get; set; }
+    /// <summary>Un lundi ou commence une periode de 2 semaines du BC / A Monday starting a 2-week BC period.</summary>
+    public DateOnly? DebutPeriodes { get; set; }
+}
+
+public enum EtatFiche
+{
+    [Display(Name = "À signer")] Brouillon = 0,
+    [Display(Name = "Signée par la RSGE")] SigneeRsge = 1,
+    [Display(Name = "Signée")] SigneeParent = 2,
+}
+
+/// <summary>
+/// Fiche d'assiduite FO-0310 d'un enfant pour 2 semaines : paiements, signatures, PDF final.
+/// Les codes sont figes (CodesSignes) a la signature de la RSGE : le parent signe exactement ce qu'elle a signe.
+/// FO-0310 attendance sheet for one child and 2 weeks; codes frozen when the RSGE signs.
+/// </summary>
+public class FicheAssiduite
+{
+    public int Id { get; set; }
+    public int EnfantId { get; set; }
+    public Enfant Enfant { get; set; } = null!;
+    /// <summary>Lundi de la premiere semaine / Monday of the first week.</summary>
+    public DateOnly Debut { get; set; }
+    public EtatFiche Etat { get; set; }
+
+    public DateOnly? DatePaiement1 { get; set; }
+    public decimal? MontantPaye1 { get; set; }
+    public decimal? Solde1 { get; set; }
+    public DateOnly? DatePaiement2 { get; set; }
+    public decimal? MontantPaye2 { get; set; }
+    public decimal? Solde2 { get; set; }
+
+    /// <summary>Codes figes : « 2026-11-02M=P;2026-11-02P=P;... » / Frozen codes.</summary>
+    public string? CodesSignes { get; set; }
+    [MaxLength(200)] public string? NomParent { get; set; }
+    public int? ParentId { get; set; }
+
+    [MaxLength(64)] public string? SignatureRsgeFichier { get; set; }
+    public DateTime? SigneRsgeLe { get; set; }
+    [MaxLength(100)] public string? SigneRsgePar { get; set; }
+
+    [MaxLength(64)] public string? SignatureParentFichier { get; set; }
+    public DateTime? SigneParentLe { get; set; }
+    [MaxLength(200)] public string? SignataireParent { get; set; }
+    [MaxLength(64)] public string? IpParent { get; set; }
+    public bool SigneSurPlace { get; set; }
+
+    /// <summary>Document du dossier qui contient le PDF final / Child document holding the final PDF.</summary>
+    public int? DocumentId { get; set; }
+    [MaxLength(64)] public string? PdfSha256 { get; set; }
+
+    [MaxLength(1000)] public string? ErreurSignalee { get; set; }
+    public DateTime? ErreurSignaleeLe { get; set; }
+
+    public DateTime CreeLe { get; set; }
+    public DateTime ModifieLe { get; set; }
+
+    public DateOnly Fin => Debut.AddDays(13);
+}
+
+/// <summary>
+/// Lien unique envoye au parent : seul le hachage SHA-256 du jeton est garde. Usage unique, expire.
+/// One-time parent link: only the SHA-256 hash of the token is stored.
+/// </summary>
+public class LienSignature
+{
+    public int Id { get; set; }
+    public int FicheId { get; set; }
+    public FicheAssiduite Fiche { get; set; } = null!;
+    [MaxLength(64)] public string JetonHash { get; set; } = "";
+    public DateTime CreeLe { get; set; }
+    public DateTime ExpireLe { get; set; }
+    public DateTime? UtiliseLe { get; set; }
+    public DateTime? AnnuleLe { get; set; }
+    [MaxLength(200)] public string? EnvoyeA { get; set; }
+    public bool SurPlace { get; set; }
 }

@@ -86,6 +86,36 @@ public sealed class DocumentsService(GarderieOptions options, Chiffreur chiffreu
         return (nom, null);
     }
 
+    /// <summary>Chiffre et ecrit des octets (signature, etc.) ; retourne le nom du fichier / Encrypts and writes bytes.</summary>
+    public async Task<string> EnregistrerOctetsAsync(byte[] contenu)
+    {
+        var nom = Guid.NewGuid().ToString("N") + ".bin";
+        Directory.CreateDirectory(options.DossierDocuments);
+        await File.WriteAllBytesAsync(Path.Combine(options.DossierDocuments, nom), chiffreur.Chiffrer(contenu, Contextes.Document(nom)));
+        return nom;
+    }
+
+    /// <summary>Contenu dechiffre d'un fichier, ou null / Decrypted file content, or null.</summary>
+    public async Task<byte[]?> LireFichierAsync(string? fichier) => (await LirePhotoAsync(fichier))?.Contenu;
+
+    /// <summary>PDF genere (fiche signee) range comme document du dossier / Generated PDF stored as a record document.</summary>
+    public async Task<Document> EnregistrerPdfAsync(int enfantId, TypeDocument type, string nomOriginal, byte[] contenu, string? note)
+    {
+        var nom = await EnregistrerOctetsAsync(contenu);
+        return new Document
+        {
+            EnfantId = enfantId,
+            Type = type,
+            NomOriginal = nomOriginal,
+            TypeContenu = "application/pdf",
+            Taille = contenu.Length,
+            Sha256 = Convert.ToHexStringLower(SHA256.HashData(contenu)),
+            Fichier = nom,
+            Note = note,
+            TeleverseLe = DateTime.UtcNow,
+        };
+    }
+
     /// <summary>Photo dechiffree et son type, ou null / Decrypted photo and its type, or null.</summary>
     public async Task<(byte[] Contenu, string Type)?> LirePhotoAsync(string? fichier)
     {

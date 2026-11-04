@@ -16,6 +16,8 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
     public DbSet<JourFermeture> Fermetures => Set<JourFermeture>();
     public DbSet<JournalAcces> Journal => Set<JournalAcces>();
     public DbSet<Parametres> Parametres => Set<Parametres>();
+    public DbSet<FicheAssiduite> Fiches => Set<FicheAssiduite>();
+    public DbSet<LienSignature> Liens => Set<LienSignature>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -37,5 +39,9 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
         b.Entity<JourFermeture>().HasIndex(x => x.Date);
         b.Entity<JournalAcces>().HasIndex(x => x.Horodatage);
         b.Entity<Document>().HasIndex(x => x.Fichier).IsUnique();
+        b.Entity<FicheAssiduite>().HasOne(f => f.Enfant).WithMany().HasForeignKey(f => f.EnfantId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<FicheAssiduite>().HasIndex(f => new { f.EnfantId, f.Debut }).IsUnique();
+        b.Entity<LienSignature>().HasOne(l => l.Fiche).WithMany().HasForeignKey(l => l.FicheId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<LienSignature>().HasIndex(l => l.JetonHash).IsUnique();
     }
 }

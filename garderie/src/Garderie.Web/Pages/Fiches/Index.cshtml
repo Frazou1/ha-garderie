@@ -1,0 +1,53 @@
+@page
+@model Garderie.Web.Pages.Fiches.IndexModel
+@{
+    ViewData["Title"] = "Fiches";
+}
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Fiches d'assiduité</h1>
+        <p class="sous-titre">Du @Affichage.Periode(Model.Debut, Model.Fin)@(Model.Debut == Model.Courante ? " (en cours)" : "")</p>
+    </div>
+    <nav class="nav-semaine" aria-label="Changer de période">
+        <a class="btn btn-rond" asp-page="Index" asp-route-periode="@Model.Debut.AddDays(-14).ToString("yyyy-MM-dd")" aria-label="Période précédente">‹</a>
+        <a class="btn btn-rond" asp-page="Index" asp-route-periode="@Model.Debut.AddDays(14).ToString("yyyy-MM-dd")" aria-label="Période suivante">›</a>
+    </nav>
+</div>
+
+@if (!Model.ModeleDisponible)
+{
+    <p class="aide">Le formulaire vierge FO-0310 n'est pas encore téléversé. <a asp-page="/Parametres">Téléversez-le dans Réglages</a>.</p>
+}
+
+@if (Model.Situations.Count == 0)
+{
+    <div class="carte vide"><p class="mb-0">Aucun enfant inscrit pendant cette période.</p></div>
+}
+else
+{
+    <div class="liste-enfants">
+        @foreach (var s in Model.Situations)
+        {
+            var e = s.Enfant;
+            var photo = e.PhotoDocumentId is { } pid ? Url.Page("/Enfants/Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
+            var etat = s.Fiche?.Etat ?? Garderie.Web.Data.EtatFiche.Brouillon;
+            <a class="tuile-enfant" asp-page="Fiche" asp-route-enfantId="@e.Id" asp-route-debut="@Model.Debut.ToString("yyyy-MM-dd")">
+                <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                <span class="details">
+                    <span class="nom d-block">@e.NomComplet</span>
+                    <span class="info d-block">
+                        <span class="badge @Affichage.ClasseEtat(etat)">@Affichage.Nom(etat)</span>
+                        @if (s.Fiche?.ErreurSignalee is not null && etat != Garderie.Web.Data.EtatFiche.SigneeParent)
+                        {
+                            <span class="badge text-bg-danger">Erreur signalée</span>
+                        }
+                        @if (etat == Garderie.Web.Data.EtatFiche.Brouillon && s.JoursNonEnregistres > 0)
+                        {
+                            <span class="badge text-bg-warning">@s.JoursNonEnregistres jour(s) à enregistrer</span>
+                        }
+                    </span>
+                </span>
+            </a>
+        }
+    </div>
+}

@@ -1,0 +1,143 @@
+@page "{enfantId:int}"
+@model Garderie.Web.Pages.Fiches.FicheModel
+@using Garderie.Web.Pages.Shared
+@{
+    var e = Model.Enfant;
+    var f = Model.Fiche;
+    ViewData["Title"] = "Fiche de " + e.Prenom;
+    var debut = Model.Debut.ToString("yyyy-MM-dd");
+    var grille = new GrilleFicheVue(Model.Debut, Model.Codes, e);
+    var fin = Model.Debut.AddDays(13);
+}
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Fiche de @e.Prenom @e.Nom</h1>
+        <p class="sous-titre">Du @Affichage.Periode(Model.Debut, fin) · <span class="badge @Affichage.ClasseEtat(Model.Etat)">@Affichage.Nom(Model.Etat)</span></p>
+    </div>
+    <nav class="nav-semaine" aria-label="Changer de période">
+        <a class="btn btn-rond" asp-route-enfantId="@e.Id" asp-route-debut="@Model.Debut.AddDays(-14).ToString("yyyy-MM-dd")" aria-label="Période précédente">‹</a>
+        <a class="btn btn-rond" asp-route-enfantId="@e.Id" asp-route-debut="@Model.Debut.AddDays(14).ToString("yyyy-MM-dd")" aria-label="Période suivante">›</a>
+    </nav>
+</div>
+
+@if (TempData["Lien"] is string lien)
+{
+    <div class="carte">
+        <p class="fw-bold mb-1">Lien à envoyer au parent (affiché une seule fois, valide 7 jours)</p>
+        <input class="form-control" readonly value="@lien" aria-label="Lien de signature" />
+    </div>
+}
+@if (f?.ErreurSignalee is not null && Model.Etat != EtatFiche.SigneeParent)
+{
+    <div class="bulle bulle-erreur">
+        Erreur signalée par le parent le @Affichage.Horodatage(f.ErreurSignaleeLe!.Value) : « @f.ErreurSignalee »<br />
+        <span class="fw-normal">Corrigez les présences, puis « Reprendre la fiche » et signez de nouveau.</span>
+    </div>
+}
+@if (!Model.ModeleDisponible)
+{
+    <p class="aide">Le formulaire vierge FO-0310 n'est pas encore téléversé. <a asp-page="/Parametres">Téléversez-le dans Réglages</a>.</p>
+}
+
+<section class="carte">
+    <h2 class="h5">Présences</h2>
+    @if (Model.Etat == EtatFiche.Brouillon && Model.NonEnregistres.Count > 0)
+    {
+        <p class="aide">
+            @Model.NonEnregistres.Count journée(s) pas encore enregistrée(s) (« ? ») :
+            @string.Join(", ", Model.NonEnregistres.Select(d => $"{Affichage.JourCourt(d.DayOfWeek)} {d.Day}")).
+            <a asp-page="/Presences/Index" asp-route-semaine="@Model.NonEnregistres[0].ToString("yyyy-MM-dd")">Aller aux présences</a>
+        </p>
+    }
+    @if (Model.CodesModifies)
+    {
+        <p class="bulle bulle-erreur">Les présences ont changé depuis votre signature. Le parent verra la version signée :
+            reprenez la fiche pour signer la nouvelle version.</p>
+    }
+    <partial name="_GrilleFiche" model="grille" />
+</section>
+
+<section class="carte">
+    <h2 class="h5">Paiement de la contribution réduite</h2>
+    @if (Model.Etat == EtatFiche.Brouillon)
+    {
+        <form method="post" asp-page-handler="Paiement" asp-route-enfantId="@e.Id" asp-route-debut="@debut" class="row g-2 align-items-end">
+            @for (var i = 1; i <= 2; i++)
+            {
+                var lundi = Model.Debut.AddDays(7 * (i - 1));
+                <div class="col-12 small fw-bold mt-2">Semaine du @Affichage.Date(lundi)</div>
+                <div class="col-sm-4"><label class="form-label small mb-0" for="dp@(i)">Date du paiement</label>
+                    <input type="date" class="form-control" id="dp@(i)" name="Paiement.DatePaiement@(i)" value="@(i == 1 ? Model.Paiement.DatePaiement1?.ToString("yyyy-MM-dd") : Model.Paiement.DatePaiement2?.ToString("yyyy-MM-dd"))" /></div>
+                <div class="col-6 col-sm-4"><label class="form-label small mb-0" for="mp@(i)">Montant payé ($)</label>
+                    <input type="text" inputmode="decimal" autocomplete="off" class="form-control" id="mp@(i)" name="Paiement.MontantPaye@(i)" value="@(i == 1 ? Model.Paiement.MontantPaye1 : Model.Paiement.MontantPaye2)" /></div>
+                <div class="col-6 col-sm-4"><label class="form-label small mb-0" for="sp@(i)">Solde à payer ($)</label>
+                    <input type="text" inputmode="decimal" autocomplete="off" class="form-control" id="sp@(i)" name="Paiement.Solde@(i)" value="@(i == 1 ? Model.Paiement.Solde1 : Model.Paiement.Solde2)" /></div>
+            }
+            <div class="col-12 mt-3"><button class="btn btn-doux" type="submit">Enregistrer le paiement</button></div>
+        </form>
+    }
+    else
+    {
+        <dl class="row small-dl mb-0">
+            <dt class="col-6">Semaine du @Affichage.Date(Model.Debut)</dt>
+            <dd class="col-6">@Affichage.Date(f!.DatePaiement1) · @(f.MontantPaye1?.ToString("0.00") ?? "—") $ · solde @(f.Solde1?.ToString("0.00") ?? "—") $</dd>
+            <dt class="col-6">Semaine du @Affichage.Date(Model.Debut.AddDays(7))</dt>
+            <dd class="col-6">@Affichage.Date(f.DatePaiement2) · @(f.MontantPaye2?.ToString("0.00") ?? "—") $ · solde @(f.Solde2?.ToString("0.00") ?? "—") $</dd>
+        </dl>
+    }
+</section>
+
+<section class="carte">
+    <h2 class="h5">Signatures</h2>
+    @if (Model.ModeleDisponible)
+    {
+        <p><a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
+            @(Model.Etat == EtatFiche.SigneeParent ? "Télécharger le PDF signé" : "Voir l'aperçu PDF")</a></p>
+    }
+
+    @if (Model.Etat == EtatFiche.Brouillon)
+    {
+        @if (Model.ParentPayeur is null)
+        {
+            <p class="aide">Ajoutez d'abord un parent au dossier (son nom va sur la fiche).</p>
+        }
+        <form method="post" asp-page-handler="SignerRsge" asp-route-enfantId="@e.Id" asp-route-debut="@debut" class="form-signature">
+            <p class="small mb-2">J'atteste que les renseignements inscrits sur cette fiche d'assiduité correspondent à la présence réelle de
+                cet enfant et aux contributions réduites perçues et à percevoir.</p>
+            <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+            <input type="hidden" name="signature" class="valeur-signature" />
+            <div class="d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                <button type="submit" class="btn btn-primary ms-auto" disabled="@(Model.NonEnregistres.Count > 0 || !Model.ModeleDisponible || Model.ParentPayeur is null)">Signer la fiche</button>
+            </div>
+        </form>
+    }
+    else if (Model.Etat == EtatFiche.SigneeRsge)
+    {
+        <p>Signée par la RSGE le @Affichage.Horodatage(f!.SigneRsgeLe!.Value). En attente de @(f.NomParent).</p>
+        <div class="d-flex flex-wrap gap-2">
+            <form method="post" asp-page-handler="Envoyer" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
+                <button class="btn btn-primary" type="submit" disabled="@(!Model.CourrielConfigure || !Model.UrlPubliqueConfiguree)">Envoyer au parent par courriel</button>
+            </form>
+            <form method="post" asp-page-handler="SurPlace" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
+                <button class="btn btn-outline-primary" type="submit">Faire signer ici (tablette)</button>
+            </form>
+            <form method="post" asp-page-handler="Lien" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
+                <button class="btn btn-doux" type="submit" disabled="@(!Model.UrlPubliqueConfiguree)">Copier un lien</button>
+            </form>
+            <form method="post" asp-page-handler="Reprendre" asp-route-enfantId="@e.Id" asp-route-debut="@debut" class="confirmer ms-auto"
+                  data-confirmer="Reprendre la fiche ? Votre signature et les liens déjà envoyés seront annulés.">
+                <button class="btn btn-outline-danger" type="submit">Reprendre la fiche</button>
+            </form>
+        </div>
+        @if (!Model.CourrielConfigure || !Model.UrlPubliqueConfiguree)
+        {
+            <p class="small text-muted mt-2">Envoi par courriel indisponible : configurez l'adresse publique et le compte Gmail dans les options du module.</p>
+        }
+    }
+    else
+    {
+        <p class="mb-0">Signée par @f!.SignataireParent le @Affichage.Horodatage(f.SigneParentLe!.Value)@(f.SigneSurPlace ? " (sur place)" : "").
+            Le PDF est rangé dans les documents du dossier.</p>
+    }
+</section>

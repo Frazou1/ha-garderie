@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+- Fiches d'assiduité aux 2 semaines : formulaire officiel FO-0310 rempli (téléversé dans Réglages), paiements,
+  signature de la RSGE au doigt, lien unique au parent par courriel (7 jours, usage unique), lien à copier ou
+  signature sur place, « Signaler une erreur », PDF final verrouillé rangé dans le dossier et envoyé à la RSGE.
+- Courriels par Gmail (mot de passe d'application dans les options du module).
+- Réglages : période de référence, formulaire FO-0310, test du courriel ; onglet Fiches.
+- Montants acceptés avec point ou virgule ; « 1er » dans les dates.
+
 ## 0.2.1
 - Présences : retour à 2 cases par jour (matin / après-midi), comme sur la fiche FO-0310 ; P dans les 2 cases
   par défaut. Fermeture d'une demi-journée : F ½ dans la case fermée, P ½ dans l'autre. Migration : le code

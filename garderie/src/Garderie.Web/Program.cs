@@ -36,6 +36,8 @@ builder.Services.AddSingleton<Chiffreur>();
 builder.Services.AddScoped<Journal>();
 builder.Services.AddScoped<PresencesService>();
 builder.Services.AddScoped<DocumentsService>();
+builder.Services.AddScoped<FichesService>();
+builder.Services.AddSingleton<Courriels>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDataProtection()

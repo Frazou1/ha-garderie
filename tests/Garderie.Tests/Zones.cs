@@ -22,6 +22,8 @@ public sealed class Appli : WebApplicationFactory<Program>
         builder.UseSetting("Garderie:PortIngress", "8090");
         builder.UseSetting("utilisateurs_autorises:0", "rsge");
         builder.UseSetting("path_base_public", "/garderie");
+        builder.UseSetting("url_publique", "https://exemple.test/garderie");
+        builder.UseSetting("Garderie:DossierCourrielsTest", Path.Combine(Dossier, "courriels"));
         builder.ConfigureServices(s => s.AddTransient<IStartupFilter, FiltreConnexion>());
     }
 

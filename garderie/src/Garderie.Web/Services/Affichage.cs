@@ -42,14 +42,19 @@ public static class Affichage
     public static string Taille(long octets) =>
         octets < 1024 ? $"{octets} o" : octets < 1024 * 1024 ? $"{octets / 1024.0:0} Ko" : $"{octets / 1024.0 / 1024.0:0.0} Mo";
 
-    public static string Date(DateOnly? d) => d?.ToString("d MMMM yyyy") ?? "—";
+    private static readonly System.Globalization.CultureInfo Fr = System.Globalization.CultureInfo.GetCultureInfo("fr-CA");
+
+    public static string Date(DateOnly? d) => d is { } j ? $"{JourDuMois(j)} {j.ToString("MMMM yyyy", Fr)}" : "—";
+
+    /// <summary>« 1er » pour le premier du mois / "1er" for the first day of the month.</summary>
+    public static string JourDuMois(DateOnly d) => d.Day == 1 ? "1er" : d.Day.ToString();
 
     /// <summary>Abreviation du jour (Lun, Mar...) / Short day name.</summary>
     public static string JourCourt(DayOfWeek j) => Jour(j)[..3];
 
     /// <summary>Periode d'une semaine (ex. « 2 au 6 novembre 2026 ») / Week span.</summary>
     public static string Periode(DateOnly debut, DateOnly fin) =>
-        debut.Month == fin.Month ? $"{debut.Day} au {fin:d MMMM yyyy}" : $"{debut:d MMMM} au {fin:d MMMM yyyy}";
+        debut.Month == fin.Month ? $"{JourDuMois(debut)} au {Date(fin)}" : $"{JourDuMois(debut)} {debut.ToString("MMMM", Fr)} au {Date(fin)}";
 
     /// <summary>Classe CSS d'un code (couleur) / CSS class of a code (colour).</summary>
     public static string ClasseCode(string? code) => (code ?? "") switch
@@ -60,6 +65,14 @@ public static class Affichage
         "F" or "F 1/2" => "code-f",
         "R" or "R 1/2" => "code-r",
         _ => "code-autre",
+    };
+
+    /// <summary>Couleur du badge d'etat d'une fiche / Sheet status badge colour.</summary>
+    public static string ClasseEtat(EtatFiche e) => e switch
+    {
+        EtatFiche.SigneeParent => "text-bg-success",
+        EtatFiche.SigneeRsge => "text-bg-info",
+        _ => "text-bg-light border",
     };
 
     /// <summary>Initiales pour l'avatar sans photo / Initials for the avatar without photo.</summary>

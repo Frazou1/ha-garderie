@@ -30,6 +30,18 @@ public class IdentifiantsTests
     }
 }
 
+public class AffichageTests
+{
+    [Fact]
+    public void PremierDuMois()
+    {
+        Assert.Equal("1er novembre 2026", Affichage.Date(new DateOnly(2026, 11, 1)));
+        Assert.Equal("2 novembre 2026", Affichage.Date(new DateOnly(2026, 11, 2)));
+        Assert.Equal("19 octobre au 1er novembre 2026", Affichage.Periode(new DateOnly(2026, 10, 19), new DateOnly(2026, 11, 1)));
+        Assert.Equal("1er au 14 mars 2027", Affichage.Periode(new DateOnly(2027, 3, 1), new DateOnly(2027, 3, 14)));
+    }
+}
+
 public class ChiffreurTests
 {
     private readonly Chiffreur _c = new(RandomNumberGenerator.GetBytes(32));

@@ -9,9 +9,9 @@ COPY src/ src/
 RUN dotnet publish src/Garderie.Web/Garderie.Web.csproj -c Release -o /app --no-restore -p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
-# Fuseaux horaires / Time zones (America/Toronto)
+# Fuseaux horaires (America/Toronto) et police du PDF / Time zones and PDF font
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tzdata \
+    && apt-get install -y --no-install-recommends tzdata fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 ENV TZ=America/Toronto \
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \

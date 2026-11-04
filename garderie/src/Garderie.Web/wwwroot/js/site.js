@@ -52,6 +52,63 @@
         }
     });
 
+    // Signature au doigt / a la souris : <canvas class="pad-signature"> + <input class="valeur-signature">
+    // Finger / mouse signature
+    document.querySelectorAll("canvas.pad-signature").forEach(function (c) {
+        var g = c.getContext("2d");
+        var trace = false, vide = true, dernier = null;
+        g.lineWidth = 3.2; g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#1d1b2b";
+        function point(e) {
+            var r = c.getBoundingClientRect();
+            return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height };
+        }
+        c.addEventListener("pointerdown", function (e) {
+            trace = true; dernier = point(e); c.setPointerCapture(e.pointerId);
+            g.beginPath(); g.arc(dernier.x, dernier.y, 1.4, 0, 7); g.fillStyle = g.strokeStyle; g.fill();
+            vide = false; e.preventDefault();
+        });
+        c.addEventListener("pointermove", function (e) {
+            if (!trace) return;
+            var p = point(e);
+            g.beginPath(); g.moveTo(dernier.x, dernier.y); g.lineTo(p.x, p.y); g.stroke();
+            dernier = p; e.preventDefault();
+        });
+        ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { c.addEventListener(t, function () { trace = false; }); });
+
+        var form = c.closest("form");
+        var bouton = form.querySelector(".effacer-signature");
+        if (bouton) bouton.addEventListener("click", function () { g.clearRect(0, 0, c.width, c.height); vide = true; });
+        form.addEventListener("submit", function (e) {
+            if (vide) {
+                e.preventDefault();
+                window.alert("Signez dans le cadre avant d'envoyer.");
+                return;
+            }
+            form.querySelector(".valeur-signature").value = recadrer(c).toDataURL("image/png");
+        });
+    });
+
+    // Recadre la signature autour du trait (elle remplit mieux la case du PDF) / Crop around the ink
+    function recadrer(c) {
+        var d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+        var x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+        for (var y = 0; y < c.height; y++) {
+            for (var x = 0; x < c.width; x++) {
+                if (d[(y * c.width + x) * 4 + 3] > 0) {
+                    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+                }
+            }
+        }
+        if (x1 < 0) return c;
+        var marge = 6;
+        x0 = Math.max(0, x0 - marge); y0 = Math.max(0, y0 - marge);
+        x1 = Math.min(c.width - 1, x1 + marge); y1 = Math.min(c.height - 1, y1 + marge);
+        var r = document.createElement("canvas");
+        r.width = x1 - x0 + 1; r.height = y1 - y0 + 1;
+        r.getContext("2d").drawImage(c, x0, y0, r.width, r.height, 0, 0, r.width, r.height);
+        return r;
+    }
+
     function reduire(fichier, max) {
         if (!window.createImageBitmap) return Promise.resolve(null);
         return createImageBitmap(fichier).then(function (img) {

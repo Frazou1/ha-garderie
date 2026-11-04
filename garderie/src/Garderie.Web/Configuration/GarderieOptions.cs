@@ -41,11 +41,31 @@ public sealed class GarderieOptions
     /// <summary>Chemin public (ex. /garderie) / Public path base.</summary>
     public string PathBasePublic { get; set; } = "/garderie";
 
+    /// <summary>Adresse publique complete des pages des parents (liens par courriel) / Public base URL.</summary>
+    public string UrlPublique { get; set; } = "";
+
+    // --- Courriel (SMTP, ex. Gmail + mot de passe d'application) / Email (SMTP) ---
+    public string SmtpHote { get; set; } = "smtp.gmail.com";
+    public int SmtpPort { get; set; } = 587;
+    public string SmtpUtilisateur { get; set; } = "";
+    public string SmtpMotDePasse { get; set; } = "";
+    /// <summary>Nom affiche de l'expediteur / Sender display name.</summary>
+    public string SmtpNomExpediteur { get; set; } = "Garderie";
+    /// <summary>
+    /// Developpement / tests : ecrit les courriels en fichiers .eml dans ce dossier au lieu de les envoyer.
+    /// Development / tests: writes emails as .eml files instead of sending.
+    /// </summary>
+    public string? DossierCourrielsTest { get; set; }
+
+    public bool CourrielConfigure => DossierCourrielsTest is not null ||
+        (!string.IsNullOrWhiteSpace(SmtpHote) && !string.IsNullOrWhiteSpace(SmtpUtilisateur) && !string.IsNullOrWhiteSpace(SmtpMotDePasse));
+
     public const string PrefixeIngressSimule = "/api/hassio_ingress/dev";
 
     public string FichierBase => Path.Combine(DataDir, "garderie.db");
     public string DossierDocuments => Path.Combine(DataDir, "docs");
     public string DossierCles => Path.Combine(DataDir, "keys");
+    public string FichierModeleFo0310 => Path.Combine(DataDir, "modeles", "FO-0310.pdf");
 
     public bool EstProxyDeConfiance(IPAddress? ip) =>
         ip is not null && ProxyDeConfiance.Any(p => IPAddress.TryParse(p, out var a) && Normaliser(a).Equals(Normaliser(ip)));
@@ -70,6 +90,14 @@ public sealed class GarderieOptions
         if (proxies is not null) o.ProxyDeConfiance = proxies;
         var pb = config["path_base_public"];
         if (!string.IsNullOrWhiteSpace(pb)) o.PathBasePublic = pb;
+        string? Lire(string cle) => string.IsNullOrWhiteSpace(config[cle]) ? null : config[cle]!.Trim();
+        o.UrlPublique = Lire("url_publique") ?? o.UrlPublique;
+        o.SmtpHote = Lire("smtp_hote") ?? o.SmtpHote;
+        if (int.TryParse(config["smtp_port"], out var port) && port > 0) o.SmtpPort = port;
+        o.SmtpUtilisateur = Lire("smtp_utilisateur") ?? o.SmtpUtilisateur;
+        o.SmtpMotDePasse = config["smtp_mot_de_passe"] ?? o.SmtpMotDePasse;
+        o.SmtpNomExpediteur = Lire("smtp_nom_expediteur") ?? o.SmtpNomExpediteur;
+        o.UrlPublique = o.UrlPublique.TrimEnd('/');
         o.PathBasePublic = "/" + o.PathBasePublic.Trim().Trim('/');
         if (o.PathBasePublic == "/") o.PathBasePublic = "";
         return o;

@@ -1,0 +1,97 @@
+@page
+@model Garderie.Web.Pages.Public.SignerModel
+@using Garderie.Web.Pages.Shared
+@{
+    Layout = "_LayoutPublic";
+    ViewData["Title"] = "Fiche d'assiduité";
+    var nomGarderie = Model.Garderie?.NomGarderie ?? "Garderie";
+}
+@if (Model.Termine)
+{
+    <div class="carte carte-publique mx-auto text-center">
+        <h1 class="h4">Merci !</h1>
+        <p class="mb-0">La fiche est signée. Votre éducatrice en reçoit une copie. Vous pouvez fermer cette page.</p>
+        @if (Model.Lien?.SurPlace == true && User.Identity?.IsAuthenticated == true)
+        {
+            <a class="btn btn-doux mt-3" asp-page="/Fiches/Index" asp-route-periode="@Model.Lien.Fiche.Debut.ToString("yyyy-MM-dd")">Retour aux fiches</a>
+        }
+    </div>
+}
+else if (Model.ErreurEnvoyee)
+{
+    <div class="carte carte-publique mx-auto text-center">
+        <h1 class="h4">Message envoyé</h1>
+        <p class="mb-0">Votre éducatrice va vérifier la fiche et vous en renverra une version corrigée.</p>
+    </div>
+}
+else if (Model.Lien is null)
+{
+    <div class="carte carte-publique mx-auto">
+        <h1 class="h4">Lien invalide ou expiré</h1>
+        <p class="mb-0">Ce lien a déjà été utilisé ou n'est plus valide. Demandez-en un nouveau à votre éducatrice.</p>
+    </div>
+}
+else
+{
+    var f = Model.Fiche;
+    var e = f.Enfant;
+    <div class="carte-publique mx-auto">
+        <p class="sous-titre mb-1">@nomGarderie</p>
+        <h1 class="titre-page mb-1">Fiche d'assiduité de @e.Prenom</h1>
+        <p class="sous-titre">Du @Affichage.Periode(f.Debut, f.Fin)</p>
+
+        <div asp-validation-summary="All" class="bulle bulle-erreur"></div>
+
+        <section class="carte">
+            <partial name="_GrilleFiche" model="new GrilleFicheVue(f.Debut, Model.Codes, e)" />
+            <details class="legende mb-0">
+                <summary>Que veulent dire les codes ?</summary>
+                <dl>
+                    @foreach (var c in CodesPresence.Tous)
+                    {
+                        <div><dt><span class="pastille @Affichage.ClasseCode(c.Valeur)">@CodesPresence.Court(c.Valeur)</span></dt><dd>@c.Libelle</dd></div>
+                    }
+                </dl>
+            </details>
+        </section>
+
+        <section class="carte">
+            <h2 class="h6">Contribution réduite</h2>
+            <dl class="row small-dl mb-0 small">
+                <dt class="col-5">Semaine du @Affichage.Date(f.Debut)</dt>
+                <dd class="col-7">payé le @Affichage.Date(f.DatePaiement1) : @(f.MontantPaye1?.ToString("0.00") ?? "—") $ · solde @(f.Solde1?.ToString("0.00") ?? "—") $</dd>
+                <dt class="col-5">Semaine du @Affichage.Date(f.Debut.AddDays(7))</dt>
+                <dd class="col-7">payé le @Affichage.Date(f.DatePaiement2) : @(f.MontantPaye2?.ToString("0.00") ?? "—") $ · solde @(f.Solde2?.ToString("0.00") ?? "—") $</dd>
+            </dl>
+            <p class="small text-muted mt-2 mb-0">Signée par @(Model.Garderie?.NomRsge ?? "la RSGE") le @Affichage.Date(DateOnly.FromDateTime(Temps.VersLocal(f.SigneRsgeLe!.Value))).</p>
+        </section>
+
+        <section class="carte">
+            <h2 class="h6">Votre signature</h2>
+            <form method="post" asp-page-handler="Signer" asp-route-j="@Model.Jeton" class="form-signature">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
+                    <label class="form-check-label small" for="atteste">J'atteste que les renseignements inscrits sur cette fiche d'assiduité
+                        correspondent à la présence réelle de mon enfant et aux contributions réduites payées et à payer.</label>
+                </div>
+                <label class="form-label small mb-0" for="nom">Votre nom</label>
+                <input class="form-control mb-2" id="nom" name="nom" value="@f.NomParent" maxlength="200" required autocomplete="name" />
+                <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+                <input type="hidden" name="signature" class="valeur-signature" />
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                    <button type="submit" class="btn btn-primary btn-lg ms-auto">Signer</button>
+                </div>
+            </form>
+        </section>
+
+        <details class="carte">
+            <summary class="fw-bold">Un code vous semble inexact ? Signaler une erreur</summary>
+            <form method="post" asp-page-handler="Erreur" asp-route-j="@Model.Jeton" class="mt-2">
+                <textarea class="form-control mb-2" name="message" rows="3" maxlength="1000" required
+                          placeholder="Ex. Le mardi 4, mon enfant était absent."></textarea>
+                <button type="submit" class="btn btn-doux">Envoyer à l'éducatrice</button>
+            </form>
+        </details>
+    </div>
+}

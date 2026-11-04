@@ -1,41 +1,88 @@
 @page
 @model ParametresModel
 @{
-    ViewData["Title"] = "Paramètres";
+    ViewData["Title"] = "Réglages";
 }
-<h1 class="h3 mb-3">Paramètres de la garderie</h1>
-<form method="post" class="row g-3 col-lg-9">
-    <div class="col-md-6">
-        <label asp-for="Donnees.NomGarderie" class="form-label">Nom de la garderie</label>
-        <input asp-for="Donnees.NomGarderie" class="form-control" />
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Réglages</h1>
+        <p class="sous-titre">Garderie, fiches d'assiduité et courriel</p>
     </div>
-    <div class="col-md-6">
-        <label asp-for="Donnees.NomRsge" class="form-label">Nom de la RSGE</label>
-        <input asp-for="Donnees.NomRsge" class="form-control" />
-    </div>
-    <div class="col-12">
-        <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
-        <input asp-for="Donnees.Adresse" class="form-control" />
-    </div>
-    <div class="col-md-6">
-        <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
-        <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
-    </div>
-    <div class="col-md-6">
-        <label asp-for="Donnees.CourrielRsge" class="form-label">Courriel de la RSGE (réception des PDF signés)</label>
-        <input asp-for="Donnees.CourrielRsge" type="email" class="form-control" />
-    </div>
-    <div class="col-md-6">
-        <label asp-for="Donnees.NomBureauCoordonnateur" class="form-label">Bureau coordonnateur</label>
-        <input asp-for="Donnees.NomBureauCoordonnateur" class="form-control" />
-    </div>
-    <div class="col-md-3">
-        <label asp-for="Donnees.HeureOuverture" class="form-label">Ouverture</label>
-        <input asp-for="Donnees.HeureOuverture" type="time" class="form-control" />
-    </div>
-    <div class="col-md-3">
-        <label asp-for="Donnees.HeureFermeture" class="form-label">Fermeture</label>
-        <input asp-for="Donnees.HeureFermeture" type="time" class="form-control" />
-    </div>
-    <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
-</form>
+    <a class="btn btn-doux btn-sm" asp-page="/Journal">Journal des accès</a>
+</div>
+
+<section class="carte">
+    <h2 class="h5">La garderie</h2>
+    <form method="post" class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Donnees.NomGarderie" class="form-label">Nom de la garderie</label>
+            <input asp-for="Donnees.NomGarderie" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.NomRsge" class="form-label">Nom de la RSGE (sur la fiche)</label>
+            <input asp-for="Donnees.NomRsge" class="form-control" />
+        </div>
+        <div class="col-12">
+            <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
+            <input asp-for="Donnees.Adresse" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
+            <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.CourrielRsge" class="form-label">Courriel de la RSGE (reçoit les PDF signés)</label>
+            <input asp-for="Donnees.CourrielRsge" type="email" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.NomBureauCoordonnateur" class="form-label">Bureau coordonnateur (sur la fiche)</label>
+            <input asp-for="Donnees.NomBureauCoordonnateur" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.DebutPeriodes" class="form-label">Un lundi qui commence une période de 2 semaines</label>
+            <input asp-for="Donnees.DebutPeriodes" type="date" class="form-control" />
+            <div class="form-text">Ex. 19 octobre 2026 : périodes du 19 oct. au 1er nov., du 2 au 15 nov., etc.</div>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Donnees.HeureOuverture" class="form-label">Ouverture</label>
+            <input asp-for="Donnees.HeureOuverture" type="time" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Donnees.HeureFermeture" class="form-label">Fermeture</label>
+            <input asp-for="Donnees.HeureFermeture" type="time" class="form-control" />
+        </div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+    </form>
+</section>
+
+<section class="carte">
+    <h2 class="h5">Formulaire FO-0310 (fiche d'assiduité vierge)</h2>
+    @if (Model.ModeleDisponible)
+    {
+        <p class="mb-2"><span class="badge text-bg-success">Enregistré</span> le @Affichage.Horodatage(Model.ModeleDate!.Value).
+            Remplacez-le si le ministère publie une nouvelle version.</p>
+    }
+    else
+    {
+        <p class="mb-2">Téléversez le PDF à remplir du ministère de la Famille (FO-0310), fourni par le bureau coordonnateur.</p>
+    }
+    <form method="post" asp-page-handler="Modele" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+        <input type="file" name="modele" accept="application/pdf,.pdf" class="form-control w-auto" required aria-label="Formulaire FO-0310" />
+        <button type="submit" class="btn btn-doux">Téléverser</button>
+    </form>
+</section>
+
+<section class="carte">
+    <h2 class="h5">Courriel</h2>
+    <dl class="row small-dl mb-2">
+        <dt class="col-sm-4">Envoi</dt>
+        <dd class="col-sm-8">@(Model.CourrielConfigure ? $"configuré ({Model.CompteCourriel})" : "non configuré")</dd>
+        <dt class="col-sm-4">Adresse publique</dt>
+        <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.UrlPublique) ? "non configurée" : Model.UrlPublique)</dd>
+    </dl>
+    <p class="small text-muted">Le compte Gmail, son mot de passe d'application et l'adresse publique se règlent dans
+        Home Assistant : Paramètres → Modules → Garderie → Configuration.</p>
+    <form method="post" asp-page-handler="TestCourriel">
+        <button type="submit" class="btn btn-doux" disabled="@(!Model.CourrielConfigure)">Envoyer un courriel de test à la RSGE</button>
+    </form>
+</section>

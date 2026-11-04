@@ -291,6 +291,9 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         var fichiers = e.Documents.ToList();
         var parents = e.Parents.Select(p => p.Parent).ToList();
         var photos = e.Contacts.Select(c => c.PhotoFichier).ToList();
+        // Signatures des fiches (les fiches et liens partent en cascade) / Sheet signatures (sheets cascade)
+        foreach (var f in await db.Fiches.Where(f => f.EnfantId == Id).Select(f => new { f.SignatureRsgeFichier, f.SignatureParentFichier }).ToListAsync())
+            photos.AddRange([f.SignatureRsgeFichier, f.SignatureParentFichier]);
         await using var tx = await db.Database.BeginTransactionAsync();
         await db.Presences.Where(p => p.EnfantId == Id).ExecuteDeleteAsync();
         db.Enfants.Remove(e); // cascade : liens parents, contacts, allergies, medicaments, horaires, documents

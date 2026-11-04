@@ -207,3 +207,16 @@ select.code option { font-weight: 600; color: var(--encre); background: #fff; }
 
 /* --- Pages publiques / Public pages --- */
 .carte-publique { max-width: 32rem; }
+
+/* --- Fiches et signatures / Sheets and signatures --- */
+.semaine-titre { margin: .5rem 0 .35rem; font-size: .85rem; font-weight: 700; color: var(--encre-douce); }
+.grille-semaine.lecture { margin-bottom: .5rem; }
+span.code { display: grid; place-items: center; min-height: 2.3rem; border-radius: .8rem; font-weight: 800; font-size: .95rem; }
+.code-hors.lecture { min-height: 4.95rem; }
+.pad-signature { display: block; width: 100%; max-width: 36rem; aspect-ratio: 3 / 1; height: auto; background: #fff;
+    border: 2px dashed #e2d8ce; border-radius: 1rem; touch-action: none; cursor: crosshair; }
+.public .contenu { padding-bottom: 2rem; }
+.public .carte-publique { max-width: 40rem; }
+details.carte > summary { cursor: pointer; }
+.btn:disabled { opacity: .45; }
+.validation-summary-valid { display: none; }

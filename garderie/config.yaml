@@ -1,8 +1,8 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: "Garderie"
-version: "0.2.1"
+version: "0.3.0"
 slug: "garderie"
-description: "Dossiers des enfants et présences d'un service de garde en milieu familial / Family daycare records and attendance"
+description: "Dossiers, présences et fiches d'assiduité signées d'un service de garde en milieu familial / Family daycare records, attendance and signed sheets"
 url: "https://github.com/Frazou1/ha-garderie"
 arch:
   - amd64
@@ -32,9 +32,21 @@ options:
   utilisateurs_autorises: []
   proxy_de_confiance: []
   path_base_public: "/garderie"
+  url_publique: ""
+  smtp_hote: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_utilisateur: ""
+  smtp_mot_de_passe: ""
+  smtp_nom_expediteur: "Garderie"
 schema:
   utilisateurs_autorises:
     - str
   proxy_de_confiance:
     - str
   path_base_public: str
+  url_publique: str
+  smtp_hote: str
+  smtp_port: port
+  smtp_utilisateur: str
+  smtp_mot_de_passe: password
+  smtp_nom_expediteur: str

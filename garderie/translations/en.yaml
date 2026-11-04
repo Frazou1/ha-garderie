@@ -12,5 +12,23 @@ configuration:
   path_base_public:
     name: Public path
     description: Path of the public address (e.g. /garderie).
+  url_publique:
+    name: Public URL
+    description: Full URL of the parent pages, used in emailed links (e.g. https://your-domain/garderie).
+  smtp_hote:
+    name: SMTP server
+    description: Outgoing mail server (Gmail - smtp.gmail.com).
+  smtp_port:
+    name: SMTP port
+    description: 587 (STARTTLS) for Gmail.
+  smtp_utilisateur:
+    name: Email account
+    description: Gmail address sending the emails.
+  smtp_mot_de_passe:
+    name: App password
+    description: Google app password (16 letters), not the account password.
+  smtp_nom_expediteur:
+    name: Sender name
+    description: Name shown to parents.
 network:
   8080/tcp: Public parent pages (to be routed by Nginx Proxy Manager)

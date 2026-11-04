@@ -12,5 +12,27 @@ configuration:
   path_base_public:
     name: Chemin public
     description: Chemin de l'adresse publique (ex. /garderie).
+  url_publique:
+    name: Adresse publique
+    description: >-
+      Adresse complète des pages des parents, utilisée dans les liens envoyés par courriel
+      (ex. https://votre-domaine/garderie).
+  smtp_hote:
+    name: Serveur SMTP
+    description: "Serveur d'envoi des courriels (Gmail : smtp.gmail.com)."
+  smtp_port:
+    name: Port SMTP
+    description: 587 (STARTTLS) pour Gmail.
+  smtp_utilisateur:
+    name: Compte courriel
+    description: Adresse Gmail qui envoie les courriels (ex. la garderie).
+  smtp_mot_de_passe:
+    name: Mot de passe d'application
+    description: >-
+      Mot de passe d'application Google (16 lettres), pas le mot de passe du compte.
+      Compte Google → Sécurité → Validation en deux étapes → Mots de passe des applications.
+  smtp_nom_expediteur:
+    name: Nom de l'expéditeur
+    description: Nom affiché aux parents (ex. Les petits moussaillons).
 network:
   8080/tcp: Pages publiques des parents (à relier dans Nginx Proxy Manager)

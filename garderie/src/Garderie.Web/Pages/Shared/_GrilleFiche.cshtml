@@ -1,0 +1,33 @@
+@model Garderie.Web.Pages.Shared.GrilleFicheVue
+@* 2 semaines, du lundi au vendredi, AM / PM, comme la grille du FO-0310 (la fin de semaine reste vide) *@
+@for (var s = 0; s < 2; s++)
+{
+    var lundi = Model.Debut.AddDays(7 * s);
+    <p class="semaine-titre">Semaine du @Affichage.Date(lundi)</p>
+    <div class="grille-semaine lecture">
+        <div class="jour demis-libelles" aria-hidden="true">
+            <span class="jour-nom">&nbsp;</span>
+            <span class="demi-nom">AM</span>
+            <span class="demi-nom">PM</span>
+        </div>
+        @for (var j = 0; j < 5; j++)
+        {
+            var d = lundi.AddDays(j);
+            <div class="jour">
+                <span class="jour-nom">@Affichage.JourCourt(d.DayOfWeek) <b>@d.Day</b></span>
+                @if (!Model.Enfant.EstInscritLe(d))
+                {
+                    <span class="code code-hors lecture">·</span>
+                }
+                else
+                {
+                    @foreach (var demi in new[] { DemiJournee.Matin, DemiJournee.Pm })
+                    {
+                        var code = Model.Codes.GetValueOrDefault((d, demi), "");
+                        <span class="code @Affichage.ClasseCode(code)" title="@CodesPresence.Libelle(code)">@(code == "" ? "?" : CodesPresence.Court(code))</span>
+                    }
+                }
+            </div>
+        }
+    </div>
+}

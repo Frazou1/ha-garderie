@@ -6,7 +6,11 @@
 <h1 class="h3 mb-1">@ViewData["Title"]</h1>
 <p class="text-muted">Dossier de @Model.Enfant.NomComplet. Un parent partagé (frères et sœurs) est mis à jour dans tous les dossiers.</p>
 
-@if (Model.ParentId is null && Model.ParentsExistants.Count > 0)
+@if (Model.Archive)
+{
+    <div class="alert alert-secondary">Dossier archivé : lecture seule. Réactivez-le depuis le dossier pour modifier.</div>
+}
+@if (!Model.Archive && Model.ParentId is null && Model.ParentsExistants.Count > 0)
 {
     <div class="card mb-4">
         <div class="card-header fw-semibold">Parent déjà inscrit (frère ou sœur)</div>
@@ -102,7 +106,10 @@
         </div>
     </div>
     <div class="col-12 d-flex flex-wrap gap-2">
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        @if (!Model.Archive)
+        {
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        }
         @if (Model.NasEnregistre && Model.NasAffiche is null)
         {
             <button type="submit" class="btn btn-outline-warning" asp-page-handler="AfficherNas" asp-route-enfantId="@Model.EnfantId" asp-route-parentId="@Model.ParentId" formnovalidate>Afficher le NAS</button>

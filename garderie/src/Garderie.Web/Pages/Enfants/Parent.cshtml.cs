@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using Garderie.Web.Data;
 using Garderie.Web.Securite;
@@ -11,6 +12,7 @@ namespace Garderie.Web.Pages.Enfants;
 /// Ajout / modification d'un parent dans le dossier d'un enfant, ou lien vers un parent existant (fratrie).
 /// Add or edit a parent in a child's record, or link an existing parent (siblings).
 /// </summary>
+[LectureSeuleSiAncien("enfantId", "AfficherNas")]
 public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : PageModel
 {
     public sealed class Saisie
@@ -32,6 +34,8 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
     [BindProperty(SupportsGet = true)] public int? ParentId { get; set; }
     [BindProperty] public Saisie Donnees { get; set; } = new();
     public Enfant Enfant { get; private set; } = null!;
+    /// <summary>Dossier archive : lecture seule / Archived record: read-only.</summary>
+    public bool Archive { get; private set; }
     public bool NasEnregistre { get; private set; }
     public string? NasAffiche { get; private set; }
     public List<Parent> ParentsExistants { get; private set; } = new();
@@ -41,6 +45,7 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         var e = await db.Enfants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == EnfantId);
         if (e is null) return false;
         Enfant = e;
+        Archive = e.EstAncienLe(Services.Temps.Aujourdhui());
         var dejaLies = await db.EnfantParents.Where(x => x.EnfantId == EnfantId).Select(x => x.ParentId).ToListAsync();
         ParentsExistants = await db.Parents.AsNoTracking().Where(p => !dejaLies.Contains(p.Id))
             .OrderBy(p => p.Nom).ThenBy(p => p.Prenom).ToListAsync();

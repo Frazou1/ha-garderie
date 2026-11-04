@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+- Dossier archivé (date de fin passée) : badge « Ancien », lecture seule (refusée aussi côté serveur),
+  documents et NAS toujours consultables pour l'impôt. Bouton « Réactiver » (retire la date de fin, journalisé).
+
 ## 0.1.1
 - Suppression d'un dossier d'enfant (prénom à retaper) : contacts, santé, horaire, présences,
   documents chiffrés et parents sans autre enfant. L'action reste inscrite au journal.

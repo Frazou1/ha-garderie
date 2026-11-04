@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using Garderie.Web.Data;
 using Garderie.Web.Securite;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace Garderie.Web.Pages.Enfants;
 
 /// <summary>Creation / modification de l'identite de l'enfant / Create or edit the child's identity.</summary>
+[LectureSeuleSiAncien("id")]
 public class EditionModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : PageModel
 {
     public sealed class Saisie

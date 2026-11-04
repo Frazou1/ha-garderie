@@ -45,6 +45,9 @@ public class Enfant
 
     public string NomComplet => $"{Prenom} {Nom}";
     public bool EstInscritLe(DateOnly jour) => DateDebut <= jour && (DateFin is null || DateFin >= jour);
+    /// <summary>Parti (date de fin passee) : dossier archive en lecture seule / Left: archived, read-only.</summary>
+    public bool EstAncienLe(DateOnly jour) => EstAncienSelon(DateFin, jour);
+    public static bool EstAncienSelon(DateOnly? dateFin, DateOnly jour) => dateFin is { } f && f < jour;
 }
 
 /// <summary>Parent ou responsable (partage entre freres et soeurs) / Parent or guardian (shared by siblings).</summary>

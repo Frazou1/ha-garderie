@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using Garderie.Web.Data;
 using Garderie.Web.Securite;
@@ -12,6 +13,7 @@ namespace Garderie.Web.Pages.Enfants;
 /// Dossier complet de l'enfant : identite, parents, contacts, sante, horaire, documents.
 /// Full child record. Each sub-form posts to its own handler.
 /// </summary>
+[LectureSeuleSiAncien("id", "Reactiver", "SupprimerEnfant")]
 public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, DocumentsService documents) : PageModel
 {
     public sealed class NouveauContact
@@ -180,6 +182,22 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             await db.SaveChangesAsync();
         }
         return await RetourAsync("Parent retiré du dossier.");
+    }
+
+    // --- Archive / Archived record ---
+    public bool Archive => Enfant.EstAncienLe(Aujourdhui);
+
+    /// <summary>Reactive un dossier archive (retire la date de fin) / Reactivates an archived record.</summary>
+    public async Task<IActionResult> OnPostReactiverAsync()
+    {
+        var e = await db.Enfants.FindAsync(Id);
+        if (e is null) return NotFound();
+        var ancienneFin = e.DateFin;
+        e.DateFin = null;
+        e.ModifieLe = DateTime.UtcNow;
+        journal.Noter("enfant.reactiver", "Enfant", Id, $"Date de fin retirée ({ancienneFin:yyyy-MM-dd})");
+        await db.SaveChangesAsync();
+        return await RetourAsync("Dossier réactivé : la date de fin est retirée.");
     }
 
     // --- Suppression du dossier / Record deletion ---

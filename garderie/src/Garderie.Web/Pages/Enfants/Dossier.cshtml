@@ -11,7 +11,11 @@
     }
     <div class="me-auto">
         <h1 class="h3 mb-0">@e.NomComplet</h1>
-        @if (!e.EstInscritLe(Model.Aujourdhui))
+        @if (Model.Archive)
+        {
+            <span class="badge text-bg-dark">Ancien · parti le @Affichage.Date(e.DateFin)</span>
+        }
+        else if (!e.EstInscritLe(Model.Aujourdhui))
         {
             <span class="badge text-bg-secondary">Non inscrit aujourd'hui</span>
         }
@@ -20,10 +24,24 @@
             <span class="badge text-bg-danger">Allergie sévère : @a.Description</span>
         }
     </div>
-    <a class="btn btn-outline-primary" asp-page="Edition" asp-route-id="@e.Id">Modifier l'identité</a>
+    @if (!Model.Archive)
+    {
+        <a class="btn btn-outline-primary" asp-page="Edition" asp-route-id="@e.Id">Modifier l'identité</a>
+    }
 </div>
 
-<div class="row g-3">
+@if (Model.Archive)
+{
+    <div class="alert alert-secondary d-flex flex-wrap align-items-center gap-2">
+        <span class="me-auto">Dossier archivé en <strong>lecture seule</strong> : conservé pour l'impôt (relevé 24) et les
+            vérifications. Les documents restent téléchargeables et le NAS consultable.</span>
+        <form method="post" asp-page-handler="Reactiver" asp-route-id="@e.Id" class="confirmer" data-confirmer="Réactiver le dossier de @e.NomComplet (retirer la date de fin) ?">
+            <button class="btn btn-sm btn-outline-primary" type="submit">Réactiver</button>
+        </form>
+    </div>
+}
+
+<div class="row g-3 @(Model.Archive ? "archive" : "")">
     <!-- Identite / Identity -->
     <section class="col-lg-6">
         <div class="card h-100">
@@ -50,7 +68,7 @@
         <div class="card h-100">
             <div class="card-header d-flex align-items-center">
                 <span class="fw-semibold me-auto">Parents / responsables</span>
-                <a class="btn btn-sm btn-primary" asp-page="Parent" asp-route-enfantId="@e.Id">Ajouter</a>
+                <a class="btn btn-sm btn-primary modif" asp-page="Parent" asp-route-enfantId="@e.Id">Ajouter</a>
             </div>
             <ul class="list-group list-group-flush">
                 @if (e.Parents.Count == 0)
@@ -73,7 +91,7 @@
                                 </div>
                                 <div class="small text-muted">NAS : @(p.NasChiffre is null ? "non saisi" : "enregistré (chiffré)")</div>
                             </div>
-                            <a class="btn btn-sm btn-outline-secondary" asp-page="Parent" asp-route-enfantId="@e.Id" asp-route-parentId="@p.Id">Modifier</a>
+                            <a class="btn btn-sm btn-outline-secondary" asp-page="Parent" asp-route-enfantId="@e.Id" asp-route-parentId="@p.Id">@(Model.Archive ? "Voir" : "Modifier")</a>
                             <form method="post" asp-page-handler="RetirerParent" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer @p.NomComplet du dossier ?">
                                 <input type="hidden" name="parentId" value="@p.Id" />
                                 <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
@@ -131,7 +149,7 @@
         <div class="card h-100">
             <div class="card-header d-flex align-items-center">
                 <span class="fw-semibold me-auto">Horaire prévu</span>
-                <a class="btn btn-sm btn-primary" asp-page="Horaire" asp-route-id="@e.Id">Modifier</a>
+                <a class="btn btn-sm btn-primary modif" asp-page="Horaire" asp-route-id="@e.Id">Modifier</a>
             </div>
             <div class="card-body">
                 @if (Model.HoraireDepuis is null)

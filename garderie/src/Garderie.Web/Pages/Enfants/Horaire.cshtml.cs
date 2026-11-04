@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using Garderie.Web.Data;
 using Garderie.Web.Securite;
 using Garderie.Web.Services;
@@ -12,6 +13,7 @@ namespace Garderie.Web.Pages.Enfants;
 /// reste valable pour les fiches passees) ; la meme date remplace la version.
 /// Planned schedule per half-day; a new effective date creates a new version.
 /// </summary>
+[LectureSeuleSiAncien("id")]
 public class HoraireModel(GarderieDb db, Journal journal) : PageModel
 {
     [BindProperty(SupportsGet = true)] public int Id { get; set; }

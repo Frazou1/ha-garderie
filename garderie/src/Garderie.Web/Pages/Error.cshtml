@@ -1,0 +1,12 @@
+@page
+@model ErrorModel
+@using Garderie.Web.Infrastructure
+@{
+    ViewData["Title"] = "Erreur";
+    if (HttpContext.ZoneDe() != Zone.Ingress) { Layout = "_LayoutPublic"; }
+}
+<h1 class="h4 text-danger">Une erreur est survenue.</h1>
+@if (Model.ShowRequestId)
+{
+    <p class="small text-muted">Référence : <code>@Model.RequestId</code></p>
+}

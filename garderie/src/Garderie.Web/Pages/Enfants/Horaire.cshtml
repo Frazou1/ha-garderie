@@ -1,0 +1,53 @@
+@page "{id:int}"
+@model Garderie.Web.Pages.Enfants.HoraireModel
+@{
+    ViewData["Title"] = "Horaire";
+}
+<h1 class="h3 mb-1">Horaire prévu</h1>
+<p class="text-muted">@Model.Enfant.NomComplet — sert à pré-remplir les présences.</p>
+
+<form method="post" asp-route-id="@Model.Id">
+    <div class="mb-3 col-sm-4">
+        <label asp-for="DateEffective" class="form-label">En vigueur à partir du</label>
+        <input asp-for="DateEffective" type="date" class="form-control" />
+        <div class="form-text">Une nouvelle date garde l'ancien horaire pour les jours précédents.</div>
+    </div>
+    <table class="table table-sm align-middle horaire">
+        <thead>
+            <tr><th>Jour</th><th class="text-center">Matin</th><th class="text-center">Après-midi</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var j in Affichage.JoursSemaine)
+            {
+                var m = $"{(int)j}-M";
+                var p = $"{(int)j}-P";
+                <tr>
+                    <td>@Affichage.Jour(j)</td>
+                    <td class="text-center"><input type="checkbox" class="form-check-input case-horaire" name="Cases" value="@m" id="c@(m)" checked="@Model.Cases.Contains(m)" aria-label="@Affichage.Jour(j) matin" /></td>
+                    <td class="text-center"><input type="checkbox" class="form-check-input case-horaire" name="Cases" value="@p" id="c@(p)" checked="@Model.Cases.Contains(p)" aria-label="@Affichage.Jour(j) après-midi" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a class="btn btn-outline-secondary" asp-page="Dossier" asp-route-id="@Model.Id">Annuler</a>
+    </div>
+</form>
+
+@if (Model.Versions.Count > 0)
+{
+    <h2 class="h5 mt-4">Versions enregistrées</h2>
+    <ul class="list-group col-md-6">
+        @foreach (var v in Model.Versions)
+        {
+            <li class="list-group-item d-flex align-items-center gap-2">
+                <a class="me-auto" asp-page="Horaire" asp-route-id="@Model.Id" asp-route-version="@v.ToString("yyyy-MM-dd")">En vigueur le @Affichage.Date(v)</a>
+                <form method="post" asp-page-handler="SupprimerVersion" asp-route-id="@Model.Id" class="confirmer" data-confirmer="Supprimer cette version de l'horaire ?">
+                    <input type="hidden" name="version" value="@v.ToString("yyyy-MM-dd")" />
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                </form>
+            </li>
+        }
+    </ul>
+}

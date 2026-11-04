@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"] – Garderie</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-primary mb-3">
+        <div class="container-fluid">
+            <a class="navbar-brand" asp-page="/Index">Garderie</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" asp-page="/Presences/Index">Présences</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Enfants/Index">Enfants</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Fermetures">Fermetures</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Parametres">Paramètres</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-page="/Journal">Journal</a></li>
+                </ul>
+                <span class="navbar-text small">@(User.FindFirst("nom_affiche")?.Value ?? User.Identity?.Name)</span>
+            </div>
+        </div>
+    </nav>
+    <main class="container-lg pb-5">
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+        @if (TempData["Erreur"] is string erreur)
+        {
+            <div class="alert alert-danger">@erreur</div>
+        }
+        @RenderBody()
+    </main>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

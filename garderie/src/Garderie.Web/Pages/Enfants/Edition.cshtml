@@ -1,0 +1,82 @@
+@page
+@model Garderie.Web.Pages.Enfants.EditionModel
+@{
+    ViewData["Title"] = Model.Id is null ? "Nouvel enfant" : "Modifier l'enfant";
+}
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form method="post" class="row g-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Prenom" class="form-label">Prénom</label>
+        <input asp-for="Donnees.Prenom" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Donnees.Prenom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Nom" class="form-label">Nom</label>
+        <input asp-for="Donnees.Nom" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Donnees.Nom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Donnees.DateNaissance" class="form-label">Date de naissance</label>
+        <input asp-for="Donnees.DateNaissance" type="date" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Donnees.Sexe" class="form-label">Sexe</label>
+        <select asp-for="Donnees.Sexe" class="form-select">
+            <option value="">—</option>
+            <option value="F">Fille</option>
+            <option value="M">Garçon</option>
+            <option value="X">Autre</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
+        <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
+        <input asp-for="Donnees.Adresse" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Nam" class="form-label">N° d'assurance maladie (NAM)</label>
+        <input asp-for="Donnees.Nam" class="form-control" autocomplete="off" placeholder="@(Model.NamMasque is null ? "ABCD 1234 5678" : $"Enregistré : {Model.NamMasque} (laisser vide pour garder)")" />
+        <span asp-validation-for="Donnees.Nam" class="text-danger small"></span>
+        @if (Model.NamMasque is not null)
+        {
+            <div class="form-check mt-1">
+                <input asp-for="Donnees.EffacerNam" class="form-check-input" />
+                <label asp-for="Donnees.EffacerNam" class="form-check-label small">Effacer le NAM enregistré</label>
+            </div>
+        }
+        <div class="form-text">Stocké chiffré.</div>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.DateDebut" class="form-label">Début de fréquentation</label>
+        <input asp-for="Donnees.DateDebut" type="date" class="form-control" />
+        <span asp-validation-for="Donnees.DateDebut" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.DateFin" class="form-label">Fin de fréquentation</label>
+        <input asp-for="Donnees.DateFin" type="date" class="form-control" />
+        <span asp-validation-for="Donnees.DateFin" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.NotesSante" class="form-label">Notes de santé</label>
+        <textarea asp-for="Donnees.NotesSante" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Notes" class="form-label">Autres notes</label>
+        <textarea asp-for="Donnees.Notes" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        @if (Model.Id is not null)
+        {
+            <a class="btn btn-outline-secondary" asp-page="Dossier" asp-route-id="@Model.Id">Annuler</a>
+        }
+        else
+        {
+            <a class="btn btn-outline-secondary" asp-page="Index">Annuler</a>
+        }
+    </div>
+</form>

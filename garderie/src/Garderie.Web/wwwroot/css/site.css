@@ -1,0 +1,18 @@
+/* Garderie - styles communs / common styles */
+html { font-size: 16px; }
+body { background: #f6f7fb; }
+
+.texte-libre { white-space: pre-line; }
+.photo-enfant { width: 96px; height: 96px; object-fit: cover; border-radius: 50%; border: 2px solid #dee2e6; }
+.small-dl dt { font-weight: 500; color: #6c757d; }
+.carte-publique { max-width: 32rem; }
+
+/* Presences : gros boutons tactiles / Attendance: large touch buttons */
+.cellule { border: 2px solid transparent; border-radius: .5rem; padding: .35rem .5rem .5rem; background: #fff; }
+.cellule legend { float: none; width: auto; font-size: .85rem; color: #6c757d; }
+.cellule.propose { border: 2px dashed #0d6efd; background: #eef4ff; }
+.cellule.enregistre { border-color: #d1e7dd; }
+.cellule.modifie { border: 2px solid #fd7e14; }
+.cellule .codes .btn { min-width: 3.2rem; min-height: 2.8rem; font-weight: 600; }
+.barre-enregistrer { position: sticky; bottom: 0; padding: .75rem 0; background: linear-gradient(transparent, #f6f7fb 30%); }
+.horaire .form-check-input { width: 1.6em; height: 1.6em; }

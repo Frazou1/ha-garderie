@@ -1,0 +1,60 @@
+@page
+@model Garderie.Web.Pages.Presences.IndexModel
+@{
+    ViewData["Title"] = "Présences";
+    var jour = Model.Jour;
+    var aujourdhui = Temps.Aujourdhui();
+    var index = 0;
+    var prevus = Model.Lignes.Where(l => l.Prevu).ToList();
+    var autres = Model.Lignes.Where(l => !l.Prevu).ToList();
+}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0 me-auto">Présences — @Affichage.Jour(jour.DayOfWeek) @Affichage.Date(jour)</h1>
+    <a class="btn btn-outline-secondary" asp-page="Index" asp-route-date="@jour.AddDays(-1).ToString("yyyy-MM-dd")" aria-label="Jour précédent">‹</a>
+    @if (jour != aujourdhui)
+    {
+        <a class="btn btn-outline-primary" asp-page="Index">Aujourd'hui</a>
+    }
+    <a class="btn btn-outline-secondary" asp-page="Index" asp-route-date="@jour.AddDays(1).ToString("yyyy-MM-dd")" aria-label="Jour suivant">›</a>
+    <form method="get" class="d-flex gap-1">
+        <input type="date" name="date" value="@jour.ToString("yyyy-MM-dd")" class="form-control" aria-label="Date" />
+        <button class="btn btn-outline-secondary" type="submit">Aller</button>
+    </form>
+</div>
+
+@if (Model.Lignes.Count == 0)
+{
+    <p class="text-muted">Aucun enfant inscrit à cette date. <a asp-page="/Enfants/Edition">Ajouter un enfant</a></p>
+}
+else
+{
+    <form method="post" asp-route-date="@jour.ToString("yyyy-MM-dd")">
+        @if (Model.AuMoinsUnPropose)
+        {
+            <div class="alert alert-info py-2">Les cases en pointillé sont <strong>proposées</strong> selon l'horaire : vérifiez puis appuyez sur <strong>Enregistrer</strong>.</div>
+        }
+        @if (prevus.Count == 0)
+        {
+            <p class="text-muted">Aucun enfant prévu ce jour-là.</p>
+        }
+        @foreach (var l in prevus)
+        {
+            <partial name="_Ligne" model="(l, index)" />
+            index += 2;
+        }
+        @if (autres.Count > 0)
+        {
+            <details class="mb-3">
+                <summary class="mb-2">Autres enfants inscrits (non prévus ce jour-là) — @autres.Count</summary>
+                @foreach (var l in autres)
+                {
+                    <partial name="_Ligne" model="(l, index)" />
+                    index += 2;
+                }
+            </details>
+        }
+        <div class="barre-enregistrer">
+            <button type="submit" class="btn btn-primary btn-lg w-100">Enregistrer la journée</button>
+        </div>
+    </form>
+}

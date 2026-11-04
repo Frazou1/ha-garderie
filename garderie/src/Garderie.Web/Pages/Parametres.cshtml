@@ -1,0 +1,41 @@
+@page
+@model ParametresModel
+@{
+    ViewData["Title"] = "Paramètres";
+}
+<h1 class="h3 mb-3">Paramètres de la garderie</h1>
+<form method="post" class="row g-3 col-lg-9">
+    <div class="col-md-6">
+        <label asp-for="Donnees.NomGarderie" class="form-label">Nom de la garderie</label>
+        <input asp-for="Donnees.NomGarderie" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.NomRsge" class="form-label">Nom de la RSGE</label>
+        <input asp-for="Donnees.NomRsge" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
+        <input asp-for="Donnees.Adresse" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
+        <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.CourrielRsge" class="form-label">Courriel de la RSGE (réception des PDF signés)</label>
+        <input asp-for="Donnees.CourrielRsge" type="email" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.NomBureauCoordonnateur" class="form-label">Bureau coordonnateur</label>
+        <input asp-for="Donnees.NomBureauCoordonnateur" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.HeureOuverture" class="form-label">Ouverture</label>
+        <input asp-for="Donnees.HeureOuverture" type="time" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.HeureFermeture" class="form-label">Fermeture</label>
+        <input asp-for="Donnees.HeureFermeture" type="time" class="form-control" />
+    </div>
+    <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+</form>

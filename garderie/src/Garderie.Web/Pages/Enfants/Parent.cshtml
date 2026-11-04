@@ -1,0 +1,112 @@
+@page
+@model Garderie.Web.Pages.Enfants.ParentModel
+@{
+    ViewData["Title"] = Model.ParentId is null ? "Ajouter un parent" : "Modifier le parent";
+}
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<p class="text-muted">Dossier de @Model.Enfant.NomComplet. Un parent partagé (frères et sœurs) est mis à jour dans tous les dossiers.</p>
+
+@if (Model.ParentId is null && Model.ParentsExistants.Count > 0)
+{
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Parent déjà inscrit (frère ou sœur)</div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="Lier" asp-route-enfantId="@Model.EnfantId" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small mb-0" for="parentExistantId">Parent</label>
+                    <select name="parentExistantId" id="parentExistantId" class="form-select">
+                        @foreach (var p in Model.ParentsExistants)
+                        {
+                            <option value="@p.Id">@p.Nom, @p.Prenom @(p.Courriel is null ? "" : $"({p.Courriel})")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-0" for="lien-existant">Lien</label>
+                    <input name="lien" id="lien-existant" class="form-control" value="Mère" maxlength="50" list="liens" />
+                </div>
+                <div class="col-md-2 form-check ms-2">
+                    <input type="checkbox" class="form-check-input" name="estPayeur" value="true" id="payeur-existant" />
+                    <label class="form-check-label" for="payeur-existant">Payeur</label>
+                </div>
+                <div class="col-md-auto"><button class="btn btn-primary" type="submit">Lier</button></div>
+            </form>
+        </div>
+    </div>
+    <h2 class="h5">Ou nouveau parent</h2>
+}
+
+<datalist id="liens">
+    <option value="Mère"></option>
+    <option value="Père"></option>
+    <option value="Tuteur"></option>
+    <option value="Tutrice"></option>
+</datalist>
+
+<form method="post" asp-route-enfantId="@Model.EnfantId" asp-route-parentId="@Model.ParentId" class="row g-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="col-md-5">
+        <label asp-for="Donnees.Prenom" class="form-label">Prénom</label>
+        <input asp-for="Donnees.Prenom" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Donnees.Prenom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-5">
+        <label asp-for="Donnees.Nom" class="form-label">Nom</label>
+        <input asp-for="Donnees.Nom" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Donnees.Nom" class="text-danger small"></span>
+    </div>
+    <div class="col-md-2">
+        <label asp-for="Donnees.Lien" class="form-label">Lien</label>
+        <input asp-for="Donnees.Lien" class="form-control" list="liens" />
+        <span asp-validation-for="Donnees.Lien" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Courriel" class="form-label">Courriel</label>
+        <input asp-for="Donnees.Courriel" type="email" class="form-control" />
+        <span asp-validation-for="Donnees.Courriel" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.Telephone1" class="form-label">Téléphone</label>
+        <input asp-for="Donnees.Telephone1" type="tel" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Donnees.Telephone2" class="form-label">Autre téléphone</label>
+        <input asp-for="Donnees.Telephone2" type="tel" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
+        <input asp-for="Donnees.Adresse" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Donnees.Nas" class="form-label">NAS (relevé 24)</label>
+        <input asp-for="Donnees.Nas" class="form-control" autocomplete="off" inputmode="numeric"
+               placeholder="@(Model.NasEnregistre ? "Enregistré — laisser vide pour garder" : "123 456 789")" />
+        <span asp-validation-for="Donnees.Nas" class="text-danger small"></span>
+        <div class="form-text">Stocké chiffré. Chaque affichage est inscrit au journal.</div>
+        @if (Model.NasAffiche is not null)
+        {
+            <div class="alert alert-warning py-1 px-2 mt-2 mb-0">NAS : <strong>@Model.NasAffiche</strong></div>
+        }
+        @if (Model.NasEnregistre)
+        {
+            <div class="form-check mt-1">
+                <input asp-for="Donnees.EffacerNas" class="form-check-input" />
+                <label asp-for="Donnees.EffacerNas" class="form-check-label small">Effacer le NAS enregistré</label>
+            </div>
+        }
+    </div>
+    <div class="col-md-6 d-flex align-items-center">
+        <div class="form-check">
+            <input asp-for="Donnees.EstPayeur" class="form-check-input" />
+            <label asp-for="Donnees.EstPayeur" class="form-check-label">Parent payeur (nom sur la fiche d'assiduité et le relevé 24)</label>
+        </div>
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        @if (Model.NasEnregistre && Model.NasAffiche is null)
+        {
+            <button type="submit" class="btn btn-outline-warning" asp-page-handler="AfficherNas" asp-route-enfantId="@Model.EnfantId" asp-route-parentId="@Model.ParentId" formnovalidate>Afficher le NAS</button>
+        }
+        <a class="btn btn-outline-secondary" asp-page="Dossier" asp-route-id="@Model.EnfantId">Annuler</a>
+    </div>
+</form>

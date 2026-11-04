@@ -1,0 +1,277 @@
+@page "{id:int}"
+@model Garderie.Web.Pages.Enfants.DossierModel
+@{
+    var e = Model.Enfant;
+    ViewData["Title"] = e.NomComplet;
+}
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    @if (e.PhotoDocumentId is { } photoId)
+    {
+        <img class="photo-enfant" alt="Photo de @e.Prenom" src="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = photoId, apercu = true })" />
+    }
+    <div class="me-auto">
+        <h1 class="h3 mb-0">@e.NomComplet</h1>
+        @if (!e.EstInscritLe(Model.Aujourdhui))
+        {
+            <span class="badge text-bg-secondary">Non inscrit aujourd'hui</span>
+        }
+        @foreach (var a in e.Allergies.Where(a => a.Gravite == Gravite.Severe))
+        {
+            <span class="badge text-bg-danger">Allergie sévère : @a.Description</span>
+        }
+    </div>
+    <a class="btn btn-outline-primary" asp-page="Edition" asp-route-id="@e.Id">Modifier l'identité</a>
+</div>
+
+<div class="row g-3">
+    <!-- Identite / Identity -->
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Identité</div>
+            <div class="card-body">
+                <dl class="row mb-0 small-dl">
+                    <dt class="col-5">Naissance</dt><dd class="col-7">@Affichage.Date(e.DateNaissance)</dd>
+                    <dt class="col-5">Sexe</dt><dd class="col-7">@Affichage.Sexe(e.Sexe)</dd>
+                    <dt class="col-5">Adresse</dt><dd class="col-7">@(e.Adresse ?? "—")</dd>
+                    <dt class="col-5">Téléphone</dt><dd class="col-7">@(e.Telephone ?? "—")</dd>
+                    <dt class="col-5">NAM</dt><dd class="col-7">@(Model.NamMasque ?? "—")</dd>
+                    <dt class="col-5">Fréquentation</dt><dd class="col-7">du @Affichage.Date(e.DateDebut) @(e.DateFin is null ? "" : $"au {Affichage.Date(e.DateFin)}")</dd>
+                    @if (e.Notes is not null)
+                    {
+                        <dt class="col-5">Notes</dt><dd class="col-7 texte-libre">@e.Notes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </section>
+
+    <!-- Parents -->
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center">
+                <span class="fw-semibold me-auto">Parents / responsables</span>
+                <a class="btn btn-sm btn-primary" asp-page="Parent" asp-route-enfantId="@e.Id">Ajouter</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                @if (e.Parents.Count == 0)
+                {
+                    <li class="list-group-item text-muted">Aucun parent.</li>
+                }
+                @foreach (var lien in e.Parents.OrderBy(p => p.Ordre))
+                {
+                    var p = lien.Parent;
+                    <li class="list-group-item">
+                        <div class="d-flex align-items-start gap-2">
+                            <div class="me-auto">
+                                <div class="fw-semibold">@p.NomComplet <span class="text-muted fw-normal">(@lien.Lien)</span>
+                                    @if (lien.EstPayeur) { <span class="badge text-bg-info">Payeur</span> }
+                                </div>
+                                <div class="small">
+                                    @if (p.Telephone1 is not null) { <span>@p.Telephone1</span> }
+                                    @if (p.Telephone2 is not null) { <span> · @p.Telephone2</span> }
+                                    @if (p.Courriel is not null) { <span> · @p.Courriel</span> }
+                                </div>
+                                <div class="small text-muted">NAS : @(p.NasChiffre is null ? "non saisi" : "enregistré (chiffré)")</div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-secondary" asp-page="Parent" asp-route-enfantId="@e.Id" asp-route-parentId="@p.Id">Modifier</a>
+                            <form method="post" asp-page-handler="RetirerParent" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer @p.NomComplet du dossier ?">
+                                <input type="hidden" name="parentId" value="@p.Id" />
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    <!-- Contacts -->
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Personnes autorisées et contacts d'urgence</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var c in e.Contacts.OrderBy(c => c.Ordre))
+                {
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        <div class="me-auto">
+                            <span class="fw-semibold">@c.Nom</span> @if (c.Lien is not null) { <span class="text-muted">(@c.Lien)</span> }
+                            <div class="small">@c.Telephone
+                                @if (c.PeutVenirChercher) { <span class="badge text-bg-success">Peut venir chercher</span> }
+                                @if (c.ContactUrgence) { <span class="badge text-bg-warning">Urgence</span> }
+                            </div>
+                        </div>
+                        <form method="post" asp-page-handler="SupprimerContact" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer @c.Nom ?">
+                            <input type="hidden" name="contactId" value="@c.Id" />
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
+                        </form>
+                    </li>
+                }
+                <li class="list-group-item">
+                    <form method="post" asp-page-handler="Contact" asp-route-id="@e.Id" class="row g-2">
+                        <div class="col-sm-5"><input name="contact.Nom" class="form-control form-control-sm" placeholder="Nom" required maxlength="200" /></div>
+                        <div class="col-sm-3"><input name="contact.Lien" class="form-control form-control-sm" placeholder="Lien" maxlength="50" /></div>
+                        <div class="col-sm-4"><input name="contact.Telephone" type="tel" class="form-control form-control-sm" placeholder="Téléphone" maxlength="30" /></div>
+                        <div class="col-auto form-check ms-2">
+                            <input class="form-check-input" type="checkbox" name="contact.PeutVenirChercher" value="true" id="c-chercher" />
+                            <label class="form-check-label small" for="c-chercher">Peut venir chercher</label>
+                        </div>
+                        <div class="col-auto form-check ms-2">
+                            <input class="form-check-input" type="checkbox" name="contact.ContactUrgence" value="true" id="c-urgence" />
+                            <label class="form-check-label small" for="c-urgence">Contact d'urgence</label>
+                        </div>
+                        <div class="col-auto ms-auto"><button class="btn btn-sm btn-primary" type="submit">Ajouter</button></div>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Horaire / Schedule -->
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center">
+                <span class="fw-semibold me-auto">Horaire prévu</span>
+                <a class="btn btn-sm btn-primary" asp-page="Horaire" asp-route-id="@e.Id">Modifier</a>
+            </div>
+            <div class="card-body">
+                @if (Model.HoraireDepuis is null)
+                {
+                    <p class="text-muted mb-0">Aucun horaire.</p>
+                }
+                else
+                {
+                    <p class="small text-muted">En vigueur depuis le @Affichage.Date(Model.HoraireDepuis)</p>
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var j in Affichage.JoursSemaine)
+                        {
+                            var h = Model.HoraireActuel.FirstOrDefault(x => x.Jour == j);
+                            if (h is not null && (h.Matin || h.Pm))
+                            {
+                                <li>@Affichage.Jour(j) : @Affichage.ResumeJour(h)</li>
+                            }
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Sante / Health -->
+    <section class="col-12">
+        <div class="card">
+            <div class="card-header fw-semibold">Santé</div>
+            <div class="card-body">
+                @if (e.NotesSante is not null)
+                {
+                    <p class="texte-libre">@e.NotesSante</p>
+                }
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h2 class="h6">Allergies</h2>
+                        <ul class="list-group mb-2">
+                            @foreach (var a in e.Allergies)
+                            {
+                                <li class="list-group-item d-flex align-items-start gap-2">
+                                    <div class="me-auto">
+                                        <span class="fw-semibold">@a.Description</span>
+                                        <span class="badge @(a.Gravite == Gravite.Severe ? "text-bg-danger" : a.Gravite == Gravite.Moderee ? "text-bg-warning" : "text-bg-secondary")">@Affichage.Gravite(a.Gravite)</span>
+                                        @if (a.Mesures is not null) { <div class="small texte-libre">@a.Mesures</div> }
+                                    </div>
+                                    <form method="post" asp-page-handler="SupprimerAllergie" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer cette allergie ?">
+                                        <input type="hidden" name="allergieId" value="@a.Id" />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                        <form method="post" asp-page-handler="Allergie" asp-route-id="@e.Id" class="row g-2">
+                            <div class="col-sm-7"><input name="allergie.Description" class="form-control form-control-sm" placeholder="Allergie (ex. arachides)" required maxlength="200" /></div>
+                            <div class="col-sm-5">
+                                <select name="allergie.Gravite" class="form-select form-select-sm">
+                                    <option value="Legere">Légère</option>
+                                    <option value="Moderee" selected>Modérée</option>
+                                    <option value="Severe">Sévère</option>
+                                </select>
+                            </div>
+                            <div class="col-12"><input name="allergie.Mesures" class="form-control form-control-sm" placeholder="Mesures (ex. EpiPen dans le sac)" maxlength="1000" /></div>
+                            <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">Ajouter l'allergie</button></div>
+                        </form>
+                    </div>
+                    <div class="col-lg-6">
+                        <h2 class="h6">Médicaments autorisés</h2>
+                        <ul class="list-group mb-2">
+                            @foreach (var m in e.Medicaments)
+                            {
+                                <li class="list-group-item d-flex align-items-start gap-2">
+                                    <div class="me-auto">
+                                        <span class="fw-semibold">@m.Nom</span> @if (m.Posologie is not null) { <span>— @m.Posologie</span> }
+                                        <div class="small text-muted">
+                                            @m.Raison
+                                            @if (m.DateDebut is not null || m.DateFin is not null) { <span>(@Affichage.Date(m.DateDebut) → @Affichage.Date(m.DateFin))</span> }
+                                        </div>
+                                    </div>
+                                    <form method="post" asp-page-handler="SupprimerMedicament" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer ce médicament ?">
+                                        <input type="hidden" name="medicamentId" value="@m.Id" />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                        <form method="post" asp-page-handler="Medicament" asp-route-id="@e.Id" class="row g-2">
+                            <div class="col-sm-6"><input name="medicament.Nom" class="form-control form-control-sm" placeholder="Médicament" required maxlength="200" /></div>
+                            <div class="col-sm-6"><input name="medicament.Posologie" class="form-control form-control-sm" placeholder="Posologie" maxlength="200" /></div>
+                            <div class="col-12"><input name="medicament.Raison" class="form-control form-control-sm" placeholder="Raison" maxlength="300" /></div>
+                            <div class="col-sm-6"><label class="form-label small mb-0">Du</label><input name="medicament.DateDebut" type="date" class="form-control form-control-sm" /></div>
+                            <div class="col-sm-6"><label class="form-label small mb-0">Au</label><input name="medicament.DateFin" type="date" class="form-control form-control-sm" /></div>
+                            <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">Ajouter le médicament</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documents -->
+    <section class="col-12">
+        <div class="card">
+            <div class="card-header fw-semibold">Documents <span class="small text-muted fw-normal">(chiffrés sur le serveur)</span></div>
+            <ul class="list-group list-group-flush">
+                @foreach (var d in e.Documents.OrderByDescending(d => d.TeleverseLe))
+                {
+                    <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge text-bg-light border">@Affichage.Nom(d.Type)</span>
+                        <a class="me-auto" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">@d.NomOriginal</a>
+                        <span class="small text-muted">@Affichage.Taille(d.Taille) · @Affichage.Horodatage(d.TeleverseLe)</span>
+                        @if (d.Note is not null) { <span class="small w-100">@d.Note</span> }
+                        <form method="post" asp-page-handler="SupprimerDocument" asp-route-id="@e.Id" class="confirmer" data-confirmer="Supprimer définitivement « @d.NomOriginal » ?">
+                            <input type="hidden" name="documentId" value="@d.Id" />
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                        </form>
+                    </li>
+                }
+                <li class="list-group-item">
+                    <form method="post" asp-page-handler="Document" asp-route-id="@e.Id" enctype="multipart/form-data" class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-0" for="doc-type">Type</label>
+                            <select name="type" id="doc-type" class="form-select form-select-sm">
+                                @foreach (var t in Enum.GetValues<TypeDocument>())
+                                {
+                                    <option value="@t">@Affichage.Nom(t)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-0" for="doc-fichier">Fichier (PDF, JPG, PNG, HEIC — 15 Mo max)</label>
+                            <input type="file" name="fichier" id="doc-fichier" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.heic,application/pdf,image/*" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-0" for="doc-note">Note</label>
+                            <input name="note" id="doc-note" class="form-control form-control-sm" maxlength="500" />
+                        </div>
+                        <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" type="submit">Téléverser</button></div>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </section>
+</div>

@@ -1,0 +1,40 @@
+# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
+name: "Garderie"
+version: "0.1.0"
+slug: "garderie"
+description: "Dossiers des enfants et présences d'un service de garde en milieu familial / Family daycare records and attendance"
+url: "https://github.com/Frazou1/ha-garderie"
+arch:
+  - amd64
+init: false
+startup: application
+boot: auto
+# Sauvegarde HA a froid : le module est arrete pendant la copie de SQLite
+# Cold HA backup: the add-on is stopped while SQLite is copied
+backup: cold
+
+# Partie administration : uniquement par l'Ingress de HA (compte HA requis)
+# Admin side: only through HA Ingress (HA account required)
+ingress: true
+ingress_port: 8090
+panel_icon: mdi:human-child
+panel_title: Garderie
+panel_admin: false
+
+# Partie publique (pages des parents) : derriere Nginx Proxy Manager
+# Public side (parent pages): behind Nginx Proxy Manager
+ports:
+  8080/tcp: 8099
+ports_description:
+  8080/tcp: "Pages publiques des parents (via Nginx Proxy Manager) / Public parent pages"
+
+options:
+  utilisateurs_autorises: []
+  proxy_de_confiance: []
+  path_base_public: "/garderie"
+schema:
+  utilisateurs_autorises:
+    - str
+  proxy_de_confiance:
+    - str
+  path_base_public: str

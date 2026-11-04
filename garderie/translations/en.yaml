@@ -1,0 +1,16 @@
+configuration:
+  utilisateurs_autorises:
+    name: Allowed HA users
+    description: >-
+      Home Assistant usernames allowed to open the admin side (e.g. rsge).
+      Empty list = nobody.
+  proxy_de_confiance:
+    name: Trusted proxy
+    description: >-
+      Nginx Proxy Manager IP address, used to read the parents' real IP
+      (X-Forwarded-For). Empty = connection IP is used.
+  path_base_public:
+    name: Public path
+    description: Path of the public address (e.g. /garderie).
+network:
+  8080/tcp: Public parent pages (to be routed by Nginx Proxy Manager)

@@ -1,0 +1,235 @@
+using System.ComponentModel.DataAnnotations;
+using Garderie.Web.Data;
+using Garderie.Web.Securite;
+using Garderie.Web.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+
+namespace Garderie.Web.Pages.Enfants;
+
+/// <summary>
+/// Dossier complet de l'enfant : identite, parents, contacts, sante, horaire, documents.
+/// Full child record. Each sub-form posts to its own handler.
+/// </summary>
+public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, DocumentsService documents) : PageModel
+{
+    public sealed class NouveauContact
+    {
+        [Required(ErrorMessage = "Nom requis"), MaxLength(200)] public string Nom { get; set; } = "";
+        [MaxLength(50)] public string? Lien { get; set; }
+        [MaxLength(30)] public string? Telephone { get; set; }
+        public bool PeutVenirChercher { get; set; }
+        public bool ContactUrgence { get; set; }
+    }
+
+    public sealed class NouvelleAllergie
+    {
+        [Required(ErrorMessage = "Description requise"), MaxLength(200)] public string Description { get; set; } = "";
+        public Gravite Gravite { get; set; } = Gravite.Moderee;
+        [MaxLength(1000)] public string? Mesures { get; set; }
+    }
+
+    public sealed class NouveauMedicament
+    {
+        [Required(ErrorMessage = "Nom requis"), MaxLength(200)] public string Nom { get; set; } = "";
+        [MaxLength(200)] public string? Posologie { get; set; }
+        [MaxLength(300)] public string? Raison { get; set; }
+        public DateOnly? DateDebut { get; set; }
+        public DateOnly? DateFin { get; set; }
+    }
+
+    [BindProperty(SupportsGet = true)] public int Id { get; set; }
+    public Enfant Enfant { get; private set; } = null!;
+    public string? NamMasque { get; private set; }
+    public DateOnly? HoraireDepuis { get; private set; }
+    public List<HoraireType> HoraireActuel { get; private set; } = new();
+    public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
+
+    public async Task<IActionResult> OnGetAsync()
+    {
+        if (!await ChargerAsync()) return NotFound();
+        await journal.NoterMaintenantAsync("enfant.consulter", "Enfant", Id);
+        return Page();
+    }
+
+    private async Task<bool> ChargerAsync()
+    {
+        var e = await db.Enfants.AsNoTracking().AsSplitQuery()
+            .Include(x => x.Parents).ThenInclude(p => p.Parent)
+            .Include(x => x.Contacts)
+            .Include(x => x.Allergies)
+            .Include(x => x.Medicaments)
+            .Include(x => x.Horaires)
+            .Include(x => x.Documents)
+            .FirstOrDefaultAsync(x => x.Id == Id);
+        if (e is null) return false;
+        Enfant = e;
+        var nam = chiffreur.DechiffrerTexte(e.NamChiffre, Contextes.NamEnfant);
+        NamMasque = nam is null ? null : Identifiants.MasquerNam(nam);
+        var versions = e.Horaires.Where(h => h.DateEffective <= Aujourdhui).Select(h => h.DateEffective).ToList();
+        if (versions.Count == 0) versions = e.Horaires.Select(h => h.DateEffective).ToList(); // horaire futur seulement
+        if (versions.Count > 0)
+        {
+            HoraireDepuis = versions.Max();
+            HoraireActuel = e.Horaires.Where(h => h.DateEffective == HoraireDepuis).ToList();
+        }
+        return true;
+    }
+
+    private async Task<IActionResult> RetourAsync(string? message = null)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Erreur"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(x => x.ErrorMessage));
+        }
+        else if (message is not null) TempData["Message"] = message;
+        await Task.CompletedTask;
+        return RedirectToPage(new { id = Id });
+    }
+
+    private Task<bool> EnfantExisteAsync() => db.Enfants.AnyAsync(e => e.Id == Id);
+
+    // --- Contacts ---
+    public async Task<IActionResult> OnPostContactAsync(NouveauContact contact)
+    {
+        if (!await EnfantExisteAsync()) return NotFound();
+        if (!ModelState.IsValid) return await RetourAsync();
+        var ordre = await db.Contacts.Where(c => c.EnfantId == Id).CountAsync();
+        var c = new Contact
+        {
+            EnfantId = Id, Nom = contact.Nom.Trim(), Lien = contact.Lien?.Trim(), Telephone = contact.Telephone?.Trim(),
+            PeutVenirChercher = contact.PeutVenirChercher, ContactUrgence = contact.ContactUrgence, Ordre = ordre,
+        };
+        db.Contacts.Add(c);
+        journal.Noter("contact.ajouter", "Enfant", Id, c.Nom);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Contact ajouté.");
+    }
+
+    public async Task<IActionResult> OnPostSupprimerContactAsync(int contactId)
+    {
+        var c = await db.Contacts.FirstOrDefaultAsync(x => x.Id == contactId && x.EnfantId == Id);
+        if (c is null) return NotFound();
+        db.Contacts.Remove(c);
+        journal.Noter("contact.supprimer", "Enfant", Id, c.Nom);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Contact retiré.");
+    }
+
+    // --- Sante / Health ---
+    public async Task<IActionResult> OnPostAllergieAsync(NouvelleAllergie allergie)
+    {
+        if (!await EnfantExisteAsync()) return NotFound();
+        if (!ModelState.IsValid) return await RetourAsync();
+        db.Allergies.Add(new Allergie { EnfantId = Id, Description = allergie.Description.Trim(), Gravite = allergie.Gravite, Mesures = allergie.Mesures?.Trim() });
+        journal.Noter("allergie.ajouter", "Enfant", Id, allergie.Description);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Allergie ajoutée.");
+    }
+
+    public async Task<IActionResult> OnPostSupprimerAllergieAsync(int allergieId)
+    {
+        var a = await db.Allergies.FirstOrDefaultAsync(x => x.Id == allergieId && x.EnfantId == Id);
+        if (a is null) return NotFound();
+        db.Allergies.Remove(a);
+        journal.Noter("allergie.supprimer", "Enfant", Id, a.Description);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Allergie retirée.");
+    }
+
+    public async Task<IActionResult> OnPostMedicamentAsync(NouveauMedicament medicament)
+    {
+        if (!await EnfantExisteAsync()) return NotFound();
+        if (medicament.DateDebut is not null && medicament.DateFin is not null && medicament.DateFin < medicament.DateDebut)
+            ModelState.AddModelError("", "La date de fin du médicament précède la date de début.");
+        if (!ModelState.IsValid) return await RetourAsync();
+        db.Medicaments.Add(new MedicamentAutorise
+        {
+            EnfantId = Id, Nom = medicament.Nom.Trim(), Posologie = medicament.Posologie?.Trim(), Raison = medicament.Raison?.Trim(),
+            DateDebut = medicament.DateDebut, DateFin = medicament.DateFin,
+        });
+        journal.Noter("medicament.ajouter", "Enfant", Id, medicament.Nom);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Médicament ajouté.");
+    }
+
+    public async Task<IActionResult> OnPostSupprimerMedicamentAsync(int medicamentId)
+    {
+        var m = await db.Medicaments.FirstOrDefaultAsync(x => x.Id == medicamentId && x.EnfantId == Id);
+        if (m is null) return NotFound();
+        db.Medicaments.Remove(m);
+        journal.Noter("medicament.supprimer", "Enfant", Id, m.Nom);
+        await db.SaveChangesAsync();
+        return await RetourAsync("Médicament retiré.");
+    }
+
+    // --- Parents ---
+    public async Task<IActionResult> OnPostRetirerParentAsync(int parentId)
+    {
+        var lien = await db.EnfantParents.Include(x => x.Parent).FirstOrDefaultAsync(x => x.EnfantId == Id && x.ParentId == parentId);
+        if (lien is null) return NotFound();
+        db.EnfantParents.Remove(lien);
+        journal.Noter("parent.retirer", "Enfant", Id, lien.Parent.NomComplet);
+        await db.SaveChangesAsync();
+        // Parent sans enfant : supprime (donnees personnelles inutiles) / Orphan parent: deleted
+        if (!await db.EnfantParents.AnyAsync(x => x.ParentId == parentId))
+        {
+            db.Parents.Remove(lien.Parent);
+            journal.Noter("parent.supprimer", "Parent", parentId, lien.Parent.NomComplet);
+            await db.SaveChangesAsync();
+        }
+        return await RetourAsync("Parent retiré du dossier.");
+    }
+
+    // --- Documents ---
+    public async Task<IActionResult> OnPostDocumentAsync(IFormFile? fichier, TypeDocument type, string? note)
+    {
+        var e = await db.Enfants.FindAsync(Id);
+        if (e is null) return NotFound();
+        if (fichier is null) { TempData["Erreur"] = "Choisissez un fichier."; return RedirectToPage(new { id = Id }); }
+        if (!Enum.IsDefined(type)) type = TypeDocument.Autre;
+
+        var r = await documents.EnregistrerAsync(Id, type, fichier, note);
+        if (r.Document is null) { TempData["Erreur"] = r.Erreur; return RedirectToPage(new { id = Id }); }
+        db.Documents.Add(r.Document);
+        await db.SaveChangesAsync();
+        if (type == TypeDocument.Photo) e.PhotoDocumentId = r.Document.Id;
+        journal.Noter("document.televerser", "Enfant", Id, $"{type} : {r.Document.NomOriginal}");
+        await db.SaveChangesAsync();
+        TempData["Message"] = "Document ajouté (chiffré).";
+        return RedirectToPage(new { id = Id });
+    }
+
+    public async Task<IActionResult> OnPostSupprimerDocumentAsync(int documentId)
+    {
+        var d = await db.Documents.FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
+        if (d is null) return NotFound();
+        var e = await db.Enfants.FindAsync(Id);
+        if (e?.PhotoDocumentId == d.Id) e.PhotoDocumentId = null;
+        await db.Medicaments.Where(m => m.DocumentId == d.Id).ExecuteUpdateAsync(s => s.SetProperty(m => m.DocumentId, (int?)null));
+        db.Documents.Remove(d);
+        journal.Noter("document.supprimer", "Enfant", Id, d.NomOriginal);
+        await db.SaveChangesAsync();
+        documents.Supprimer(d);
+        return await RetourAsync("Document supprimé.");
+    }
+
+    /// <summary>
+    /// Telechargement (pieces jointes) ou apercu de la photo (image seulement).
+    /// Download (attachment) or photo preview (images only).
+    /// </summary>
+    public async Task<IActionResult> OnGetDocumentAsync(int documentId, bool apercu = false)
+    {
+        var d = await db.Documents.AsNoTracking().FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
+        if (d is null) return NotFound();
+        var contenu = await documents.LireAsync(d);
+        if (apercu && d.TypeContenu is "image/jpeg" or "image/png")
+        {
+            await journal.NoterMaintenantAsync("photo.afficher", "Enfant", Id, d.NomOriginal);
+            return File(contenu, d.TypeContenu);
+        }
+        await journal.NoterMaintenantAsync("document.telecharger", "Enfant", Id, d.NomOriginal);
+        return File(contenu, d.TypeContenu, d.NomOriginal);
+    }
+}

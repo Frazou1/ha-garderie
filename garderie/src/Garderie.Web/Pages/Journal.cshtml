@@ -1,0 +1,35 @@
+@page
+@model JournalModel
+@{
+    ViewData["Title"] = "Journal";
+}
+<h1 class="h3 mb-3">Journal des accès</h1>
+<div class="table-responsive">
+    <table class="table table-sm table-striped small">
+        <thead>
+            <tr><th>Date</th><th>Utilisateur</th><th>IP</th><th>Action</th><th>Sur</th><th>Détails</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var j in Model.Entrees)
+            {
+                <tr>
+                    <td class="text-nowrap">@Affichage.Horodatage(j.Horodatage)</td>
+                    <td>@j.Utilisateur</td>
+                    <td>@j.Ip</td>
+                    <td>@j.Action</td>
+                    <td>
+                        @if (j.Entite == "Enfant" && j.EntiteId is { } id && Model.NomsEnfants.TryGetValue(id, out var nom))
+                        {
+                            <a asp-page="/Enfants/Dossier" asp-route-id="@id">@nom</a>
+                        }
+                        else if (j.Entite is not null)
+                        {
+                            <span>@j.Entite @j.EntiteId</span>
+                        }
+                    </td>
+                    <td>@j.Details</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

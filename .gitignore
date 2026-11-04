@@ -1,0 +1,19 @@
+# Compilation / Build
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+.idea/
+TestResults/
+
+# Donnees locales de developpement - jamais dans le depot / Local dev data - never committed
+data-dev/
+**/data-dev/
+*.db
+*.db-shm
+*.db-wal
+
+# Notes privees du projet (noms, adresse) / Private project notes (names, address)
+CLAUDE_Projet_Garderie.md
+CLAUDE*.md

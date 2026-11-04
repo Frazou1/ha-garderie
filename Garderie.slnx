@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/garderie/" />
+  <Folder Name="/garderie/src/">
+    <Project Path="garderie/src/Garderie.Web/Garderie.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Garderie.Tests/Garderie.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,4 @@
+# https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
+name: Garderie (Frazou1)
+url: 'https://github.com/Frazou1/ha-garderie'
+maintainer: Frazou1

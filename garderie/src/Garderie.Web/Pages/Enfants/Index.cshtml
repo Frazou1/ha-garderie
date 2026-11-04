@@ -1,0 +1,49 @@
+@page
+@model Garderie.Web.Pages.Enfants.IndexModel
+@{
+    ViewData["Title"] = "Enfants";
+}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 me-auto mb-0">Enfants</h1>
+    @if (Model.Tous)
+    {
+        <a class="btn btn-outline-secondary btn-sm" asp-page="Index">Inscrits seulement</a>
+    }
+    else
+    {
+        <a class="btn btn-outline-secondary btn-sm" asp-page="Index" asp-route-tous="true">Inclure les anciens</a>
+    }
+    <a class="btn btn-primary" asp-page="Edition">Ajouter un enfant</a>
+</div>
+
+@if (Model.Enfants.Count == 0)
+{
+    <p class="text-muted">Aucun enfant.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var e in Model.Enfants)
+        {
+            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-page="Dossier" asp-route-id="@e.Id">
+                <span class="fw-semibold">@e.NomComplet</span>
+                @if (e.DateNaissance is { } dn)
+                {
+                    <span class="text-muted small">né(e) le @dn.ToString("d MMMM yyyy")</span>
+                }
+                @if (e.Allergies.Any(a => a.Gravite == Gravite.Severe))
+                {
+                    <span class="badge text-bg-danger">Allergie sévère</span>
+                }
+                else if (e.Allergies.Count > 0)
+                {
+                    <span class="badge text-bg-warning">Allergie</span>
+                }
+                @if (!e.EstInscritLe(Model.Aujourdhui))
+                {
+                    <span class="badge text-bg-secondary ms-auto">@(e.DateDebut > Model.Aujourdhui ? "À venir" : "Ancien")</span>
+                }
+            </a>
+        }
+    </div>
+}

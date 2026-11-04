@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+- Signature du parent : le bouton se désactive au premier toucher ; un lien déjà utilisé pour signer affiche
+  « Merci » au lieu de « Lien invalide » (double toucher).
+
 ## 0.3.0
 - Fiches d'assiduité aux 2 semaines : formulaire officiel FO-0310 rempli (téléversé dans Réglages), paiements,
   signature de la RSGE au doigt, lien unique au parent par courriel (7 jours, usage unique), lien à copier ou

@@ -24,11 +24,16 @@ public class SignerModel(GarderieDb db, FichesService fiches, DocumentsService d
     public Parametres? Garderie { get; private set; }
     public bool Termine { get; private set; }
     public bool ErreurEnvoyee { get; private set; }
+    public bool DejaSignee { get; private set; }
 
     private async Task<bool> ChargerAsync()
     {
         Lien = await fiches.TrouverLienAsync(Jeton);
-        if (Lien is null) return false;
+        if (Lien is null)
+        {
+            DejaSignee = await fiches.DejaSigneParCeLienAsync(Jeton);
+            return false;
+        }
         Codes = FichesService.Lire(Lien.Fiche.CodesSignes);
         Garderie = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
         return true;

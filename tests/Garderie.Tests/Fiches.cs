@@ -246,9 +246,18 @@ public class FichesParcoursTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal(fiche.PdfSha256, doc.Sha256);
         Assert.Contains(Directory.GetFiles(Courriels, "*.eml").Select(File.ReadAllText), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
 
-        // Lien a usage unique / One-time link
+        // Lien a usage unique : un 2e envoi (double toucher) remercie au lieu d'une erreur, sans re-signer
+        // One-time link: a 2nd submission thanks instead of an error, without signing again
         var encore = await (await parent.GetAsync($"/garderie/Public/Signer?j={jeton}")).Content.ReadAsStringAsync();
-        Assert.Contains("Lien invalide ou expiré", encore);
+        Assert.Contains("Merci", encore);
+        Assert.DoesNotContain("Lien invalide", encore);
+        var deuxieme = await parent.PostAsync($"/garderie/Public/Signer?j={jeton}&handler=Signer", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Jeton(html), ["signature"] = ModeleTest.Png, ["nom"] = "Autre", ["atteste"] = "true",
+        }));
+        Assert.Contains("Merci", await deuxieme.Content.ReadAsStringAsync());
+        Assert.Equal("Julie F", Db(db => db.Fiches.Single(f => f.EnfantId == id).SignataireParent));
+        Assert.Single(Db(db => db.Documents.Where(d => d.EnfantId == id && d.Type == TypeDocument.FicheAssiduite).ToList()));
 
         // PDF final telechargeable par la RSGE / Final PDF downloadable
         var pdf = await admin.GetAsync($"/Fiches/Fiche/{id}?debut={Debut:yyyy-MM-dd}&handler=Pdf");

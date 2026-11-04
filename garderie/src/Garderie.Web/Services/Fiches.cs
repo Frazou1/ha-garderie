@@ -158,6 +158,17 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
         return lien.Fiche.Etat == EtatFiche.SigneeRsge ? lien : null;
     }
 
+    /// <summary>
+    /// Le lien a deja servi a signer cette fiche (ex. double toucher sur « Signer ») : on remercie au lieu d'une erreur.
+    /// The link was already used to sign (e.g. double tap): thank instead of an error.
+    /// </summary>
+    public async Task<bool> DejaSigneParCeLienAsync(string? jeton)
+    {
+        if (string.IsNullOrWhiteSpace(jeton) || jeton.Length > 100) return false;
+        var hash = Hacher(jeton);
+        return await db.Liens.AnyAsync(l => l.JetonHash == hash && l.UtiliseLe != null && l.Fiche.Etat == EtatFiche.SigneeParent);
+    }
+
     public async Task AnnulerLiensAsync(int ficheId)
     {
         await db.Liens.Where(l => l.FicheId == ficheId && l.UtiliseLe == null && l.AnnuleLe == null)

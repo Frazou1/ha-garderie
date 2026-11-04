@@ -85,6 +85,9 @@
                 return;
             }
             form.querySelector(".valeur-signature").value = recadrer(c).toDataURL("image/png");
+            // Un seul envoi (double toucher) / Single submission (double tap)
+            form.querySelectorAll("button[type=submit]").forEach(function (b) { b.disabled = true; });
+            form.classList.add("envoi");
         });
     });
 

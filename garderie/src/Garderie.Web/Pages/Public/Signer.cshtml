@@ -6,7 +6,7 @@
     ViewData["Title"] = "Fiche d'assiduité";
     var nomGarderie = Model.Garderie?.NomGarderie ?? "Garderie";
 }
-@if (Model.Termine)
+@if (Model.Termine || Model.DejaSignee)
 {
     <div class="carte carte-publique mx-auto text-center">
         <h1 class="h4">Merci !</h1>

@@ -1,16 +1,35 @@
 @page "{id:int}"
 @model Garderie.Web.Pages.Enfants.DossierModel
+@using Garderie.Web.Pages.Shared
 @{
     var e = Model.Enfant;
     ViewData["Title"] = e.NomComplet;
-}
-<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-    @if (e.PhotoDocumentId is { } photoId)
+    var photoEnfant = e.PhotoDocumentId is { } photoId ? Url.Page("Dossier", "Document", new { id = e.Id, documentId = photoId, apercu = true }) : null;
+    var avatarEnfant = new AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photoEnfant, "av-lg");
+    AvatarVue AvatarParent(Parent p) => new(p.NomComplet, Affichage.Initiales(p.Prenom, p.Nom), p.Id + 2,
+        p.PhotoFichier is null ? null : Url.Page("Dossier", "PhotoParent", new { id = e.Id, parentId = p.Id }), "av-md");
+    AvatarVue AvatarContact(Contact c)
     {
-        <img class="photo-enfant" alt="Photo de @e.Prenom" src="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = photoId, apercu = true })" />
+        var mots = c.Nom.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var initiales = Affichage.Initiales(mots.FirstOrDefault() ?? "", mots.Length > 1 ? mots[^1] : "");
+        return new(c.Nom, initiales, c.Id + 4,
+            c.PhotoFichier is null ? null : Url.Page("Dossier", "PhotoContact", new { id = e.Id, contactId = c.Id }), "av-md");
     }
-    <div class="me-auto">
-        <h1 class="h3 mb-0">@e.NomComplet</h1>
+    PhotoModifiableVue PhotoEnfant() => new(avatarEnfant, e.Id, "Photo", photoEnfant is null ? "Ajouter une photo" : "Changer la photo");
+    PhotoModifiableVue PhotoParent(Parent p) => new(AvatarParent(p), e.Id, "PhotoParent", "Photo de " + p.Prenom, "parentId", p.Id);
+    PhotoModifiableVue PhotoContact(Contact c) => new(AvatarContact(c), e.Id, "PhotoContact", "Photo de " + c.Nom, "contactId", c.Id);
+}
+<div class="entete-fiche">
+    @if (Model.Archive)
+    {
+        <partial name="_Avatar" model="avatarEnfant" />
+    }
+    else
+    {
+        <partial name="_PhotoModifiable" model="PhotoEnfant()" />
+    }
+    <div class="identite">
+        <h1>@e.NomComplet</h1>
         @if (Model.Archive)
         {
             <span class="badge text-bg-dark">Ancien · parti le @Affichage.Date(e.DateFin)</span>
@@ -32,7 +51,7 @@
 
 @if (Model.Archive)
 {
-    <div class="alert alert-secondary d-flex flex-wrap align-items-center gap-2">
+    <div class="aide d-flex flex-wrap align-items-center gap-2 mb-3">
         <span class="me-auto">Dossier archivé en <strong>lecture seule</strong> : conservé pour l'impôt (relevé 24) et les
             vérifications. Les documents restent téléchargeables et le NAS consultable.</span>
         <form method="post" asp-page-handler="Reactiver" asp-route-id="@e.Id" class="confirmer" data-confirmer="Réactiver le dossier de @e.NomComplet (retirer la date de fin) ?">
@@ -45,7 +64,7 @@
     <!-- Identite / Identity -->
     <section class="col-lg-6">
         <div class="card h-100">
-            <div class="card-header fw-semibold">Identité</div>
+            <div class="card-header">Identité</div>
             <div class="card-body">
                 <dl class="row mb-0 small-dl">
                     <dt class="col-5">Naissance</dt><dd class="col-7">@Affichage.Date(e.DateNaissance)</dd>
@@ -67,8 +86,8 @@
     <section class="col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex align-items-center">
-                <span class="fw-semibold me-auto">Parents / responsables</span>
-                <a class="btn btn-sm btn-primary modif" asp-page="Parent" asp-route-enfantId="@e.Id">Ajouter</a>
+                <span class="me-auto">Parents / responsables</span>
+                <a class="btn btn-sm btn-primary modif" asp-page="Parent" asp-route-enfantId="@e.Id">+ Ajouter</a>
             </div>
             <ul class="list-group list-group-flush">
                 @if (e.Parents.Count == 0)
@@ -79,19 +98,29 @@
                 {
                     var p = lien.Parent;
                     <li class="list-group-item">
-                        <div class="d-flex align-items-start gap-2">
+                        <div class="personne">
+                            @if (Model.Archive)
+                            {
+                                <partial name="_Avatar" model="AvatarParent(p)" />
+                            }
+                            else
+                            {
+                                <partial name="_PhotoModifiable" model="PhotoParent(p)" />
+                            }
                             <div class="me-auto">
-                                <div class="fw-semibold">@p.NomComplet <span class="text-muted fw-normal">(@lien.Lien)</span>
+                                <div class="fw-bold">@p.NomComplet <span class="text-muted fw-normal">(@lien.Lien)</span>
                                     @if (lien.EstPayeur) { <span class="badge text-bg-info">Payeur</span> }
                                 </div>
                                 <div class="small">
-                                    @if (p.Telephone1 is not null) { <span>@p.Telephone1</span> }
-                                    @if (p.Telephone2 is not null) { <span> · @p.Telephone2</span> }
+                                    @if (p.Telephone1 is not null) { <a href="tel:@p.Telephone1">@p.Telephone1</a> }
+                                    @if (p.Telephone2 is not null) { <span> · <a href="tel:@p.Telephone2">@p.Telephone2</a></span> }
                                     @if (p.Courriel is not null) { <span> · @p.Courriel</span> }
                                 </div>
                                 <div class="small text-muted">NAS : @(p.NasChiffre is null ? "non saisi" : "enregistré (chiffré)")</div>
                             </div>
-                            <a class="btn btn-sm btn-outline-secondary" asp-page="Parent" asp-route-enfantId="@e.Id" asp-route-parentId="@p.Id">@(Model.Archive ? "Voir" : "Modifier")</a>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-end mt-2">
+                            <a class="btn btn-sm btn-doux" asp-page="Parent" asp-route-enfantId="@e.Id" asp-route-parentId="@p.Id">@(Model.Archive ? "Voir" : "Modifier")</a>
                             <form method="post" asp-page-handler="RetirerParent" asp-route-id="@e.Id" class="confirmer" data-confirmer="Retirer @p.NomComplet du dossier ?">
                                 <input type="hidden" name="parentId" value="@p.Id" />
                                 <button class="btn btn-sm btn-outline-danger" type="submit">Retirer</button>
@@ -106,14 +135,23 @@
     <!-- Contacts -->
     <section class="col-lg-6">
         <div class="card h-100">
-            <div class="card-header fw-semibold">Personnes autorisées et contacts d'urgence</div>
+            <div class="card-header">Personnes autorisées et contacts d'urgence</div>
             <ul class="list-group list-group-flush">
                 @foreach (var c in e.Contacts.OrderBy(c => c.Ordre))
                 {
-                    <li class="list-group-item d-flex align-items-center gap-2">
+                    <li class="list-group-item personne">
+                        @if (Model.Archive)
+                        {
+                            <partial name="_Avatar" model="AvatarContact(c)" />
+                        }
+                        else
+                        {
+                            <partial name="_PhotoModifiable" model="PhotoContact(c)" />
+                        }
                         <div class="me-auto">
-                            <span class="fw-semibold">@c.Nom</span> @if (c.Lien is not null) { <span class="text-muted">(@c.Lien)</span> }
-                            <div class="small">@c.Telephone
+                            <span class="fw-bold">@c.Nom</span> @if (c.Lien is not null) { <span class="text-muted">(@c.Lien)</span> }
+                            <div class="small">
+                                @if (c.Telephone is not null) { <a href="tel:@c.Telephone">@c.Telephone</a> }
                                 @if (c.PeutVenirChercher) { <span class="badge text-bg-success">Peut venir chercher</span> }
                                 @if (c.ContactUrgence) { <span class="badge text-bg-warning">Urgence</span> }
                             </div>
@@ -148,7 +186,7 @@
     <section class="col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex align-items-center">
-                <span class="fw-semibold me-auto">Horaire prévu</span>
+                <span class="me-auto">Horaire prévu</span>
                 <a class="btn btn-sm btn-primary modif" asp-page="Horaire" asp-route-id="@e.Id">Modifier</a>
             </div>
             <div class="card-body">
@@ -177,7 +215,7 @@
     <!-- Sante / Health -->
     <section class="col-12">
         <div class="card">
-            <div class="card-header fw-semibold">Santé</div>
+            <div class="card-header">Santé</div>
             <div class="card-body">
                 @if (e.NotesSante is not null)
                 {
@@ -252,7 +290,7 @@
     <!-- Documents -->
     <section class="col-12">
         <div class="card">
-            <div class="card-header fw-semibold">Documents <span class="small text-muted fw-normal">(chiffrés sur le serveur)</span></div>
+            <div class="card-header">Documents <span class="small text-muted fw-normal">(chiffrés sur le serveur)</span></div>
             <ul class="list-group list-group-flush">
                 @foreach (var d in e.Documents.OrderByDescending(d => d.TeleverseLe))
                 {

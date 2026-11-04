@@ -7,43 +7,44 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace Garderie.Web.Pages.Presences;
 
 /// <summary>
-/// Presences du jour : enfants prevus, code propose selon l'horaire, un tap pour corriger, puis Enregistrer.
-/// Today's attendance: planned children, suggested code, one tap to fix, then Save.
+/// Presences de la semaine : une case par jour et par enfant (comme le FO-0310), P propose par defaut
+/// du lundi au vendredi, F les jours de fermeture. Rien n'est enregistre avant « Enregistrer la semaine ».
+/// Weekly attendance: one cell per day and child, P suggested by default, F on closures.
 /// </summary>
 public class IndexModel(PresencesService presences, Journal journal) : PageModel
 {
     public sealed class SaisieCode
     {
         public int EnfantId { get; set; }
-        public DemiJournee Demi { get; set; }
-        /// <summary>Code rapide (boutons) / Quick code (buttons).</summary>
+        public DateOnly Date { get; set; }
         public string? Code { get; set; }
-        /// <summary>Code moins courant (liste), prioritaire / Less common code (list), takes precedence.</summary>
-        public string? Autre { get; set; }
     }
 
-    /// <summary>Codes en boutons ; les autres sont dans la liste « Autre » / Button codes; others in the list.</summary>
-    public static readonly string[] CodesRapides = ["P", "P 1/2", "A", "A 1/2", "F"];
-    public static IEnumerable<CodesPresence.Code> CodesAutres => CodesPresence.Tous.Where(c => !CodesRapides.Contains(c.Valeur));
-
-    [BindProperty(SupportsGet = true)] public DateOnly? Date { get; set; }
-    public DateOnly Jour { get; private set; }
-    public List<LignePresence> Lignes { get; private set; } = new();
-    public bool AuMoinsUnPropose => Lignes.Any(l => (!l.Matin.Enregistre && l.Matin.Code != "") || (!l.Pm.Enregistre && l.Pm.Code != ""));
+    /// <summary>N'importe quel jour de la semaine voulue / Any day of the wanted week.</summary>
+    [BindProperty(SupportsGet = true)] public DateOnly? Semaine { get; set; }
+    public DateOnly Lundi { get; private set; }
+    public IReadOnlyList<DateOnly> Jours { get; private set; } = [];
+    public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
+    public List<LigneSemaine> Lignes { get; private set; } = new();
+    public bool AuMoinsUnPropose => Lignes.Any(l => l.Jours.Any(j => j.Inscrit && !j.Enregistre && j.Code != ""));
 
     public async Task OnGetAsync()
     {
-        Jour = Date ?? Temps.Aujourdhui();
-        Lignes = await presences.ChargerJourAsync(Jour);
+        Lundi = PresencesService.Lundi(Semaine ?? Aujourdhui);
+        Jours = PresencesService.JoursOuvrables(Lundi);
+        Lignes = await presences.ChargerSemaineAsync(Lundi);
     }
 
     public async Task<IActionResult> OnPostAsync(List<SaisieCode> codes)
     {
-        if (Date is null) return BadRequest();
-        var liste = codes.Select(c => (c.EnfantId, c.Demi, string.IsNullOrEmpty(c.Autre) ? c.Code ?? "" : c.Autre));
-        var n = await presences.EnregistrerJourAsync(Date.Value, liste, User.Identity?.Name ?? "?");
-        await journal.NoterMaintenantAsync("presences.enregistrer", details: $"{Date:yyyy-MM-dd} : {n} changement(s)");
-        TempData["Message"] = $"Présences du {Affichage.Date(Date)} enregistrées ({n} changement(s)).";
-        return RedirectToPage(new { date = Date.Value.ToString("yyyy-MM-dd") });
+        if (Semaine is null) return BadRequest();
+        var lundi = PresencesService.Lundi(Semaine.Value);
+        var jours = PresencesService.JoursOuvrables(lundi);
+        // Seulement les jours de la semaine affichee / Only the days of the displayed week
+        var liste = codes.Where(c => jours.Contains(c.Date)).Select(c => (c.EnfantId, c.Date, c.Code ?? ""));
+        var n = await presences.EnregistrerAsync(liste, User.Identity?.Name ?? "?");
+        await journal.NoterMaintenantAsync("presences.enregistrer", details: $"semaine du {lundi:yyyy-MM-dd} : {n} changement(s)");
+        TempData["Message"] = $"Semaine du {Affichage.Date(lundi)} enregistrée ({n} changement(s)).";
+        return RedirectToPage(new { semaine = lundi.ToString("yyyy-MM-dd") });
     }
 }

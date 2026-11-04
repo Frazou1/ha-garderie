@@ -1,0 +1,10 @@
+@model Garderie.Web.Pages.Shared.AvatarVue
+@* Photo ronde, ou initiales sur fond pastel / Round photo, or initials on a pastel background *@
+@if (Model.Url is not null)
+{
+    <img class="avatar @Model.Taille" src="@Model.Url" alt="Photo de @Model.Nom" loading="lazy" />
+}
+else
+{
+    <span class="avatar @Model.Taille @Affichage.ClasseAvatar(Model.Graine)" aria-hidden="true">@Model.Initiales</span>
+}

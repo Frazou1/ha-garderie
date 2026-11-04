@@ -44,6 +44,31 @@ public static class Affichage
 
     public static string Date(DateOnly? d) => d?.ToString("d MMMM yyyy") ?? "—";
 
+    /// <summary>Abreviation du jour (Lun, Mar...) / Short day name.</summary>
+    public static string JourCourt(DayOfWeek j) => Jour(j)[..3];
+
+    /// <summary>Periode d'une semaine (ex. « 2 au 6 novembre 2026 ») / Week span.</summary>
+    public static string Periode(DateOnly debut, DateOnly fin) =>
+        debut.Month == fin.Month ? $"{debut.Day} au {fin:d MMMM yyyy}" : $"{debut:d MMMM} au {fin:d MMMM yyyy}";
+
+    /// <summary>Classe CSS d'un code (couleur) / CSS class of a code (colour).</summary>
+    public static string ClasseCode(string? code) => (code ?? "") switch
+    {
+        "" => "code-vide",
+        "P" or "P 1/2" => "code-p",
+        "A" or "A 1/2" => "code-a",
+        "F" or "F 1/2" => "code-f",
+        "R" or "R 1/2" => "code-r",
+        _ => "code-autre",
+    };
+
+    /// <summary>Initiales pour l'avatar sans photo / Initials for the avatar without photo.</summary>
+    public static string Initiales(string prenom, string nom) =>
+        $"{(prenom.Length > 0 ? char.ToUpper(prenom[0]) : ' ')}{(nom.Length > 0 ? char.ToUpper(nom[0]) : ' ')}".Trim();
+
+    /// <summary>Couleur pastel stable selon l'id (classe av-0 a av-5) / Stable pastel colour.</summary>
+    public static string ClasseAvatar(int graine) => $"av-{Math.Abs(graine) % 6}";
+
     public static string Horodatage(DateTime utc) => Temps.VersLocal(utc).ToString("yyyy-MM-dd HH:mm");
 
     /// <summary>Resume d'un horaire (ex. « Lun–Ven journée ») / Schedule summary.</summary>

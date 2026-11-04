@@ -116,7 +116,76 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         db.Contacts.Remove(c);
         journal.Noter("contact.supprimer", "Enfant", Id, c.Nom);
         await db.SaveChangesAsync();
+        documents.SupprimerFichier(c.PhotoFichier);
         return await RetourAsync("Contact retiré.");
+    }
+
+    // --- Photos (enfant, parents, contacts) / Photos ---
+    /// <summary>Photo de l'enfant : remplace la precedente / Child photo: replaces the previous one.</summary>
+    public async Task<IActionResult> OnPostPhotoAsync(IFormFile? photo)
+    {
+        var e = await db.Enfants.FindAsync(Id);
+        if (e is null) return NotFound();
+        if (photo is null) { TempData["Erreur"] = "Choisissez une photo."; return RedirectToPage(new { id = Id }); }
+        var r = await documents.EnregistrerAsync(Id, TypeDocument.Photo, photo, null);
+        if (r.Document is null) { TempData["Erreur"] = r.Erreur; return RedirectToPage(new { id = Id }); }
+        var ancienne = e.PhotoDocumentId is { } aid ? await db.Documents.FindAsync(aid) : null;
+        db.Documents.Add(r.Document);
+        await db.SaveChangesAsync();
+        e.PhotoDocumentId = r.Document.Id;
+        if (ancienne is not null) db.Documents.Remove(ancienne);
+        journal.Noter("photo.changer", "Enfant", Id, e.NomComplet);
+        await db.SaveChangesAsync();
+        if (ancienne is not null) documents.Supprimer(ancienne);
+        return await RetourAsync("Photo mise à jour.");
+    }
+
+    /// <summary>Photo d'un parent de cet enfant / Photo of a parent of this child.</summary>
+    public async Task<IActionResult> OnPostPhotoParentAsync(int parentId, IFormFile? photo)
+    {
+        var lien = await db.EnfantParents.Include(x => x.Parent).FirstOrDefaultAsync(x => x.EnfantId == Id && x.ParentId == parentId);
+        if (lien is null) return NotFound();
+        return await RemplacerPhotoAsync(photo, lien.Parent.PhotoFichier, f => lien.Parent.PhotoFichier = f, "photo.parent", lien.Parent.NomComplet);
+    }
+
+    /// <summary>Photo d'une personne autorisee / contact d'urgence / Contact photo.</summary>
+    public async Task<IActionResult> OnPostPhotoContactAsync(int contactId, IFormFile? photo)
+    {
+        var c = await db.Contacts.FirstOrDefaultAsync(x => x.Id == contactId && x.EnfantId == Id);
+        if (c is null) return NotFound();
+        return await RemplacerPhotoAsync(photo, c.PhotoFichier, f => c.PhotoFichier = f, "photo.contact", c.Nom);
+    }
+
+    private async Task<IActionResult> RemplacerPhotoAsync(IFormFile? photo, string? ancienne, Action<string> affecter, string action, string qui)
+    {
+        if (photo is null) { TempData["Erreur"] = "Choisissez une photo."; return RedirectToPage(new { id = Id }); }
+        var (fichier, erreur) = await documents.EnregistrerPhotoAsync(photo);
+        if (fichier is null) { TempData["Erreur"] = erreur; return RedirectToPage(new { id = Id }); }
+        affecter(fichier);
+        journal.Noter(action, "Enfant", Id, qui);
+        await db.SaveChangesAsync();
+        documents.SupprimerFichier(ancienne);
+        return await RetourAsync("Photo mise à jour.");
+    }
+
+    public async Task<IActionResult> OnGetPhotoParentAsync(int parentId)
+    {
+        var p = await db.EnfantParents.AsNoTracking().Where(x => x.EnfantId == Id && x.ParentId == parentId)
+            .Select(x => x.Parent.PhotoFichier).FirstOrDefaultAsync();
+        return await PhotoAsync(p);
+    }
+
+    public async Task<IActionResult> OnGetPhotoContactAsync(int contactId)
+    {
+        var p = await db.Contacts.AsNoTracking().Where(x => x.Id == contactId && x.EnfantId == Id)
+            .Select(x => x.PhotoFichier).FirstOrDefaultAsync();
+        return await PhotoAsync(p);
+    }
+
+    private async Task<IActionResult> PhotoAsync(string? fichier)
+    {
+        var photo = await documents.LirePhotoAsync(fichier);
+        return photo is { } p ? File(p.Contenu, p.Type) : NotFound();
     }
 
     // --- Sante / Health ---
@@ -180,6 +249,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             db.Parents.Remove(lien.Parent);
             journal.Noter("parent.supprimer", "Parent", parentId, lien.Parent.NomComplet);
             await db.SaveChangesAsync();
+            documents.SupprimerFichier(lien.Parent.PhotoFichier);
         }
         return await RetourAsync("Parent retiré du dossier.");
     }
@@ -208,7 +278,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
     /// </summary>
     public async Task<IActionResult> OnPostSupprimerEnfantAsync(string? confirmation)
     {
-        var e = await db.Enfants.Include(x => x.Documents).Include(x => x.Parents).ThenInclude(p => p.Parent)
+        var e = await db.Enfants.Include(x => x.Documents).Include(x => x.Contacts).Include(x => x.Parents).ThenInclude(p => p.Parent)
             .FirstOrDefaultAsync(x => x.Id == Id);
         if (e is null) return NotFound();
         if (!string.Equals(confirmation?.Trim(), e.Prenom.Trim(), StringComparison.CurrentCultureIgnoreCase))
@@ -220,6 +290,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         var nom = e.NomComplet;
         var fichiers = e.Documents.ToList();
         var parents = e.Parents.Select(p => p.Parent).ToList();
+        var photos = e.Contacts.Select(c => c.PhotoFichier).ToList();
         await using var tx = await db.Database.BeginTransactionAsync();
         await db.Presences.Where(p => p.EnfantId == Id).ExecuteDeleteAsync();
         db.Enfants.Remove(e); // cascade : liens parents, contacts, allergies, medicaments, horaires, documents
@@ -230,11 +301,13 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             if (await db.EnfantParents.AnyAsync(x => x.ParentId == p.Id)) continue;
             db.Parents.Remove(p);
             journal.Noter("parent.supprimer", "Parent", p.Id, p.NomComplet);
+            photos.Add(p.PhotoFichier);
         }
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         // Fichiers chiffres effaces apres la validation / Encrypted files removed after commit
         foreach (var d in fichiers) documents.Supprimer(d);
+        foreach (var f in photos) documents.SupprimerFichier(f);
 
         TempData["Message"] = $"Dossier de {nom} supprimé.";
         return RedirectToPage("Index");
@@ -282,11 +355,9 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         var d = await db.Documents.AsNoTracking().FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
         if (d is null) return NotFound();
         var contenu = await documents.LireAsync(d);
-        if (apercu && d.TypeContenu is "image/jpeg" or "image/png")
-        {
-            await journal.NoterMaintenantAsync("photo.afficher", "Enfant", Id, d.NomOriginal);
+        // Apercu de la photo (avatar) : non journalise, il s'affiche partout / Avatar preview: not logged
+        if (apercu && d.Type == TypeDocument.Photo && d.TypeContenu is "image/jpeg" or "image/png")
             return File(contenu, d.TypeContenu);
-        }
         await journal.NoterMaintenantAsync("document.telecharger", "Enfant", Id, d.NomOriginal);
         return File(contenu, d.TypeContenu, d.NomOriginal);
     }

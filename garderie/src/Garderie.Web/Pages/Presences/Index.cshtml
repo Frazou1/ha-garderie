@@ -2,59 +2,89 @@
 @model Garderie.Web.Pages.Presences.IndexModel
 @{
     ViewData["Title"] = "Présences";
-    var jour = Model.Jour;
-    var aujourdhui = Temps.Aujourdhui();
-    var index = 0;
-    var prevus = Model.Lignes.Where(l => l.Prevu).ToList();
-    var autres = Model.Lignes.Where(l => !l.Prevu).ToList();
+    var lundi = Model.Lundi;
+    var i = 0;
+    var cetteSemaine = Garderie.Web.Services.PresencesService.Lundi(Model.Aujourdhui);
 }
-<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0 me-auto">Présences — @Affichage.Jour(jour.DayOfWeek) @Affichage.Date(jour)</h1>
-    <a class="btn btn-outline-secondary" asp-page="Index" asp-route-date="@jour.AddDays(-1).ToString("yyyy-MM-dd")" aria-label="Jour précédent">‹</a>
-    @if (jour != aujourdhui)
-    {
-        <a class="btn btn-outline-primary" asp-page="Index">Aujourd'hui</a>
-    }
-    <a class="btn btn-outline-secondary" asp-page="Index" asp-route-date="@jour.AddDays(1).ToString("yyyy-MM-dd")" aria-label="Jour suivant">›</a>
-    <form method="get" class="d-flex gap-1">
-        <input type="date" name="date" value="@jour.ToString("yyyy-MM-dd")" class="form-control" aria-label="Date" />
-        <button class="btn btn-outline-secondary" type="submit">Aller</button>
-    </form>
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Présences</h1>
+        <p class="sous-titre">Semaine du @Affichage.Periode(Model.Jours[0], Model.Jours[^1])</p>
+    </div>
+    <nav class="nav-semaine" aria-label="Changer de semaine">
+        <a class="btn btn-rond" asp-page="Index" asp-route-semaine="@lundi.AddDays(-7).ToString("yyyy-MM-dd")" aria-label="Semaine précédente">‹</a>
+        @if (lundi != cetteSemaine)
+        {
+            <a class="btn btn-doux" asp-page="Index">Cette semaine</a>
+        }
+        <a class="btn btn-rond" asp-page="Index" asp-route-semaine="@lundi.AddDays(7).ToString("yyyy-MM-dd")" aria-label="Semaine suivante">›</a>
+    </nav>
 </div>
 
 @if (Model.Lignes.Count == 0)
 {
-    <p class="text-muted">Aucun enfant inscrit à cette date. <a asp-page="/Enfants/Edition">Ajouter un enfant</a></p>
+    <div class="carte vide">
+        <p class="mb-2">Aucun enfant inscrit cette semaine.</p>
+        <a class="btn btn-primary" asp-page="/Enfants/Edition">Ajouter un enfant</a>
+    </div>
 }
 else
 {
-    <form method="post" asp-route-date="@jour.ToString("yyyy-MM-dd")">
+    <form method="post" asp-route-semaine="@lundi.ToString("yyyy-MM-dd")">
         @if (Model.AuMoinsUnPropose)
         {
-            <div class="alert alert-info py-2">Les cases en pointillé sont <strong>proposées</strong> selon l'horaire : vérifiez puis appuyez sur <strong>Enregistrer</strong>.</div>
+            <p class="aide">Les cases en pointillé sont <strong>proposées</strong> (P, ou F les jours de fermeture).
+                Touchez une case pour la changer, puis <strong>Enregistrez</strong>.</p>
         }
-        @if (prevus.Count == 0)
+        @foreach (var l in Model.Lignes)
         {
-            <p class="text-muted">Aucun enfant prévu ce jour-là.</p>
+            var e = l.Enfant;
+            var photo = e.PhotoDocumentId is { } pid ? Url.Page("/Enfants/Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
+            <section class="carte carte-presence">
+                <a class="enfant-entete" asp-page="/Enfants/Dossier" asp-route-id="@e.Id">
+                    <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                    <span class="enfant-nom">@e.Prenom <span class="text-muted fw-normal">@e.Nom</span></span>
+                </a>
+                <div class="grille-semaine">
+                    @foreach (var j in l.Jours)
+                    {
+                        var classeJour = j.Date == Model.Aujourdhui ? "jour aujourdhui" : "jour";
+                        <div class="@classeJour">
+                            <span class="jour-nom">@Affichage.JourCourt(j.Date.DayOfWeek) <b>@j.Date.Day</b></span>
+                            @if (!j.Inscrit)
+                            {
+                                <span class="code code-hors" title="Pas inscrit ce jour-là">·</span>
+                            }
+                            else
+                            {
+                                var etat = j.Enregistre ? "enregistre" : j.Code == "" ? "" : "propose";
+                                <input type="hidden" name="codes[@i].EnfantId" value="@e.Id" />
+                                <input type="hidden" name="codes[@i].Date" value="@j.Date.ToString("yyyy-MM-dd")" />
+                                <select name="codes[@i].Code" class="code @Affichage.ClasseCode(j.Code) @etat" aria-label="@e.Prenom, @Affichage.Jour(j.Date.DayOfWeek) @j.Date.Day">
+                                    <option value="" selected="@(j.Code == "")">—</option>
+                                    @foreach (var c in CodesPresence.Tous)
+                                    {
+                                        <option value="@c.Valeur" title="@c.Libelle" selected="@(j.Code == c.Valeur)">@CodesPresence.Court(c.Valeur)</option>
+                                    }
+                                </select>
+                                i++;
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
         }
-        @foreach (var l in prevus)
-        {
-            <partial name="_Ligne" model="(l, index)" />
-            index += 2;
-        }
-        @if (autres.Count > 0)
-        {
-            <details class="mb-3">
-                <summary class="mb-2">Autres enfants inscrits (non prévus ce jour-là) — @autres.Count</summary>
-                @foreach (var l in autres)
+        <details class="legende">
+            <summary>Que veulent dire les codes ?</summary>
+            <dl>
+                @foreach (var c in CodesPresence.Tous)
                 {
-                    <partial name="_Ligne" model="(l, index)" />
-                    index += 2;
+                    <div><dt><span class="pastille @Affichage.ClasseCode(c.Valeur)">@CodesPresence.Court(c.Valeur)</span></dt><dd>@c.Libelle</dd></div>
                 }
-            </details>
-        }
+            </dl>
+        </details>
         <div class="barre-enregistrer">
-            <button type="submit" class="btn btn-primary btn-lg w-100">Enregistrer la journée</button>
+            <button type="submit" class="btn btn-primary btn-lg w-100">Enregistrer la semaine</button>
         </div>
     </form>
 }

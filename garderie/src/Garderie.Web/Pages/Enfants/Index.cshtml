@@ -3,47 +3,73 @@
 @{
     ViewData["Title"] = "Enfants";
 }
-<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 me-auto mb-0">Enfants</h1>
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Enfants</h1>
+        <p class="sous-titre">@Model.Enfants.Count @(Model.Tous ? "au total" : "inscrit(s)")</p>
+    </div>
     @if (Model.Tous)
     {
-        <a class="btn btn-outline-secondary btn-sm" asp-page="Index">Inscrits seulement</a>
+        <a class="btn btn-doux btn-sm" asp-page="Index">Inscrits seulement</a>
     }
     else
     {
-        <a class="btn btn-outline-secondary btn-sm" asp-page="Index" asp-route-tous="true">Inclure les anciens</a>
+        <a class="btn btn-doux btn-sm" asp-page="Index" asp-route-tous="true">Voir aussi les anciens</a>
     }
-    <a class="btn btn-primary" asp-page="Edition">Ajouter un enfant</a>
+    <a class="btn btn-primary" asp-page="Edition">+ Ajouter un enfant</a>
 </div>
 
 @if (Model.Enfants.Count == 0)
 {
-    <p class="text-muted">Aucun enfant.</p>
+    <div class="carte vide">
+        <p class="mb-2">Aucun enfant pour l'instant.</p>
+        <a class="btn btn-primary" asp-page="Edition">Ajouter le premier enfant</a>
+    </div>
 }
 else
 {
-    <div class="list-group">
+    <div class="liste-enfants">
         @foreach (var e in Model.Enfants)
         {
-            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2" asp-page="Dossier" asp-route-id="@e.Id">
-                <span class="fw-semibold">@e.NomComplet</span>
-                @if (e.DateNaissance is { } dn)
-                {
-                    <span class="text-muted small">né(e) le @dn.ToString("d MMMM yyyy")</span>
-                }
-                @if (e.Allergies.Any(a => a.Gravite == Gravite.Severe))
-                {
-                    <span class="badge text-bg-danger">Allergie sévère</span>
-                }
-                else if (e.Allergies.Count > 0)
-                {
-                    <span class="badge text-bg-warning">Allergie</span>
-                }
-                @if (!e.EstInscritLe(Model.Aujourdhui))
-                {
-                    <span class="badge text-bg-secondary ms-auto">@(e.DateDebut > Model.Aujourdhui ? "À venir" : "Ancien")</span>
-                }
+            var ancien = e.EstAncienLe(Model.Aujourdhui);
+            var photo = e.PhotoDocumentId is { } pid ? Url.Page("Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
+            <a class="tuile-enfant @(ancien ? "ancienne" : "")" asp-page="Dossier" asp-route-id="@e.Id">
+                <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                <span class="details">
+                    <span class="nom d-block">@e.NomComplet</span>
+                    <span class="info d-block">
+                        @if (e.DateNaissance is { } dn)
+                        {
+                            @Age(dn)
+                        }
+                        @if (ancien)
+                        {
+                            <span class="badge text-bg-secondary">Ancien</span>
+                        }
+                        else if (e.DateDebut > Model.Aujourdhui)
+                        {
+                            <span class="badge text-bg-info">À venir</span>
+                        }
+                        @if (e.Allergies.Any(a => a.Gravite == Gravite.Severe))
+                        {
+                            <span class="badge text-bg-danger">Allergie sévère</span>
+                        }
+                        else if (e.Allergies.Count > 0)
+                        {
+                            <span class="badge text-bg-warning">Allergie</span>
+                        }
+                    </span>
+                </span>
             </a>
         }
     </div>
+}
+
+@functions {
+    private string Age(DateOnly naissance)
+    {
+        var a = Model.Aujourdhui;
+        var mois = (a.Year - naissance.Year) * 12 + a.Month - naissance.Month - (a.Day < naissance.Day ? 1 : 0);
+        return mois < 24 ? $"{mois} mois" : $"{mois / 12} ans";
+    }
 }

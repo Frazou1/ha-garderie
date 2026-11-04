@@ -67,6 +67,42 @@ public sealed class DocumentsService(GarderieOptions options, Chiffreur chiffreu
         }, null);
     }
 
+    /// <summary>
+    /// Photo d'un parent ou d'un contact (JPG ou PNG, reduite par le navigateur), chiffree sur disque.
+    /// Retourne le nom du fichier chiffre. / Parent or contact photo, encrypted; returns the file name.
+    /// </summary>
+    public async Task<(string? Fichier, string? Erreur)> EnregistrerPhotoAsync(IFormFile fichier)
+    {
+        if (fichier.Length == 0) return (null, "Le fichier est vide.");
+        if (fichier.Length > TailleMax) return (null, "La photo dépasse 15 Mo.");
+        using var ms = new MemoryStream();
+        await fichier.CopyToAsync(ms);
+        var contenu = ms.ToArray();
+        if (DetecterType(contenu) is not ("image/jpeg" or "image/png")) return (null, "La photo doit être en JPG ou PNG.");
+
+        var nom = Guid.NewGuid().ToString("N") + ".bin";
+        Directory.CreateDirectory(options.DossierDocuments);
+        await File.WriteAllBytesAsync(Path.Combine(options.DossierDocuments, nom), chiffreur.Chiffrer(contenu, Contextes.Document(nom)));
+        return (nom, null);
+    }
+
+    /// <summary>Photo dechiffree et son type, ou null / Decrypted photo and its type, or null.</summary>
+    public async Task<(byte[] Contenu, string Type)?> LirePhotoAsync(string? fichier)
+    {
+        if (fichier is null) return null;
+        var chemin = Path.Combine(options.DossierDocuments, fichier);
+        if (!File.Exists(chemin)) return null;
+        var contenu = chiffreur.Dechiffrer(await File.ReadAllBytesAsync(chemin), Contextes.Document(fichier));
+        return (contenu, DetecterType(contenu) ?? "application/octet-stream");
+    }
+
+    public void SupprimerFichier(string? fichier)
+    {
+        if (fichier is null) return;
+        var chemin = Path.Combine(options.DossierDocuments, fichier);
+        if (File.Exists(chemin)) File.Delete(chemin);
+    }
+
     public async Task<byte[]> LireAsync(Document doc)
     {
         var chiffre = await File.ReadAllBytesAsync(Path.Combine(options.DossierDocuments, doc.Fichier));

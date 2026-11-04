@@ -17,3 +17,6 @@ data-dev/
 # Notes privees du projet (noms, adresse) / Private project notes (names, address)
 CLAUDE_Projet_Garderie.md
 CLAUDE*.md
+
+# Outils locaux / local tooling
+.claude/

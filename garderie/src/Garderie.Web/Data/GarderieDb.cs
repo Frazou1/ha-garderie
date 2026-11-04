@@ -32,7 +32,7 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
 
         b.Entity<HoraireType>().HasIndex(x => new { x.EnfantId, x.DateEffective, x.Jour }).IsUnique();
         b.Entity<Presence>().HasOne(p => p.Enfant).WithMany().HasForeignKey(p => p.EnfantId).OnDelete(DeleteBehavior.Cascade);
-        b.Entity<Presence>().HasIndex(x => new { x.EnfantId, x.Date, x.Demi }).IsUnique();
+        b.Entity<Presence>().HasIndex(x => new { x.EnfantId, x.Date }).IsUnique();
         b.Entity<Presence>().HasIndex(x => x.Date);
         b.Entity<JourFermeture>().HasIndex(x => x.Date);
         b.Entity<JournalAcces>().HasIndex(x => x.Horodatage);

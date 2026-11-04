@@ -62,6 +62,8 @@ public class Parent
     [MaxLength(300)] public string? Adresse { get; set; }
     /// <summary>NAS chiffre (contexte nas:parent), pour le releve 24 / Encrypted SIN.</summary>
     public byte[]? NasChiffre { get; set; }
+    /// <summary>Photo chiffree dans /data/docs (guid.bin) / Encrypted photo file.</summary>
+    [MaxLength(64)] public string? PhotoFichier { get; set; }
     public DateTime CreeLe { get; set; }
     public DateTime ModifieLe { get; set; }
 
@@ -92,6 +94,8 @@ public class Contact
     public bool PeutVenirChercher { get; set; }
     public bool ContactUrgence { get; set; }
     public int Ordre { get; set; }
+    /// <summary>Photo chiffree dans /data/docs (guid.bin) / Encrypted photo file.</summary>
+    [MaxLength(64)] public string? PhotoFichier { get; set; }
 }
 
 public class Allergie
@@ -145,14 +149,13 @@ public class Document
     public DateTime TeleverseLe { get; set; }
 }
 
-/// <summary>Code de presence d'une demi-journee (codes du FO-0310) / Half-day attendance code.</summary>
+/// <summary>Code de presence d'une journee, une case par jour comme le FO-0310 / One attendance code per day.</summary>
 public class Presence
 {
     public int Id { get; set; }
     public int EnfantId { get; set; }
     public Enfant Enfant { get; set; } = null!;
     public DateOnly Date { get; set; }
-    public DemiJournee Demi { get; set; }
     [MaxLength(5)] public string Code { get; set; } = "";
     public DateTime ModifieLe { get; set; }
     [MaxLength(100)] public string? ModifiePar { get; set; }

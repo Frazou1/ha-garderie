@@ -47,5 +47,11 @@ Ne pas réécrire le chemin : l'appli retire elle-même `/garderie`.
 ## Codes de présence
 
 Ceux de la fiche d'assiduité FO-0310 : P, P ½, A, A ½, R, R ½, F, F ½, AN, AD, L, S, S ½.
-L'écran propose un code selon l'horaire prévu (cases en pointillé) ; rien n'est enregistré avant
-**Enregistrer la journée**.
+L'écran **Présences** montre la semaine, une case par jour et par enfant (comme la fiche). Il propose **P** du
+lundi au vendredi et **F** (ou F ½) les jours de fermeture, en pointillé ; rien n'est enregistré avant
+**Enregistrer la semaine**.
+
+## Photos
+
+Touchez l'avatar rond d'un enfant, d'un parent ou d'une personne autorisée pour prendre ou choisir une photo.
+Elle est réduite dans le navigateur (640 px, sans position GPS) puis chiffrée sur le serveur.

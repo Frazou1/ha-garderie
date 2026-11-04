@@ -89,26 +89,29 @@ public class PresencesTests
     private static readonly JourFermeture[] Aucune = [];
 
     [Fact]
-    public void ProposeSelonHoraire()
+    public void ProposePTousLesJoursOuvrables()
     {
-        Assert.Equal("P", PresencesService.Proposer(true, true, DemiJournee.Matin, Aucune));
-        Assert.Equal("P", PresencesService.Proposer(true, true, DemiJournee.Pm, Aucune));
-        Assert.Equal("P 1/2", PresencesService.Proposer(true, false, DemiJournee.Matin, Aucune));
-        Assert.Equal("", PresencesService.Proposer(true, false, DemiJournee.Pm, Aucune));
-        Assert.Equal("", PresencesService.Proposer(false, false, DemiJournee.Matin, Aucune));
+        var mercredi = new DateOnly(2026, 11, 4);
+        Assert.Equal("P", PresencesService.Proposer(mercredi, Aucune));
+        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 7), Aucune));   // samedi
+        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 8), Aucune));   // dimanche
     }
 
     [Fact]
     public void ProposeFermeture()
     {
-        var journee = new[] { new JourFermeture { Demi = null } };
-        var matin = new[] { new JourFermeture { Demi = DemiJournee.Matin } };
-        Assert.Equal("F", PresencesService.Proposer(true, true, DemiJournee.Matin, journee));
-        Assert.Equal("F 1/2", PresencesService.Proposer(true, false, DemiJournee.Matin, journee));
-        Assert.Equal("F 1/2", PresencesService.Proposer(true, true, DemiJournee.Matin, matin));
-        Assert.Equal("P", PresencesService.Proposer(true, true, DemiJournee.Pm, matin));
-        Assert.Equal("", PresencesService.Proposer(false, false, DemiJournee.Matin, journee));
+        var jour = new DateOnly(2026, 11, 5);
+        Assert.Equal("F", PresencesService.Proposer(jour, [new JourFermeture { Date = jour, Demi = null }]));
+        Assert.Equal("F 1/2", PresencesService.Proposer(jour, [new JourFermeture { Date = jour, Demi = DemiJournee.Pm }]));
+        Assert.Equal("P", PresencesService.Proposer(jour.AddDays(1), [new JourFermeture { Date = jour, Demi = null }]));
     }
+
+    [Theory]
+    [InlineData("2026-11-02", "2026-11-02")]  // lundi
+    [InlineData("2026-11-04", "2026-11-02")]  // mercredi
+    [InlineData("2026-11-08", "2026-11-02")]  // dimanche : meme semaine / Sunday: same week
+    public void LundiDeLaSemaine(string jour, string lundi) =>
+        Assert.Equal(DateOnly.Parse(lundi), PresencesService.Lundi(DateOnly.Parse(jour)));
 
     [Fact]
     public void HoraireVersionne()

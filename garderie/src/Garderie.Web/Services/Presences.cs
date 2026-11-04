@@ -12,17 +12,25 @@ public static class Temps
     public static DateTime VersLocal(DateTime utc) => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Fuseau);
 }
 
-/// <summary>Une demi-journee a l'ecran / One half-day on screen.</summary>
-public sealed record CaseDemi(string Code, bool Enregistre, bool Prevu);
+/// <summary>Une case (un jour) a l'ecran / One day cell on screen.</summary>
+/// <param name="Inscrit">L'enfant est inscrit ce jour-la (sinon pas de case) / Enrolled that day.</param>
+public sealed record CaseJour(DateOnly Date, string Code, bool Enregistre, bool Inscrit);
 
-/// <summary>Une ligne de l'ecran des presences / One row of the attendance screen.</summary>
-public sealed record LignePresence(Enfant Enfant, CaseDemi Matin, CaseDemi Pm)
-{
-    public bool Prevu => Matin.Prevu || Pm.Prevu;
-}
+/// <summary>Une ligne (un enfant, une semaine) / One row: one child, one week.</summary>
+public sealed record LigneSemaine(Enfant Enfant, IReadOnlyList<CaseJour> Jours);
 
 public sealed class PresencesService(GarderieDb db)
 {
+    /// <summary>Lundi de la semaine du jour donne / Monday of the given day's week.</summary>
+    public static DateOnly Lundi(DateOnly jour) => jour.AddDays(-(((int)jour.DayOfWeek + 6) % 7));
+
+    /// <summary>Jours ouvrables (lundi au vendredi) de la semaine / Weekdays of the week.</summary>
+    public static IReadOnlyList<DateOnly> JoursOuvrables(DateOnly jour)
+    {
+        var lundi = Lundi(jour);
+        return Enumerable.Range(0, 5).Select(lundi.AddDays).ToList();
+    }
+
     /// <summary>
     /// Horaire applicable : la version la plus recente dont DateEffective &lt;= jour.
     /// Applicable schedule: latest version effective on or before the day.
@@ -37,72 +45,68 @@ public sealed class PresencesService(GarderieDb db)
     }
 
     /// <summary>
-    /// Code propose (non enregistre) pour une demi-journee, selon l'horaire et les fermetures.
-    /// Regle a valider avec la RSGE : journee complete prevue = P le matin et P l'apres-midi ;
-    /// demi-journee prevue = « P 1/2 » ; fermeture = F (ou « F 1/2 » si une seule demi-journee est prevue/fermee).
-    /// Suggested (unsaved) code for a half-day. Rule to be validated with the RSGE.
+    /// Code propose (non enregistre) : P tous les jours ouvrables ; F si la garderie est fermee toute la journee,
+    /// « F 1/2 » si elle est fermee une demi-journee ; rien la fin de semaine.
+    /// Suggested (unsaved) code: P on every weekday; F if closed all day, "F 1/2" if closed half a day.
     /// </summary>
-    public static string Proposer(bool prevuMatin, bool prevuPm, DemiJournee demi, IReadOnlyCollection<JourFermeture> fermetures)
+    public static string Proposer(DateOnly jour, IEnumerable<JourFermeture> fermetures)
     {
-        var prevu = demi == DemiJournee.Matin ? prevuMatin : prevuPm;
-        if (!prevu) return "";
-        var journeeComplete = prevuMatin && prevuPm;
-        var ferme = fermetures.Any(f => f.Demi is null || f.Demi == demi);
-        var fermeComplet = fermetures.Any(f => f.Demi is null);
-        if (ferme) return journeeComplete && fermeComplet ? "F" : "F 1/2";
-        return journeeComplete ? "P" : "P 1/2";
+        if (jour.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return "";
+        var duJour = fermetures.Where(f => f.Date == jour).ToList();
+        if (duJour.Any(f => f.Demi is null)) return "F";
+        if (duJour.Count > 0) return "F 1/2";
+        return "P";
     }
 
-    /// <summary>Lignes de l'ecran pour un jour / Screen rows for one day.</summary>
-    public async Task<List<LignePresence>> ChargerJourAsync(DateOnly jour)
+    /// <summary>Lignes de la semaine (enfants inscrits au moins un jour) / Week rows.</summary>
+    public async Task<List<LigneSemaine>> ChargerSemaineAsync(DateOnly jour)
     {
+        var jours = JoursOuvrables(jour);
+        var (debut, fin) = (jours[0], jours[^1]);
         var enfants = await db.Enfants.AsNoTracking()
-            .Include(e => e.Horaires)
-            .Where(e => e.DateDebut <= jour && (e.DateFin == null || e.DateFin >= jour))
+            .Where(e => e.DateDebut <= fin && (e.DateFin == null || e.DateFin >= debut))
             .OrderBy(e => e.Prenom).ThenBy(e => e.Nom)
             .ToListAsync();
-        var presences = await db.Presences.AsNoTracking().Where(p => p.Date == jour).ToListAsync();
-        var fermetures = await db.Fermetures.AsNoTracking().Where(f => f.Date == jour).ToListAsync();
+        var presences = await db.Presences.AsNoTracking().Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
+        var fermetures = await db.Fermetures.AsNoTracking().Where(f => f.Date >= debut && f.Date <= fin).ToListAsync();
 
-        var lignes = new List<LignePresence>();
-        foreach (var e in enfants)
+        return enfants.Select(e => new LigneSemaine(e, jours.Select(d =>
         {
-            var (m, p) = HorairePrevu(e.Horaires, jour);
-            CaseDemi Case(DemiJournee d, bool prevu)
-            {
-                var existante = presences.FirstOrDefault(x => x.EnfantId == e.Id && x.Demi == d);
-                return existante is not null
-                    ? new CaseDemi(existante.Code, true, prevu)
-                    : new CaseDemi(Proposer(m, p, d, fermetures), false, prevu);
-            }
-            lignes.Add(new LignePresence(e, Case(DemiJournee.Matin, m), Case(DemiJournee.Pm, p)));
-        }
-        // Enfants prevus d'abord / Planned children first
-        return lignes.OrderByDescending(l => l.Prevu).ToList();
+            if (!e.EstInscritLe(d)) return new CaseJour(d, "", false, false);
+            var existante = presences.FirstOrDefault(x => x.EnfantId == e.Id && x.Date == d);
+            return existante is not null
+                ? new CaseJour(d, existante.Code, true, true)
+                : new CaseJour(d, Proposer(d, fermetures), false, true);
+        }).ToList())).ToList();
     }
 
     /// <summary>
-    /// Enregistre les codes d'une journee (code vide = supprime). Retourne le nombre de changements.
-    /// Saves a day's codes (empty code = delete). Returns the number of changes.
+    /// Enregistre des codes (code vide = supprime). Ignore les jours ou l'enfant n'est pas inscrit.
+    /// Retourne le nombre de changements. / Saves codes (empty = delete); returns the number of changes.
     /// </summary>
-    public async Task<int> EnregistrerJourAsync(DateOnly jour, IEnumerable<(int EnfantId, DemiJournee Demi, string Code)> codes, string utilisateur)
+    public async Task<int> EnregistrerAsync(IEnumerable<(int EnfantId, DateOnly Date, string Code)> codes, string utilisateur)
     {
-        var existantes = await db.Presences.Where(p => p.Date == jour).ToListAsync();
-        var idsValides = (await db.Enfants.Select(e => e.Id).ToListAsync()).ToHashSet();
+        var liste = codes.ToList();
+        if (liste.Count == 0) return 0;
+        var (debut, fin) = (liste.Min(c => c.Date), liste.Max(c => c.Date));
+        var existantes = await db.Presences.Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
+        var enfants = await db.Enfants.AsNoTracking().ToDictionaryAsync(e => e.Id);
         var changements = 0;
-        foreach (var (enfantId, demi, brut) in codes)
+        foreach (var (enfantId, date, brut) in liste)
         {
             var code = (brut ?? "").Trim();
-            if (!idsValides.Contains(enfantId) || !CodesPresence.EstValide(code)) continue;
-            var p = existantes.FirstOrDefault(x => x.EnfantId == enfantId && x.Demi == demi);
+            if (!enfants.TryGetValue(enfantId, out var e) || !e.EstInscritLe(date) || !CodesPresence.EstValide(code)) continue;
+            var p = existantes.FirstOrDefault(x => x.EnfantId == enfantId && x.Date == date);
             if (string.IsNullOrEmpty(code))
             {
-                if (p is not null) { db.Presences.Remove(p); changements++; }
+                if (p is not null) { db.Presences.Remove(p); existantes.Remove(p); changements++; }
                 continue;
             }
             if (p is null)
             {
-                db.Presences.Add(new Presence { EnfantId = enfantId, Date = jour, Demi = demi, Code = code, ModifieLe = DateTime.UtcNow, ModifiePar = utilisateur });
+                p = new Presence { EnfantId = enfantId, Date = date, Code = code, ModifieLe = DateTime.UtcNow, ModifiePar = utilisateur };
+                db.Presences.Add(p);
+                existantes.Add(p);
                 changements++;
             }
             else if (p.Code != code)

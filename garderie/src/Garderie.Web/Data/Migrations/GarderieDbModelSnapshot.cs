@@ -72,6 +72,10 @@ namespace Garderie.Web.Data.Migrations
                     b.Property<bool>("PeutVenirChercher")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PhotoFichier")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Telephone")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
@@ -425,6 +429,10 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PhotoFichier")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Prenom")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -457,9 +465,6 @@ namespace Garderie.Web.Data.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Demi")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("EnfantId")
                         .HasColumnType("INTEGER");
 
@@ -474,7 +479,7 @@ namespace Garderie.Web.Data.Migrations
 
                     b.HasIndex("Date");
 
-                    b.HasIndex("EnfantId", "Date", "Demi")
+                    b.HasIndex("EnfantId", "Date")
                         .IsUnique();
 
                     b.ToTable("Presences");

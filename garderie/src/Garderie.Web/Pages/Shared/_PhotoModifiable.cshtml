@@ -1,0 +1,15 @@
+@model Garderie.Web.Pages.Shared.PhotoModifiableVue
+@* Avatar cliquable : ouvre l'appareil photo ou la galerie, la photo part toute seule (site.js).
+   Clickable avatar: opens the camera or gallery, the photo is sent right away (site.js). *@
+<form method="post" enctype="multipart/form-data" asp-page="/Enfants/Dossier" asp-page-handler="@Model.Handler" asp-route-id="@Model.EnfantId">
+    @if (Model.Cle is not null)
+    {
+        <input type="hidden" name="@Model.Cle" value="@Model.Valeur" />
+    }
+    <label class="photo-modifiable" title="@Model.Libelle">
+        <partial name="_Avatar" model="Model.Avatar" />
+        <span class="crayon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" /></svg></span>
+        <input type="file" name="photo" accept="image/*" class="photo-auto" aria-label="@Model.Libelle" />
+    </label>
+    <noscript><button class="btn btn-sm btn-doux" type="submit">Envoyer</button></noscript>
+</form>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+- Présences : retour à 2 cases par jour (matin / après-midi), comme sur la fiche FO-0310 ; P dans les 2 cases
+  par défaut. Fermeture d'une demi-journée : F ½ dans la case fermée, P ½ dans l'autre. Migration : le code
+  d'un jour est recopié dans la case de l'après-midi.
+- Un jour où l'enfant n'est pas encore inscrit (« · ») mène à sa date de début de fréquentation.
+- Horaire : précise qu'il ne change pas les présences (seule la date de début de fréquentation compte).
+
 ## 0.2.0
 - Présences à la semaine : une case par jour et par enfant (comme le FO-0310), P proposé du lundi au vendredi,
   F les jours de fermeture. Les présences ne sont plus séparées matin / après-midi.

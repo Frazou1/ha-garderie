@@ -92,18 +92,23 @@ public class PresencesTests
     public void ProposePTousLesJoursOuvrables()
     {
         var mercredi = new DateOnly(2026, 11, 4);
-        Assert.Equal("P", PresencesService.Proposer(mercredi, Aucune));
-        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 7), Aucune));   // samedi
-        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 8), Aucune));   // dimanche
+        Assert.Equal("P", PresencesService.Proposer(mercredi, DemiJournee.Matin, Aucune));
+        Assert.Equal("P", PresencesService.Proposer(mercredi, DemiJournee.Pm, Aucune));
+        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 7), DemiJournee.Matin, Aucune));   // samedi
+        Assert.Equal("", PresencesService.Proposer(new DateOnly(2026, 11, 8), DemiJournee.Pm, Aucune));      // dimanche
     }
 
     [Fact]
     public void ProposeFermeture()
     {
         var jour = new DateOnly(2026, 11, 5);
-        Assert.Equal("F", PresencesService.Proposer(jour, [new JourFermeture { Date = jour, Demi = null }]));
-        Assert.Equal("F 1/2", PresencesService.Proposer(jour, [new JourFermeture { Date = jour, Demi = DemiJournee.Pm }]));
-        Assert.Equal("P", PresencesService.Proposer(jour.AddDays(1), [new JourFermeture { Date = jour, Demi = null }]));
+        JourFermeture[] journee = [new() { Date = jour, Demi = null }];
+        JourFermeture[] pm = [new() { Date = jour, Demi = DemiJournee.Pm }];
+        Assert.Equal("F", PresencesService.Proposer(jour, DemiJournee.Matin, journee));
+        Assert.Equal("F", PresencesService.Proposer(jour, DemiJournee.Pm, journee));
+        Assert.Equal("P 1/2", PresencesService.Proposer(jour, DemiJournee.Matin, pm));
+        Assert.Equal("F 1/2", PresencesService.Proposer(jour, DemiJournee.Pm, pm));
+        Assert.Equal("P", PresencesService.Proposer(jour.AddDays(1), DemiJournee.Matin, journee));
     }
 
     [Theory]

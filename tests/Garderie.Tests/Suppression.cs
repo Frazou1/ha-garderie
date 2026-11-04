@@ -42,7 +42,7 @@ public class SuppressionTests(Appli appli) : IClassFixture<Appli>
         frere.Parents = [new() { Parent = partage, Lien = "Mere" }];
         db.AddRange(e, frere);
         await db.SaveChangesAsync();
-        db.Presences.Add(new Presence { EnfantId = e.Id, Date = new DateOnly(2026, 11, 2), Code = "P", ModifieLe = maintenant });
+        db.Presences.Add(new Presence { EnfantId = e.Id, Date = new DateOnly(2026, 11, 2), Demi = DemiJournee.Matin, Code = "P", ModifieLe = maintenant });
         await db.SaveChangesAsync();
 
         var docs = Path.Combine(appli.Dossier, "docs");

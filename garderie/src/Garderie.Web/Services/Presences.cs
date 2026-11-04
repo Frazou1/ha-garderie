@@ -12,12 +12,14 @@ public static class Temps
     public static DateTime VersLocal(DateTime utc) => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Fuseau);
 }
 
-/// <summary>Une case (un jour) a l'ecran / One day cell on screen.</summary>
-/// <param name="Inscrit">L'enfant est inscrit ce jour-la (sinon pas de case) / Enrolled that day.</param>
-public sealed record CaseJour(DateOnly Date, string Code, bool Enregistre, bool Inscrit);
+/// <summary>Une demi-case (matin ou apres-midi) a l'ecran / One half cell on screen.</summary>
+public sealed record CaseDemi(DemiJournee Demi, string Code, bool Enregistre);
+
+/// <summary>Un jour : 2 demi-cases, ou rien si l'enfant n'est pas inscrit / One day: 2 half cells.</summary>
+public sealed record JourSemaine(DateOnly Date, bool Inscrit, CaseDemi Matin, CaseDemi Pm);
 
 /// <summary>Une ligne (un enfant, une semaine) / One row: one child, one week.</summary>
-public sealed record LigneSemaine(Enfant Enfant, IReadOnlyList<CaseJour> Jours);
+public sealed record LigneSemaine(Enfant Enfant, IReadOnlyList<JourSemaine> Jours);
 
 public sealed class PresencesService(GarderieDb db)
 {
@@ -45,17 +47,18 @@ public sealed class PresencesService(GarderieDb db)
     }
 
     /// <summary>
-    /// Code propose (non enregistre) : P tous les jours ouvrables ; F si la garderie est fermee toute la journee,
-    /// « F 1/2 » si elle est fermee une demi-journee ; rien la fin de semaine.
-    /// Suggested (unsaved) code: P on every weekday; F if closed all day, "F 1/2" if closed half a day.
+    /// Code propose (non enregistre) pour une demi-case : P du lundi au vendredi (journee complete = P dans les
+    /// 2 cases) ; fermeture toute la journee = F dans les 2 ; fermeture d'une demi-journee = « F 1/2 » dans la
+    /// demi-case fermee et « P 1/2 » dans l'autre ; rien la fin de semaine.
+    /// Suggested (unsaved) code for a half cell.
     /// </summary>
-    public static string Proposer(DateOnly jour, IEnumerable<JourFermeture> fermetures)
+    public static string Proposer(DateOnly jour, DemiJournee demi, IEnumerable<JourFermeture> fermetures)
     {
         if (jour.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return "";
         var duJour = fermetures.Where(f => f.Date == jour).ToList();
+        if (duJour.Count == 0) return "P";
         if (duJour.Any(f => f.Demi is null)) return "F";
-        if (duJour.Count > 0) return "F 1/2";
-        return "P";
+        return duJour.Any(f => f.Demi == demi) ? "F 1/2" : "P 1/2";
     }
 
     /// <summary>Lignes de la semaine (enfants inscrits au moins un jour) / Week rows.</summary>
@@ -70,21 +73,22 @@ public sealed class PresencesService(GarderieDb db)
         var presences = await db.Presences.AsNoTracking().Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
         var fermetures = await db.Fermetures.AsNoTracking().Where(f => f.Date >= debut && f.Date <= fin).ToListAsync();
 
-        return enfants.Select(e => new LigneSemaine(e, jours.Select(d =>
+        CaseDemi Case(Enfant e, DateOnly d, DemiJournee demi)
         {
-            if (!e.EstInscritLe(d)) return new CaseJour(d, "", false, false);
-            var existante = presences.FirstOrDefault(x => x.EnfantId == e.Id && x.Date == d);
-            return existante is not null
-                ? new CaseJour(d, existante.Code, true, true)
-                : new CaseJour(d, Proposer(d, fermetures), false, true);
-        }).ToList())).ToList();
+            var existante = presences.FirstOrDefault(x => x.EnfantId == e.Id && x.Date == d && x.Demi == demi);
+            return existante is not null ? new CaseDemi(demi, existante.Code, true) : new CaseDemi(demi, Proposer(d, demi, fermetures), false);
+        }
+        return enfants.Select(e => new LigneSemaine(e, jours.Select(d => e.EstInscritLe(d)
+            ? new JourSemaine(d, true, Case(e, d, DemiJournee.Matin), Case(e, d, DemiJournee.Pm))
+            : new JourSemaine(d, false, new CaseDemi(DemiJournee.Matin, "", false), new CaseDemi(DemiJournee.Pm, "", false))
+        ).ToList())).ToList();
     }
 
     /// <summary>
     /// Enregistre des codes (code vide = supprime). Ignore les jours ou l'enfant n'est pas inscrit.
     /// Retourne le nombre de changements. / Saves codes (empty = delete); returns the number of changes.
     /// </summary>
-    public async Task<int> EnregistrerAsync(IEnumerable<(int EnfantId, DateOnly Date, string Code)> codes, string utilisateur)
+    public async Task<int> EnregistrerAsync(IEnumerable<(int EnfantId, DateOnly Date, DemiJournee Demi, string Code)> codes, string utilisateur)
     {
         var liste = codes.ToList();
         if (liste.Count == 0) return 0;
@@ -92,11 +96,11 @@ public sealed class PresencesService(GarderieDb db)
         var existantes = await db.Presences.Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
         var enfants = await db.Enfants.AsNoTracking().ToDictionaryAsync(e => e.Id);
         var changements = 0;
-        foreach (var (enfantId, date, brut) in liste)
+        foreach (var (enfantId, date, demi, brut) in liste)
         {
             var code = (brut ?? "").Trim();
-            if (!enfants.TryGetValue(enfantId, out var e) || !e.EstInscritLe(date) || !CodesPresence.EstValide(code)) continue;
-            var p = existantes.FirstOrDefault(x => x.EnfantId == enfantId && x.Date == date);
+            if (!enfants.TryGetValue(enfantId, out var e) || !e.EstInscritLe(date) || !Enum.IsDefined(demi) || !CodesPresence.EstValide(code)) continue;
+            var p = existantes.FirstOrDefault(x => x.EnfantId == enfantId && x.Date == date && x.Demi == demi);
             if (string.IsNullOrEmpty(code))
             {
                 if (p is not null) { db.Presences.Remove(p); existantes.Remove(p); changements++; }
@@ -104,7 +108,7 @@ public sealed class PresencesService(GarderieDb db)
             }
             if (p is null)
             {
-                p = new Presence { EnfantId = enfantId, Date = date, Code = code, ModifieLe = DateTime.UtcNow, ModifiePar = utilisateur };
+                p = new Presence { EnfantId = enfantId, Date = date, Demi = demi, Code = code, ModifieLe = DateTime.UtcNow, ModifiePar = utilisateur };
                 db.Presences.Add(p);
                 existantes.Add(p);
                 changements++;

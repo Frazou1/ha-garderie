@@ -149,13 +149,17 @@ public class Document
     public DateTime TeleverseLe { get; set; }
 }
 
-/// <summary>Code de presence d'une journee, une case par jour comme le FO-0310 / One attendance code per day.</summary>
+/// <summary>
+/// Code d'une demi-case du FO-0310 (2 cases par jour : matin, apres-midi). Journee complete = P dans les 2.
+/// Code of one FO-0310 half cell (2 cells per day). Full day = P in both.
+/// </summary>
 public class Presence
 {
     public int Id { get; set; }
     public int EnfantId { get; set; }
     public Enfant Enfant { get; set; } = null!;
     public DateOnly Date { get; set; }
+    public DemiJournee Demi { get; set; }
     [MaxLength(5)] public string Code { get; set; } = "";
     public DateTime ModifieLe { get; set; }
     [MaxLength(100)] public string? ModifiePar { get; set; }

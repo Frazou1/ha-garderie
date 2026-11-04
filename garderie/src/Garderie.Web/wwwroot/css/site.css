@@ -142,18 +142,19 @@ form.envoi { opacity: .5; pointer-events: none; }
 .carte-presence { padding: .85rem; }
 .enfant-entete { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; color: var(--encre); text-decoration: none; }
 .enfant-nom { font-weight: 700; font-size: 1.1rem; }
-.grille-semaine { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem; }
+.grille-semaine { display: grid; grid-template-columns: auto repeat(5, 1fr); gap: .35rem; }
+.demis-libelles .demi-nom { display: grid; place-items: center; min-height: 2.5rem; font-size: .7rem; font-weight: 700; color: var(--encre-douce); }
 .jour { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; text-align: center; }
 .jour-nom { display: flex; align-items: center; justify-content: center; gap: .2rem; min-height: 1.6rem; font-size: .75rem; color: var(--encre-douce); text-transform: uppercase; letter-spacing: .03em; }
 .jour-nom b { color: var(--encre); font-size: .9rem; }
 .jour.aujourdhui .jour-nom { color: var(--corail-fonce); font-weight: 700; }
 .jour.aujourdhui .jour-nom b { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--corail); color: #fff; }
 
-select.code {
+select.code { border-radius: .8rem;
     appearance: none; -webkit-appearance: none;
-    width: 100%; min-height: 3.1rem; padding: 0;
+    width: 100%; min-height: 2.5rem; padding: 0;
     border: 2px solid transparent; border-radius: 1rem;
-    font: inherit; font-weight: 800; font-size: 1.05rem; text-align: center; text-align-last: center;
+    font: inherit; font-weight: 800; font-size: 1rem; text-align: center; text-align-last: center;
     cursor: pointer; transition: transform .08s;
 }
 select.code:active { transform: scale(.96); }
@@ -166,7 +167,8 @@ select.code:focus-visible { outline: 3px solid rgba(232, 131, 107, .5); outline-
 .code-vide { background: #faf8f6; color: #b5aebd; border-color: #eee8e2; }
 select.code.propose { border: 2px dashed currentColor; }
 select.code.modifie { border-color: var(--sable); box-shadow: 0 0 0 2px var(--sable-pale); }
-span.code-hors { display: grid; place-items: center; min-height: 3.1rem; color: #cfc8d6; font-size: 1.4rem; }
+.code-hors { display: grid; place-items: center; min-height: 5.25rem; border-radius: 1rem; color: #cfc8d6; font-size: 1.4rem; text-decoration: none; }
+.code-hors:hover { background: var(--gris-pale); color: var(--encre-douce); }
 select.code option { font-weight: 600; color: var(--encre); background: #fff; }
 
 .legende { margin: .5rem 0 1rem; }

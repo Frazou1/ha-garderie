@@ -465,6 +465,9 @@ namespace Garderie.Web.Data.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Demi")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("EnfantId")
                         .HasColumnType("INTEGER");
 
@@ -479,7 +482,7 @@ namespace Garderie.Web.Data.Migrations
 
                     b.HasIndex("Date");
 
-                    b.HasIndex("EnfantId", "Date")
+                    b.HasIndex("EnfantId", "Date", "Demi")
                         .IsUnique();
 
                     b.ToTable("Presences");

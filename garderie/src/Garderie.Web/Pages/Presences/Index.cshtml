@@ -46,6 +46,11 @@ else
                     <span class="enfant-nom">@e.Prenom <span class="text-muted fw-normal">@e.Nom</span></span>
                 </a>
                 <div class="grille-semaine">
+                    <div class="jour demis-libelles" aria-hidden="true">
+                        <span class="jour-nom">&nbsp;</span>
+                        <span class="demi-nom">AM</span>
+                        <span class="demi-nom">PM</span>
+                    </div>
                     @foreach (var j in l.Jours)
                     {
                         var classeJour = j.Date == Model.Aujourdhui ? "jour aujourdhui" : "jour";
@@ -53,21 +58,27 @@ else
                             <span class="jour-nom">@Affichage.JourCourt(j.Date.DayOfWeek) <b>@j.Date.Day</b></span>
                             @if (!j.Inscrit)
                             {
-                                <span class="code code-hors" title="Pas inscrit ce jour-là">·</span>
+                                <a class="code code-hors" asp-page="/Enfants/Edition" asp-route-id="@e.Id"
+                                   title="Pas encore inscrit ce jour-là (date de début : @Affichage.Date(e.DateDebut)). Toucher pour la changer.">·</a>
                             }
                             else
                             {
-                                var etat = j.Enregistre ? "enregistre" : j.Code == "" ? "" : "propose";
-                                <input type="hidden" name="codes[@i].EnfantId" value="@e.Id" />
-                                <input type="hidden" name="codes[@i].Date" value="@j.Date.ToString("yyyy-MM-dd")" />
-                                <select name="codes[@i].Code" class="code @Affichage.ClasseCode(j.Code) @etat" aria-label="@e.Prenom, @Affichage.Jour(j.Date.DayOfWeek) @j.Date.Day">
-                                    <option value="" selected="@(j.Code == "")">—</option>
-                                    @foreach (var c in CodesPresence.Tous)
-                                    {
-                                        <option value="@c.Valeur" title="@c.Libelle" selected="@(j.Code == c.Valeur)">@CodesPresence.Court(c.Valeur)</option>
-                                    }
-                                </select>
-                                i++;
+                                @foreach (var d in new[] { j.Matin, j.Pm })
+                                {
+                                    var etat = d.Enregistre ? "enregistre" : d.Code == "" ? "" : "propose";
+                                    var demi = d.Demi == DemiJournee.Matin ? "matin" : "après-midi";
+                                    <input type="hidden" name="codes[@i].EnfantId" value="@e.Id" />
+                                    <input type="hidden" name="codes[@i].Date" value="@j.Date.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="codes[@i].Demi" value="@d.Demi" />
+                                    <select name="codes[@i].Code" class="code @Affichage.ClasseCode(d.Code) @etat" aria-label="@e.Prenom, @Affichage.Jour(j.Date.DayOfWeek) @j.Date.Day, @demi">
+                                        <option value="" selected="@(d.Code == "")">—</option>
+                                        @foreach (var c in CodesPresence.Tous)
+                                        {
+                                            <option value="@c.Valeur" title="@c.Libelle" selected="@(d.Code == c.Valeur)">@CodesPresence.Court(c.Valeur)</option>
+                                        }
+                                    </select>
+                                    i++;
+                                }
                             }
                         </div>
                     }

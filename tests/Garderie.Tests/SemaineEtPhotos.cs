@@ -54,9 +54,10 @@ public class SemaineEtPhotosTests(Appli appli) : IClassFixture<Appli>
         var html = await Client().GetStringAsync("/Presences?semaine=2026-03-04");
         Assert.Contains("2 au 6 mars 2026", html);
         var ligne = html[html.IndexOf($"value=\"{id}\"", StringComparison.Ordinal)..];
-        // Mardi, mercredi, vendredi = P propose ; jeudi = F ; lundi : pas de case (pas encore inscrit)
-        Assert.Matches("name=\"codes\\[\\d+\\].Date\" value=\"2026-03-03\" />\\s*<select[^>]*class=\"code code-p propose\"", ligne);
-        Assert.Matches("value=\"2026-03-05\" />\\s*<select[^>]*class=\"code code-f propose\"", ligne);
+        // Mardi, mercredi, vendredi = P propose (matin et PM) ; jeudi = F ; lundi : pas de case (pas encore inscrit)
+        Assert.Matches("value=\"2026-03-03\" />\\s*<input[^>]*value=\"Matin\" />\\s*<select[^>]*class=\"code code-p propose\"", ligne);
+        Assert.Matches("value=\"2026-03-03\" />\\s*<input[^>]*value=\"Pm\" />\\s*<select[^>]*class=\"code code-p propose\"", ligne);
+        Assert.Matches("value=\"2026-03-05\" />\\s*<input[^>]*value=\"Pm\" />\\s*<select[^>]*class=\"code code-f propose\"", ligne);
         Assert.DoesNotContain("value=\"2026-03-02\"", ligne[..ligne.IndexOf("</section>", StringComparison.Ordinal)]);
     }
 
@@ -69,17 +70,19 @@ public class SemaineEtPhotosTests(Appli appli) : IClassFixture<Appli>
         var champs = new List<KeyValuePair<string, string>>
         {
             new("__RequestVerificationToken", jeton),
-            new("codes[0].EnfantId", $"{id}"), new("codes[0].Date", "2026-04-07"), new("codes[0].Code", "P"),
-            new("codes[1].EnfantId", $"{id}"), new("codes[1].Date", "2026-04-08"), new("codes[1].Code", "A 1/2"),
-            new("codes[2].EnfantId", $"{id}"), new("codes[2].Date", "2026-04-06"), new("codes[2].Code", "P"),   // pas inscrit : ignore
-            new("codes[3].EnfantId", $"{id}"), new("codes[3].Date", "2026-04-14"), new("codes[3].Code", "P"),   // autre semaine : ignore
-            new("codes[4].EnfantId", $"{id}"), new("codes[4].Date", "2026-04-09"), new("codes[4].Code", "X"),   // code invalide : ignore
+            new("codes[0].EnfantId", $"{id}"), new("codes[0].Date", "2026-04-07"), new("codes[0].Demi", "Matin"), new("codes[0].Code", "P"),
+            new("codes[1].EnfantId", $"{id}"), new("codes[1].Date", "2026-04-07"), new("codes[1].Demi", "Pm"), new("codes[1].Code", "P"),
+            new("codes[2].EnfantId", $"{id}"), new("codes[2].Date", "2026-04-08"), new("codes[2].Demi", "Pm"), new("codes[2].Code", "A 1/2"),
+            new("codes[3].EnfantId", $"{id}"), new("codes[3].Date", "2026-04-06"), new("codes[3].Demi", "Matin"), new("codes[3].Code", "P"),   // pas inscrit : ignore
+            new("codes[4].EnfantId", $"{id}"), new("codes[4].Date", "2026-04-14"), new("codes[4].Demi", "Matin"), new("codes[4].Code", "P"),   // autre semaine : ignore
+            new("codes[5].EnfantId", $"{id}"), new("codes[5].Date", "2026-04-09"), new("codes[5].Demi", "Matin"), new("codes[5].Code", "X"),   // code invalide : ignore
         };
         var r = await c.PostAsync("/Presences?semaine=2026-04-06", new FormUrlEncodedContent(champs));
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
 
-        var codes = Db(db => db.Presences.Where(p => p.EnfantId == id).OrderBy(p => p.Date).Select(p => p.Date.ToString("MM-dd") + "=" + p.Code).ToList());
-        Assert.Equal(["04-07=P", "04-08=A 1/2"], codes);
+        var codes = Db(db => db.Presences.Where(p => p.EnfantId == id).OrderBy(p => p.Date).ThenBy(p => p.Demi)
+            .AsEnumerable().Select(p => $"{p.Date:MM-dd} {p.Demi}={p.Code}").ToList());
+        Assert.Equal(["04-07 Matin=P", "04-07 Pm=P", "04-08 Pm=A 1/2"], codes);
 
         var html = await c.GetStringAsync("/Presences?semaine=2026-04-06");
         Assert.Contains("class=\"code code-a enregistre\"", html);

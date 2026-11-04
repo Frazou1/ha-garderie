@@ -47,9 +47,10 @@ Ne pas réécrire le chemin : l'appli retire elle-même `/garderie`.
 ## Codes de présence
 
 Ceux de la fiche d'assiduité FO-0310 : P, P ½, A, A ½, R, R ½, F, F ½, AN, AD, L, S, S ½.
-L'écran **Présences** montre la semaine, une case par jour et par enfant (comme la fiche). Il propose **P** du
-lundi au vendredi et **F** (ou F ½) les jours de fermeture, en pointillé ; rien n'est enregistré avant
-**Enregistrer la semaine**.
+L'écran **Présences** montre la semaine, 2 cases par jour (matin, après-midi) et par enfant, comme la fiche.
+Il propose **P** dans les 2 cases du lundi au vendredi et **F** les jours de fermeture (F ½ / P ½ pour une
+demi-journée), en pointillé ; rien n'est enregistré avant **Enregistrer la semaine**. Les jours affichés
+dépendent de la **date de début de fréquentation** de l'enfant (Modifier l'identité), pas de l'horaire.
 
 ## Photos
 

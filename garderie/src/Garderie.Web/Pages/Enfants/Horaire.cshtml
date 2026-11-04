@@ -4,11 +4,13 @@
     ViewData["Title"] = "Horaire";
 }
 <h1 class="h3 mb-1">Horaire prévu</h1>
-<p class="text-muted">@Model.Enfant.NomComplet — sert à pré-remplir les présences.</p>
+<p class="text-muted mb-2">@Model.Enfant.NomComplet — jours de fréquentation prévus, pour information (et le contrat, à venir).</p>
+<p class="aide">L'horaire <strong>ne change pas les présences</strong>. Pour changer le premier ou le dernier jour de
+    l'enfant à la garderie, utilisez la <a asp-page="Edition" asp-route-id="@Model.Id">date de début de fréquentation</a>.</p>
 
 <form method="post" asp-route-id="@Model.Id">
     <div class="mb-3 col-sm-4">
-        <label asp-for="DateEffective" class="form-label">En vigueur à partir du</label>
+        <label asp-for="DateEffective" class="form-label">Cet horaire s'applique à partir du</label>
         <input asp-for="DateEffective" type="date" class="form-control" />
         <div class="form-text">Une nouvelle date garde l'ancien horaire pour les jours précédents.</div>
     </div>

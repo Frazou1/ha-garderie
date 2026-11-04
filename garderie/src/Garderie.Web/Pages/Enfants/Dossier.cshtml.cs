@@ -182,6 +182,46 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         return await RetourAsync("Parent retiré du dossier.");
     }
 
+    // --- Suppression du dossier / Record deletion ---
+    /// <summary>
+    /// Supprime l'enfant et tout son dossier (contacts, sante, horaires, presences, documents chiffres),
+    /// puis les parents qui n'ont plus d'enfant. Il faut retaper le prenom. Le journal est conserve.
+    /// Deletes the child and the whole record, then orphan parents. First name must be retyped. Log kept.
+    /// </summary>
+    public async Task<IActionResult> OnPostSupprimerEnfantAsync(string? confirmation)
+    {
+        var e = await db.Enfants.Include(x => x.Documents).Include(x => x.Parents).ThenInclude(p => p.Parent)
+            .FirstOrDefaultAsync(x => x.Id == Id);
+        if (e is null) return NotFound();
+        if (!string.Equals(confirmation?.Trim(), e.Prenom.Trim(), StringComparison.CurrentCultureIgnoreCase))
+        {
+            TempData["Erreur"] = "Suppression annulée : le prénom tapé ne correspond pas.";
+            return RedirectToPage(new { id = Id });
+        }
+
+        var nom = e.NomComplet;
+        var fichiers = e.Documents.ToList();
+        var parents = e.Parents.Select(p => p.Parent).ToList();
+        await using var tx = await db.Database.BeginTransactionAsync();
+        await db.Presences.Where(p => p.EnfantId == Id).ExecuteDeleteAsync();
+        db.Enfants.Remove(e); // cascade : liens parents, contacts, allergies, medicaments, horaires, documents
+        journal.Noter("enfant.supprimer", "Enfant", Id, $"{nom} ({fichiers.Count} document(s))");
+        await db.SaveChangesAsync();
+        foreach (var p in parents)
+        {
+            if (await db.EnfantParents.AnyAsync(x => x.ParentId == p.Id)) continue;
+            db.Parents.Remove(p);
+            journal.Noter("parent.supprimer", "Parent", p.Id, p.NomComplet);
+        }
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        // Fichiers chiffres effaces apres la validation / Encrypted files removed after commit
+        foreach (var d in fichiers) documents.Supprimer(d);
+
+        TempData["Message"] = $"Dossier de {nom} supprimé.";
+        return RedirectToPage("Index");
+    }
+
     // --- Documents ---
     public async Task<IActionResult> OnPostDocumentAsync(IFormFile? fichier, TypeDocument type, string? note)
     {

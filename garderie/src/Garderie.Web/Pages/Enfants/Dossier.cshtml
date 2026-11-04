@@ -275,3 +275,21 @@
         </div>
     </section>
 </div>
+
+<details class="card border-danger mt-4">
+    <summary class="card-header text-danger">Supprimer ce dossier</summary>
+    <div class="card-body">
+        <p class="small mb-2">
+            Efface définitivement l'enfant, ses contacts, sa santé, son horaire, ses présences et ses documents,
+            ainsi que les parents qui n'ont pas d'autre enfant inscrit. Le journal est conservé.
+            Pour un enfant qui quitte la garderie, indiquez plutôt une date de fin dans « Modifier l'identité ».
+        </p>
+        <form method="post" asp-page-handler="SupprimerEnfant" asp-route-id="@e.Id" class="row g-2 align-items-end confirmer" data-confirmer="Supprimer définitivement le dossier de @e.NomComplet ?">
+            <div class="col-sm-6">
+                <label class="form-label small mb-0" for="confirmation">Tapez le prénom « @e.Prenom » pour confirmer</label>
+                <input name="confirmation" id="confirmation" class="form-control form-control-sm" autocomplete="off" required />
+            </div>
+            <div class="col-sm-6"><button class="btn btn-sm btn-danger" type="submit">Supprimer le dossier</button></div>
+        </form>
+    </div>
+</details>

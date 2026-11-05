@@ -57,18 +57,18 @@ public sealed record SignaturesContrat(
 /// PDF de l'entente de service, fidele au modele Word de la RSGE (« Entente service (Contrat) 2018 ») :
 /// Elephant Pro 16 gras pour le titre, Comic Sans MS 12 pour le texte, Times New Roman 9 gras justifie pour les
 /// clauses, Calibri 11,5 gras souligne pour leurs titres, valeurs soulignees, dates jj/mm/aaaa.
-/// Les polices viennent de Reglages (televersees) ; sinon une police de remplacement est utilisee.
-/// Service agreement PDF faithful to the RSGE's Word template (fonts uploaded in Settings, else fallbacks).
+/// Polices libres incluses : Comic Neue, Tinos, Carlito (voir PolicesPdf).
+/// Service agreement PDF faithful to the RSGE's Word template (bundled free look-alike fonts).
 /// </summary>
 public static class ContratPdf
 {
     static ContratPdf() => PolicesPdf.Installer();
 
-    // Familles versionnees (voir PolicesPdf.Famille) / Versioned families
-    private static string Texte => PolicesPdf.Famille("ContratTexte");
-    private static string Titre => PolicesPdf.Famille("ContratTitre");
-    private static string Clauses => PolicesPdf.Famille("ContratClauses");
-    private static string SousTitre => PolicesPdf.Famille("ContratSousTitre");
+    // Familles resolues par PolicesPdf (polices libres incluses) / Families resolved by PolicesPdf (bundled fonts)
+    private const string Texte = "ContratTexte";
+    private const string Titre = "ContratTitre";
+    private const string Clauses = "ContratClauses";
+    private const string SousTitre = "ContratSousTitre";
     private static readonly Unit Retrait = Unit.FromPoint(106.2);   // retrait des titres du modele / template heading indent
 
     private static string D(DateOnly? d) => d?.ToString("dd'/'MM'/'yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "";

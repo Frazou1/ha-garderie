@@ -1,0 +1,12 @@
+Polices libres du contrat et de la regie interne (incluses dans le module)
+Free fonts for the contract and internal rules PDFs (bundled with the add-on)
+
+- ComicNeue-Regular.ttf, ComicNeue-Bold.ttf : Comic Neue (SIL OFL 1.1), semblable a Comic Sans MS.
+- Tinos-Bold.ttf : Tinos (SIL OFL 1.1), memes mesures que Times New Roman.
+- Carlito-Bold.ttf : Carlito (SIL OFL 1.1), memes mesures que Calibri.
+
+Source : https://github.com/google/fonts (ofl/comicneue, ofl/tinos, ofl/carlito). Licences : OFL-*.txt.
+Les polices Microsoft (Comic Sans, Times New Roman, Calibri, Elephant) ne sont jamais incluses.
+
+Modification (permise par l'OFL) : dans ComicNeue-*.ttf, les glyphes composes (lettres accentuees) sont aplatis
+en contours simples avec fontTools, car PDFsharp n'affichait pas les minuscules accentuees composees.

@@ -156,37 +156,6 @@
 </section>
 
 <section class="carte">
-    <h2 class="h5">Polices du contrat</h2>
-    <p class="small text-muted">Pour que le contrat et la régie interne en PDF aient les polices de vos modèles Word. Ces polices appartiennent à Microsoft :
-        elles ne sont pas fournies avec le module. Copiez-les depuis votre ordinateur (dossier C:\Windows\Fonts) ; elles restent
-        dans les données du module. Sans police, une police de remplacement est utilisée.</p>
-    <ul class="list-group mb-0">
-        @foreach (var (cle, libelle, exemple) in Garderie.Web.Services.PolicesPdf.Emplacements)
-        {
-            var present = Garderie.Web.Services.PolicesPdf.Fichier(cle) is not null;
-            <li class="list-group-item">
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="me-auto"><strong>@libelle</strong> <span class="small text-muted">(ex. @exemple)</span>
-                        @if (present) { <span class="badge text-bg-success">Téléversée</span> } else { <span class="badge text-bg-light border">Remplacement</span> }</span>
-                    <form method="post" asp-page-handler="Police" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
-                        <input type="hidden" name="cle" value="@cle" />
-                        <input type="file" name="police" accept=".ttf,.otf,font/ttf,font/otf" class="form-control form-control-sm w-auto" required aria-label="@libelle" />
-                        <button type="submit" class="btn btn-sm btn-doux">Téléverser</button>
-                    </form>
-                    @if (present)
-                    {
-                        <form method="post" asp-page-handler="RetirerPolice">
-                            <input type="hidden" name="cle" value="@cle" />
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Retirer</button>
-                        </form>
-                    }
-                </div>
-            </li>
-        }
-    </ul>
-</section>
-
-<section class="carte">
     <h2 class="h5">Courriel</h2>
     <dl class="row small-dl mb-2">
         <dt class="col-sm-4">Envoi</dt>

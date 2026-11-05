@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0
+- Polices incluses dans le module, rien à configurer : Comic Neue (comme Comic Sans), Tinos (mesures de Times New
+  Roman) et Carlito (mesures de Calibri), sous licence libre SIL OFL. La section « Polices du contrat » de
+  Réglages est retirée (les polices Microsoft ne peuvent pas être redistribuées).
+
 ## 0.8.0
 - Régie interne générée par l'application, sans document à déposer : 24 sections modifiables dans Réglages
   (regroupées par partie, texte par défaut = régie de la RSGE). Vider une section la remet par défaut, « (aucune) »

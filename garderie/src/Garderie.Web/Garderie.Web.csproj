@@ -17,4 +17,8 @@
     <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Polices libres (SIL OFL) du contrat et de la regie / Free fonts (OFL) for the contract and rules -->
+    <None Include="Polices\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

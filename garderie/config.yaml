@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: "Garderie"
-version: "0.8.0"
+version: "0.9.0"
 slug: "garderie"
 description: "Dossiers, présences et fiches d'assiduité signées d'un service de garde en milieu familial / Family daycare records, attendance and signed sheets"
 url: "https://github.com/Frazou1/ha-garderie"

@@ -57,12 +57,6 @@ public class RegieTests
         var pdf = RegieInterne.Pdf(Reglages());
         Assert.StartsWith("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
         if (Environment.GetEnvironmentVariable("GARDERIE_PDF_DIR") is not { } dir) return;
-        // Rendu local avec les polices de l'ordinateur (jamais dans le depot) / Local render with the PC's fonts
-        if (Environment.GetEnvironmentVariable("GARDERIE_POLICES") is { } polices)
-        {
-            PolicesPdf.DossierPolices = polices;
-            pdf = RegieInterne.Pdf(Reglages());
-        }
         File.WriteAllBytes(Path.Combine(dir, "regie_test.pdf"), pdf);
         File.WriteAllText(Path.Combine(dir, "regie_composee.txt"), RegieInterne.Composer(Reglages()));
     }

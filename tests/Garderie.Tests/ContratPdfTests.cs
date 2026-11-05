@@ -31,13 +31,7 @@ public class ContratPdfTests
         Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(resiliation, 0, 4));
         if (Environment.GetEnvironmentVariable("GARDERIE_PDF_DIR") is { } dir)
         {
-            // Rendu local avec les polices de l'ordinateur (jamais dans le depot) / Local render with the PC's fonts
-            if (Environment.GetEnvironmentVariable("GARDERIE_POLICES") is { } polices)
-            {
-                PolicesPdf.DossierPolices = polices;
-                contrat = ContratPdf.Contrat(Exemple(), s);
-                resiliation = ContratPdf.Resiliation(Exemple(), s);
-            }
+            // Rendu local pour verification visuelle / Local render for visual check
             File.WriteAllBytes(Path.Combine(dir, "contrat_test.pdf"), contrat);
             File.WriteAllBytes(Path.Combine(dir, "resiliation_test.pdf"), resiliation);
         }

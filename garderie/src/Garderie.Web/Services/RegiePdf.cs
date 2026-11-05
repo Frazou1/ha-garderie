@@ -14,7 +14,7 @@ public static class RegiePdf
 {
     static RegiePdf() => PolicesPdf.Installer();
 
-    private static string Texte => PolicesPdf.Famille("ContratTexte");
+    private const string Texte = "ContratTexte";
 
     // --- Generation / Rendering ---
 

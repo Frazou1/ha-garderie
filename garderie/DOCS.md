@@ -52,9 +52,8 @@ Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du P
 
 1. **Réglages** : vérifier les textes du contrat (préremplis), la ville de signature, la note sur les vacances,
    la **régie interne** (générée par l'application : tarif, jour de paiement et frais de retard, puis texte
-   modifiable section par section ; heures, nom, fériés et mention LPC viennent des Réglages) et, pour respecter le modèle Word,
-   les **polices du contrat** depuis C:\Windows\Fonts (comic.ttf, comicbd.ttf, timesbd.ttf, calibrib.ttf ; Elephant
-   si disponible). Ces polices Microsoft ne sont jamais incluses dans le module.
+   modifiable section par section ; heures, nom, fériés et mention LPC viennent des Réglages). Les PDF utilisent
+   des polices libres incluses (Comic Neue, Tinos, Carlito), semblables à celles du modèle Word : rien à configurer.
 2. **Fermetures** : « Ajouter les jours fériés » de l'année, plus les vacances de la RSGE (motif ex. « Relâche »).
 3. **Contrats** (ou le dossier de l'enfant) : « + Nouveau », choisir les dates, puis envoyer au parent (courriel,
    lien à copier ou signature sur place).

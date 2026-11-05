@@ -226,3 +226,8 @@ details.carte > summary { cursor: pointer; }
 .badge-fiche.signee { background: var(--sauge-pale); color: #2f6b4f; }
 .badge-fiche.attente { background: var(--ciel-pale); color: #2f6890; }
 span.code.verrou { min-height: 2.5rem; opacity: .85; }
+
+/* Fiches : case a cocher a cote de la tuile / Sheets: checkbox next to the tile */
+.tuile-ligne { display: flex; align-items: center; gap: .6rem; }
+.tuile-ligne .tuile-enfant { flex: 1; min-width: 0; }
+.coche-fiche { flex: none; width: 1.6em; height: 1.6em; margin: 0; }

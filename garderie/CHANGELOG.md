@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+- Signature groupée : sur la page Fiches, la RSGE coche les enfants prêts et signe une seule fois ;
+  « Envoyer aux parents » envoie un seul courriel et un seul lien par parent, pour tous ses enfants.
+- Le parent signe une seule fois pour toutes les fiches de ses enfants ; chaque enfant reçoit son PDF dans son
+  dossier et la RSGE reçoit un courriel avec tous les PDF.
+- Page du parent : la section « Contribution réduite » n'apparaît que si un paiement est saisi.
+- Inclut 0.3.2 (semaines signées verrouillées dans Présences).
+
 ## 0.3.2
 - Présences : une semaine dont la fiche est signée affiche « ✓ Fiche signée » ou « Fiche en attente du parent »
   (lien vers la fiche) et passe en lecture seule (aussi refusé côté serveur). « Reprendre la fiche » la

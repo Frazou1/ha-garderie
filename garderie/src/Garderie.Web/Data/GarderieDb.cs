@@ -18,6 +18,7 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
     public DbSet<Parametres> Parametres => Set<Parametres>();
     public DbSet<FicheAssiduite> Fiches => Set<FicheAssiduite>();
     public DbSet<LienSignature> Liens => Set<LienSignature>();
+    public DbSet<LienFiche> LiensFiches => Set<LienFiche>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -43,5 +44,8 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
         b.Entity<FicheAssiduite>().HasIndex(f => new { f.EnfantId, f.Debut }).IsUnique();
         b.Entity<LienSignature>().HasOne(l => l.Fiche).WithMany().HasForeignKey(l => l.FicheId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<LienSignature>().HasIndex(l => l.JetonHash).IsUnique();
+        b.Entity<LienFiche>().HasKey(x => new { x.LienId, x.FicheId });
+        b.Entity<LienFiche>().HasOne(x => x.Lien).WithMany(l => l.Groupe).HasForeignKey(x => x.LienId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<LienFiche>().HasOne(x => x.Fiche).WithMany().HasForeignKey(x => x.FicheId).OnDelete(DeleteBehavior.Cascade);
     }
 }

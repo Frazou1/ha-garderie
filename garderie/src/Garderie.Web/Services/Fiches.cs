@@ -7,13 +7,20 @@ using Microsoft.EntityFrameworkCore;
 namespace Garderie.Web.Services;
 
 /// <summary>Etat d'une fiche pour l'ecran / Sheet status for the screen.</summary>
-public sealed record SituationFiche(Enfant Enfant, FicheAssiduite? Fiche, int JoursNonEnregistres);
+/// <param name="AParent">Un parent est au dossier (son nom va sur la fiche) / A parent is on file.</param>
+/// <param name="LienActif">Un lien de signature non utilise existe deja / An unused signature link exists.</param>
+public sealed record SituationFiche(Enfant Enfant, FicheAssiduite? Fiche, int JoursNonEnregistres, bool AParent = true, bool LienActif = false)
+{
+    public EtatFiche Etat => Fiche?.Etat ?? EtatFiche.Brouillon;
+    /// <summary>Prete pour la signature groupee de la RSGE / Ready for the RSGE's batch signature.</summary>
+    public bool PreteASigner => Etat == EtatFiche.Brouillon && JoursNonEnregistres == 0 && AParent;
+}
 
 /// <summary>
 /// Fiches d'assiduite aux 2 semaines : periodes, codes figes, PDF, liens uniques des parents, signatures.
 /// 2-week attendance sheets: periods, frozen codes, PDF, one-time parent links, signatures.
 /// </summary>
-public sealed class FichesService(GarderieDb db, GarderieOptions options, DocumentsService documents)
+public sealed class FichesService(GarderieDb db, GarderieOptions options, DocumentsService documents, Courriels courriels)
 {
     /// <summary>Periode de reference par defaut (semaines du 19 et du 26 octobre 2026) / Default reference period.</summary>
     public static readonly DateOnly AncreParDefaut = new(2026, 10, 19);
@@ -81,10 +88,14 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
             .OrderBy(e => e.Prenom).ThenBy(e => e.Nom).ToListAsync();
         var fiches = await db.Fiches.AsNoTracking().Where(f => f.Debut == debut).ToListAsync();
         var presences = await db.Presences.AsNoTracking().Where(p => p.Date >= debut && p.Date <= fin && p.Code != "").ToListAsync();
+        var ids = enfants.Select(e => e.Id).ToList();
+        var avecParent = (await db.EnfantParents.AsNoTracking().Where(x => ids.Contains(x.EnfantId)).Select(x => x.EnfantId).ToListAsync()).ToHashSet();
+        var actifs = await AvecLienActifAsync(fiches.Select(f => f.Id));
         return enfants.Select(e =>
         {
             var codes = presences.Where(p => p.EnfantId == e.Id).ToDictionary(p => (p.Date, p.Demi), p => p.Code);
-            return new SituationFiche(e, fiches.FirstOrDefault(f => f.EnfantId == e.Id), JoursNonEnregistres(e, debut, codes).Count);
+            var f = fiches.FirstOrDefault(x => x.EnfantId == e.Id);
+            return new SituationFiche(e, f, JoursNonEnregistres(e, debut, codes).Count, avecParent.Contains(e.Id), f is not null && actifs.Contains(f.Id));
         }).ToList();
     }
 
@@ -131,35 +142,81 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
     public static string NomPdf(FicheAssiduite f, Enfant e) =>
         $"FO-0310 {e.Prenom} {e.Nom} {f.Debut:yyyy-MM-dd}.pdf";
 
+    // --- Signature de la RSGE / RSGE signature ---
+
+    /// <summary>
+    /// Signe la fiche d'un enfant pour la RSGE : fige les codes et le nom du parent. Retourne une erreur ou null.
+    /// Signs one child's sheet for the RSGE: freezes codes and parent name. Returns an error or null.
+    /// </summary>
+    public async Task<string?> SignerRsgeAsync(int enfantId, DateOnly debut, byte[] png, string? par)
+    {
+        var e = await db.Enfants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == enfantId);
+        if (e is null) return "Enfant introuvable.";
+        if (!ModeleDisponible) return "Téléversez d'abord le formulaire FO-0310 dans Réglages.";
+        var existante = await db.Fiches.AsNoTracking().FirstOrDefaultAsync(f => f.EnfantId == enfantId && f.Debut == debut);
+        if (existante is not null && existante.Etat != EtatFiche.Brouillon) return $"{e.Prenom} : fiche déjà signée.";
+        var codes = await CodesAsync(enfantId, debut);
+        if (JoursNonEnregistres(e, debut, codes).Count > 0) return $"{e.Prenom} : enregistrez d'abord toutes les présences de la période.";
+        var parent = await ParentPayeurAsync(enfantId);
+        if (parent is null) return $"{e.Prenom} : ajoutez d'abord un parent au dossier.";
+
+        var f = await ObtenirOuCreerAsync(enfantId, debut);
+        f.CodesSignes = Serialiser(codes);
+        f.NomParent = parent.NomComplet;
+        f.ParentId = parent.Id;
+        f.SignatureRsgeFichier = await documents.EnregistrerOctetsAsync(png);
+        f.SigneRsgeLe = DateTime.UtcNow;
+        f.SigneRsgePar = par;
+        f.ErreurSignalee = null; f.ErreurSignaleeLe = null;
+        f.Etat = EtatFiche.SigneeRsge;
+        f.ModifieLe = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return null;
+    }
+
     // --- Liens uniques / One-time links ---
 
     public static string Hacher(string jeton) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(jeton)));
 
-    /// <summary>Cree un lien (le jeton en clair n'est jamais stocke) / Creates a link (clear token never stored).</summary>
-    public async Task<string> CreerLienAsync(FicheAssiduite f, string? envoyeA, bool surPlace)
+    /// <summary>
+    /// Cree un lien pour une ou plusieurs fiches (fratrie) ; le jeton en clair n'est jamais stocke.
+    /// Creates a link for one or more sheets (siblings); the clear token is never stored.
+    /// </summary>
+    public async Task<string> CreerLienAsync(IReadOnlyList<FicheAssiduite> fiches, string? envoyeA, bool surPlace)
     {
         var jeton = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        db.Liens.Add(new LienSignature
+        var lien = new LienSignature
         {
-            FicheId = f.Id, JetonHash = Hacher(jeton), CreeLe = DateTime.UtcNow,
+            FicheId = fiches[0].Id, JetonHash = Hacher(jeton), CreeLe = DateTime.UtcNow,
             ExpireLe = DateTime.UtcNow + (surPlace ? TimeSpan.FromHours(1) : DureeLien), EnvoyeA = envoyeA, SurPlace = surPlace,
-        });
+        };
+        foreach (var f in fiches) lien.Groupe.Add(new LienFiche { FicheId = f.Id });
+        db.Liens.Add(lien);
         await db.SaveChangesAsync();
         return jeton;
     }
 
-    /// <summary>Lien valide (non utilise, non annule, non expire, fiche signee par la RSGE) / Valid link.</summary>
+    /// <summary>
+    /// Lien valide (non utilise, non annule, non expire) avec au moins une fiche a signer par le parent.
+    /// Valid link with at least one sheet awaiting the parent.
+    /// </summary>
     public async Task<LienSignature?> TrouverLienAsync(string? jeton)
     {
         if (string.IsNullOrWhiteSpace(jeton) || jeton.Length > 100) return null;
         var hash = Hacher(jeton);
-        var lien = await db.Liens.Include(l => l.Fiche).ThenInclude(f => f.Enfant).FirstOrDefaultAsync(l => l.JetonHash == hash);
+        var lien = await db.Liens.Include(l => l.Groupe).ThenInclude(g => g.Fiche).ThenInclude(f => f.Enfant)
+            .AsSplitQuery().FirstOrDefaultAsync(l => l.JetonHash == hash);
         if (lien is null || lien.UtiliseLe is not null || lien.AnnuleLe is not null || lien.ExpireLe < DateTime.UtcNow) return null;
-        return lien.Fiche.Etat == EtatFiche.SigneeRsge ? lien : null;
+        return AttendentLeParent(lien).Count > 0 ? lien : null;
     }
 
+    /// <summary>Fiches du lien en attente du parent, par prenom / Link sheets awaiting the parent.</summary>
+    public static List<FicheAssiduite> AttendentLeParent(LienSignature lien) =>
+        lien.Groupe.Select(g => g.Fiche).Where(f => f.Etat == EtatFiche.SigneeRsge)
+            .OrderBy(f => f.Enfant.Prenom).ThenBy(f => f.Enfant.Nom).ToList();
+
     /// <summary>
-    /// Le lien a deja servi a signer cette fiche (ex. double toucher sur « Signer ») : on remercie au lieu d'une erreur.
+    /// Le lien a deja servi a signer (ex. double toucher sur « Signer ») : on remercie au lieu d'une erreur.
     /// The link was already used to sign (e.g. double tap): thank instead of an error.
     /// </summary>
     public async Task<bool> DejaSigneParCeLienAsync(string? jeton)
@@ -169,15 +226,106 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
         return await db.Liens.AnyAsync(l => l.JetonHash == hash && l.UtiliseLe != null && l.Fiche.Etat == EtatFiche.SigneeParent);
     }
 
+    /// <summary>Annule les liens actifs qui couvrent cette fiche / Cancels active links covering this sheet.</summary>
     public async Task AnnulerLiensAsync(int ficheId)
     {
-        await db.Liens.Where(l => l.FicheId == ficheId && l.UtiliseLe == null && l.AnnuleLe == null)
+        await db.Liens.Where(l => l.UtiliseLe == null && l.AnnuleLe == null && l.Groupe.Any(g => g.FicheId == ficheId))
             .ExecuteUpdateAsync(s => s.SetProperty(l => l.AnnuleLe, DateTime.UtcNow));
+    }
+
+    /// <summary>Fiches de la liste qui ont deja un lien actif / Sheets that already have an active link.</summary>
+    public async Task<HashSet<int>> AvecLienActifAsync(IEnumerable<int> ficheIds)
+    {
+        var ids = ficheIds.ToList();
+        var maintenant = DateTime.UtcNow;
+        return (await db.LiensFiches.AsNoTracking()
+            .Where(g => ids.Contains(g.FicheId) && g.Lien.UtiliseLe == null && g.Lien.AnnuleLe == null && g.Lien.ExpireLe > maintenant)
+            .Select(g => g.FicheId).ToListAsync()).ToHashSet();
     }
 
     /// <summary>Adresse publique du lien (vide si l'adresse publique n'est pas configuree) / Public link URL.</summary>
     public string? UrlLien(string jeton) =>
         string.IsNullOrWhiteSpace(options.UrlPublique) ? null : $"{options.UrlPublique}/Public/Signer?j={jeton}";
+
+    /// <summary>
+    /// Envoie au parent UN courriel et UN lien pour toutes ces fiches (meme parent, meme periode).
+    /// Annule les liens precedents. Retourne le courriel du parent. Leve une exception si l'envoi echoue.
+    /// Sends ONE email and ONE link to the parent for all these sheets; cancels previous links.
+    /// </summary>
+    public async Task<string> EnvoyerLienAsync(IReadOnlyList<FicheAssiduite> fiches)
+    {
+        var parentId = fiches[0].ParentId ?? throw new InvalidOperationException("Fiche sans parent.");
+        if (fiches.Any(f => f.ParentId != parentId || f.Debut != fiches[0].Debut || f.Etat != EtatFiche.SigneeRsge))
+            throw new InvalidOperationException("Fiches de parents ou de périodes différents.");
+        var parent = await db.Parents.AsNoTracking().FirstAsync(p => p.Id == parentId);
+        if (parent.Courriel is null) throw new InvalidOperationException("Le parent n'a pas de courriel.");
+        foreach (var f in fiches) await AnnulerLiensAsync(f.Id);
+        var jeton = await CreerLienAsync(fiches, parent.Courriel, surPlace: false);
+
+        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
+        var garderie = p?.NomGarderie ?? "la garderie";
+        var prenoms = Liste(fiches.Select(f => f.Enfant.Prenom).ToList());
+        var plusieurs = fiches.Count > 1;
+        var periode = Affichage.Periode(fiches[0].Debut, fiches[0].Fin);
+        try
+        {
+            await courriels.EnvoyerAsync(parent.Courriel,
+                $"{(plusieurs ? "Fiches" : "Fiche")} d'assiduité de {prenoms} à signer ({periode})",
+                $"Bonjour {parent.Prenom},\n\n" +
+                $"{(plusieurs ? "Les fiches" : "La fiche")} d'assiduité de {prenoms} pour la période du {periode} " +
+                $"{(plusieurs ? "sont prêtes" : "est prête")}.\n" +
+                $"Vérifiez et signez ici (lien personnel, valide 7 jours, une seule utilisation" +
+                $"{(plusieurs ? ", une seule signature pour toutes les fiches" : "")}) :\n\n" +
+                $"{UrlLien(jeton)}\n\n" +
+                "Si un code vous semble inexact, utilisez « Signaler une erreur » sur la même page.\n\n" +
+                $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}");
+        }
+        catch
+        {
+            foreach (var f in fiches) await AnnulerLiensAsync(f.Id);
+            throw;
+        }
+        return parent.Courriel;
+    }
+
+    /// <summary>« Léa », « Léa et Noah », « Léa, Noah et Zoé » / French list.</summary>
+    public static string Liste(IReadOnlyList<string> noms) =>
+        noms.Count <= 1 ? string.Concat(noms) : string.Join(", ", noms.Take(noms.Count - 1)) + " et " + noms[^1];
+
+    // --- Signature du parent / Parent signature ---
+
+    /// <summary>
+    /// Signature du parent pour toutes les fiches du lien : PDF final de chacune range dans son dossier,
+    /// lien marque utilise. Retourne les PDF (pour le courriel a la RSGE).
+    /// Parent signs all the link's sheets: each final PDF stored in its record, link marked used.
+    /// </summary>
+    public async Task<List<(FicheAssiduite Fiche, Document Document, byte[] Pdf)>> SignerParentAsync(
+        LienSignature lien, byte[] png, string signataire, string ip)
+    {
+        var resultats = new List<(FicheAssiduite, Document, byte[])>();
+        foreach (var f in AttendentLeParent(lien))
+        {
+            f.SignatureParentFichier = await documents.EnregistrerOctetsAsync(png);
+            f.SigneParentLe = DateTime.UtcNow;
+            f.SignataireParent = signataire;
+            f.IpParent = ip.Length > 64 ? ip[..64] : ip;
+            f.SigneSurPlace = lien.SurPlace;
+            f.Etat = EtatFiche.SigneeParent;
+            f.ModifieLe = DateTime.UtcNow;
+            var pdf = await GenererPdfAsync(f);
+            var doc = await documents.EnregistrerPdfAsync(f.EnfantId, TypeDocument.FicheAssiduite, NomPdf(f, f.Enfant), pdf,
+                $"Période du {Affichage.Periode(f.Debut, f.Fin)}");
+            db.Documents.Add(doc);
+            await db.SaveChangesAsync();
+            f.DocumentId = doc.Id;
+            f.PdfSha256 = doc.Sha256;
+            resultats.Add((f, doc, pdf));
+        }
+        lien.UtiliseLe = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        foreach (var (f, _, _) in resultats) await AnnulerLiensAsync(f.Id);
+        return resultats;
+    }
 
     // --- Signatures ---
 

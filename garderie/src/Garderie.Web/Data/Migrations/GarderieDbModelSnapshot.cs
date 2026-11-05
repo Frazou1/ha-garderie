@@ -422,6 +422,21 @@ namespace Garderie.Web.Data.Migrations
                     b.ToTable("Journal");
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.LienFiche", b =>
+                {
+                    b.Property<int>("LienId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FicheId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("LienId", "FicheId");
+
+                    b.HasIndex("FicheId");
+
+                    b.ToTable("LiensFiches");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.LienSignature", b =>
                 {
                     b.Property<int>("Id")
@@ -700,6 +715,25 @@ namespace Garderie.Web.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.LienFiche", b =>
+                {
+                    b.HasOne("Garderie.Web.Data.FicheAssiduite", "Fiche")
+                        .WithMany()
+                        .HasForeignKey("FicheId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Garderie.Web.Data.LienSignature", "Lien")
+                        .WithMany("Groupe")
+                        .HasForeignKey("LienId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Fiche");
+
+                    b.Navigation("Lien");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.LienSignature", b =>
                 {
                     b.HasOne("Garderie.Web.Data.FicheAssiduite", "Fiche")
@@ -744,6 +778,11 @@ namespace Garderie.Web.Data.Migrations
                     b.Navigation("Medicaments");
 
                     b.Navigation("Parents");
+                });
+
+            modelBuilder.Entity("Garderie.Web.Data.LienSignature", b =>
+                {
+                    b.Navigation("Groupe");
                 });
 
             modelBuilder.Entity("Garderie.Web.Data.Parent", b =>

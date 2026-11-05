@@ -37,8 +37,10 @@ Le port public ne sert **que** les pages des parents : toute page d'administrati
    coordonnateur), le nom du bureau coordonnateur, le nom et le courriel de la RSGE, et un lundi qui commence une
    période de 2 semaines.
 2. **Présences** : enregistrer toutes les journées de la période.
-3. **Fiches** → l'enfant : saisir le paiement, vérifier les codes, **signer** au doigt.
-4. **Envoyer au parent** (courriel avec lien unique), **Copier un lien** (texto) ou **Faire signer ici** (tablette).
+3. **Fiches** : saisir les paiements dans chaque fiche au besoin, puis cocher les enfants prêts et **signer une
+   seule fois** pour toutes (ou signer une fiche à la fois depuis la fiche de l'enfant).
+4. **Envoyer aux parents** : un courriel et un lien unique par parent, qui regroupe tous ses enfants. Depuis la
+   fiche d'un enfant : **Copier un lien** (texto) ou **Faire signer ici** (tablette).
 5. Le parent vérifie, coche l'attestation et signe, ou **signale une erreur** (la RSGE reçoit un courriel ;
    « Reprendre la fiche » annule sa signature et les liens).
 6. Le PDF final (formulaire officiel rempli, champs verrouillés) est rangé chiffré dans les documents du dossier

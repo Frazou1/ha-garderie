@@ -276,4 +276,15 @@ public class LienSignature
     public DateTime? AnnuleLe { get; set; }
     [MaxLength(200)] public string? EnvoyeA { get; set; }
     public bool SurPlace { get; set; }
+    /// <summary>Toutes les fiches couvertes par ce lien (fratrie) / All sheets covered by this link (siblings).</summary>
+    public List<LienFiche> Groupe { get; set; } = new();
+}
+
+/// <summary>Fiche couverte par un lien de signature / Sheet covered by a signature link.</summary>
+public class LienFiche
+{
+    public int LienId { get; set; }
+    public LienSignature Lien { get; set; } = null!;
+    public int FicheId { get; set; }
+    public FicheAssiduite Fiche { get; set; } = null!;
 }

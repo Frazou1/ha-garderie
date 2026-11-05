@@ -2,6 +2,7 @@
 @model Garderie.Web.Pages.Fiches.IndexModel
 @{
     ViewData["Title"] = "Fiches";
+    var periode = Model.Debut.ToString("yyyy-MM-dd");
 }
 <div class="entete-page">
     <div>
@@ -19,35 +20,75 @@
     <p class="aide">Le formulaire vierge FO-0310 n'est pas encore téléversé. <a asp-page="/Parametres">Téléversez-le dans Réglages</a>.</p>
 }
 
+@if (Model.AEnvoyer > 0)
+{
+    <form method="post" asp-page-handler="EnvoyerTout" asp-route-periode="@periode" class="carte d-flex flex-wrap align-items-center gap-2">
+        <span class="me-auto">@Model.AEnvoyer fiche(s) signée(s) à envoyer. Un seul courriel par parent, pour tous ses enfants.</span>
+        <button type="submit" class="btn btn-primary" disabled="@(!Model.EnvoiPossible)">Envoyer aux parents</button>
+    </form>
+}
+
 @if (Model.Situations.Count == 0)
 {
     <div class="carte vide"><p class="mb-0">Aucun enfant inscrit pendant cette période.</p></div>
 }
 else
 {
-    <div class="liste-enfants">
-        @foreach (var s in Model.Situations)
+    <form method="post" asp-page-handler="SignerTout" asp-route-periode="@periode" class="form-signature" id="signer-tout">
+        <div class="liste-enfants">
+            @foreach (var s in Model.Situations)
+            {
+                var e = s.Enfant;
+                var photo = e.PhotoDocumentId is { } pid ? Url.Page("/Enfants/Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
+                <div class="tuile-ligne">
+                    @if (s.PreteASigner && Model.ModeleDisponible)
+                    {
+                        <input class="form-check-input coche-fiche" type="checkbox" name="enfants" value="@e.Id" id="e@(e.Id)" checked
+                               aria-label="Signer la fiche de @e.Prenom" />
+                    }
+                    <a class="tuile-enfant" asp-page="Fiche" asp-route-enfantId="@e.Id" asp-route-debut="@periode">
+                        <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                        <span class="details">
+                            <span class="nom d-block">@e.NomComplet</span>
+                            <span class="info d-block">
+                                <span class="badge @Affichage.ClasseEtat(s.Etat)">@Affichage.Nom(s.Etat)</span>
+                                @if (s.Etat == EtatFiche.SigneeRsge)
+                                {
+                                    <span class="badge @(s.LienActif ? "text-bg-light border" : "text-bg-warning")">@(s.LienActif ? "envoyée" : "à envoyer")</span>
+                                }
+                                @if (s.Fiche?.ErreurSignalee is not null && s.Etat != EtatFiche.SigneeParent)
+                                {
+                                    <span class="badge text-bg-danger">Erreur signalée</span>
+                                }
+                                @if (s.Etat == EtatFiche.Brouillon && s.JoursNonEnregistres > 0)
+                                {
+                                    <span class="badge text-bg-warning">@s.JoursNonEnregistres jour(s) à enregistrer</span>
+                                }
+                                @if (s.Etat == EtatFiche.Brouillon && !s.AParent)
+                                {
+                                    <span class="badge text-bg-warning">aucun parent</span>
+                                }
+                            </span>
+                        </span>
+                    </a>
+                </div>
+            }
+        </div>
+
+        @if (Model.PretesASigner > 0 && Model.ModeleDisponible)
         {
-            var e = s.Enfant;
-            var photo = e.PhotoDocumentId is { } pid ? Url.Page("/Enfants/Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
-            var etat = s.Fiche?.Etat ?? Garderie.Web.Data.EtatFiche.Brouillon;
-            <a class="tuile-enfant" asp-page="Fiche" asp-route-enfantId="@e.Id" asp-route-debut="@Model.Debut.ToString("yyyy-MM-dd")">
-                <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
-                <span class="details">
-                    <span class="nom d-block">@e.NomComplet</span>
-                    <span class="info d-block">
-                        <span class="badge @Affichage.ClasseEtat(etat)">@Affichage.Nom(etat)</span>
-                        @if (s.Fiche?.ErreurSignalee is not null && etat != Garderie.Web.Data.EtatFiche.SigneeParent)
-                        {
-                            <span class="badge text-bg-danger">Erreur signalée</span>
-                        }
-                        @if (etat == Garderie.Web.Data.EtatFiche.Brouillon && s.JoursNonEnregistres > 0)
-                        {
-                            <span class="badge text-bg-warning">@s.JoursNonEnregistres jour(s) à enregistrer</span>
-                        }
-                    </span>
-                </span>
-            </a>
+            <section class="carte mt-3">
+                <h2 class="h5">Signer les fiches cochées</h2>
+                <p class="small mb-2">J'atteste que les renseignements inscrits sur ces fiches d'assiduité correspondent à la présence réelle
+                    de ces enfants et aux contributions réduites perçues et à percevoir.</p>
+                <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+                <input type="hidden" name="signature" class="valeur-signature" />
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Signer les fiches cochées</button>
+                </div>
+                <p class="small text-muted mt-2 mb-0">Saisissez d'abord les paiements dans chaque fiche, si besoin.</p>
+            </section>
         }
-    </div>
+    </form>
 }

@@ -121,25 +121,11 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
     public async Task<IActionResult> OnPostSignerRsgeAsync(string? signature)
     {
         if (!await ChargerAsync()) return NotFound();
-        if (Etat != EtatFiche.Brouillon) return Retour(erreur: "Cette fiche est déjà signée.");
-        if (!ModeleDisponible) return Retour(erreur: "Téléversez d'abord le formulaire FO-0310 dans Réglages.");
-        if (NonEnregistres.Count > 0) return Retour(erreur: "Enregistrez d'abord les présences de toutes les journées de la période.");
-        if (ParentPayeur is null) return Retour(erreur: "Ajoutez d'abord un parent au dossier.");
         var png = FichesService.LireSignature(signature);
         if (png is null) return Retour(erreur: "Signez dans le cadre avant d'appuyer sur Signer.");
-
-        var f = await fiches.ObtenirOuCreerAsync(EnfantId, Debut);
-        f.CodesSignes = FichesService.Serialiser(Codes);
-        f.NomParent = ParentPayeur.NomComplet;
-        f.ParentId = ParentPayeur.Id;
-        f.SignatureRsgeFichier = await documents.EnregistrerOctetsAsync(png);
-        f.SigneRsgeLe = DateTime.UtcNow;
-        f.SigneRsgePar = User.Identity?.Name;
-        f.ErreurSignalee = null; f.ErreurSignaleeLe = null;
-        f.Etat = EtatFiche.SigneeRsge;
-        f.ModifieLe = DateTime.UtcNow;
-        journal.Noter("fiche.signer_rsge", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd}");
-        await db.SaveChangesAsync();
+        var erreur = await fiches.SignerRsgeAsync(EnfantId, Debut, png, User.Identity?.Name);
+        if (erreur is not null) return Retour(erreur: erreur);
+        await journal.NoterMaintenantAsync("fiche.signer_rsge", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd}");
         return Retour("Fiche signée. Envoyez-la maintenant au parent.");
     }
 
@@ -148,33 +134,20 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
     {
         if (!await ChargerAsync()) return NotFound();
         if (Etat != EtatFiche.SigneeRsge || Fiche is null) return Retour(erreur: "La fiche doit d'abord être signée par la RSGE.");
+        if (!CourrielConfigure || !UrlPubliqueConfiguree) return Retour(erreur: "Le courriel ou l'adresse publique n'est pas configuré dans le module : copiez le lien.");
         var parent = Fiche.ParentId is { } pid ? await db.Parents.AsNoTracking().FirstOrDefaultAsync(p => p.Id == pid) : null;
         if (parent?.Courriel is null) return Retour(erreur: "Le parent n'a pas de courriel : ajoutez-le dans sa fiche, ou copiez le lien.");
-        if (!CourrielConfigure || !UrlPubliqueConfiguree) return Retour(erreur: "Le courriel ou l'adresse publique n'est pas configuré dans le module : copiez le lien.");
-
-        await fiches.AnnulerLiensAsync(Fiche.Id);
-        var jeton = await fiches.CreerLienAsync(Fiche, parent.Courriel, surPlace: false);
-        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
-        var garderie = p?.NomGarderie ?? "la garderie";
+        Fiche.Enfant = Enfant;
         try
         {
-            await courriels.EnvoyerAsync(parent.Courriel,
-                $"Fiche d'assiduité de {Enfant.Prenom} à signer ({Affichage.Periode(Debut, Fiche.Fin)})",
-                $"Bonjour {parent.Prenom},\n\n" +
-                $"La fiche d'assiduité de {Enfant.Prenom} pour la période du {Affichage.Periode(Debut, Fiche.Fin)} est prête.\n" +
-                $"Vérifiez-la et signez-la ici (lien personnel, valide 7 jours, une seule utilisation) :\n\n" +
-                $"{fiches.UrlLien(jeton)}\n\n" +
-                $"Si un code vous semble inexact, utilisez « Signaler une erreur » sur la même page.\n\n" +
-                $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}");
+            var a = await fiches.EnvoyerLienAsync([Fiche]);
+            await journal.NoterMaintenantAsync("fiche.lien_envoye", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd} → {a}");
+            return Retour($"Lien envoyé à {a}.");
         }
         catch (Exception ex)
         {
-            await fiches.AnnulerLiensAsync(Fiche.Id);
             return Retour(erreur: $"L'envoi du courriel a échoué ({ex.GetType().Name}). Vérifiez les réglages SMTP du module, ou copiez le lien.");
         }
-        journal.Noter("fiche.lien_envoye", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd} → {parent.Courriel}");
-        await db.SaveChangesAsync();
-        return Retour($"Lien envoyé à {parent.Courriel}.");
     }
 
     /// <summary>Cree un lien a copier (texto, autre courriel) ; il n'est affiche qu'une fois / Link to copy, shown once.</summary>
@@ -184,7 +157,7 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
         if (Etat != EtatFiche.SigneeRsge || Fiche is null) return Retour(erreur: "La fiche doit d'abord être signée par la RSGE.");
         if (!UrlPubliqueConfiguree) return Retour(erreur: "L'adresse publique n'est pas configurée dans le module : utilisez la signature sur place.");
         await fiches.AnnulerLiensAsync(Fiche.Id);
-        var jeton = await fiches.CreerLienAsync(Fiche, null, surPlace: false);
+        var jeton = await fiches.CreerLienAsync([Fiche], null, surPlace: false);
         journal.Noter("fiche.lien_cree", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd}");
         await db.SaveChangesAsync();
         TempData["Lien"] = fiches.UrlLien(jeton);
@@ -197,7 +170,7 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
         if (!await ChargerAsync()) return NotFound();
         if (Etat != EtatFiche.SigneeRsge || Fiche is null) return Retour(erreur: "La fiche doit d'abord être signée par la RSGE.");
         await fiches.AnnulerLiensAsync(Fiche.Id);
-        var jeton = await fiches.CreerLienAsync(Fiche, null, surPlace: true);
+        var jeton = await fiches.CreerLienAsync([Fiche], null, surPlace: true);
         journal.Noter("fiche.sur_place", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd}");
         await db.SaveChangesAsync();
         return RedirectToPage("/Public/Signer", new { j = jeton });

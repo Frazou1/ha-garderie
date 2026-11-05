@@ -14,7 +14,7 @@ public sealed class Courriels(GarderieOptions options, ILogger<Courriels> log)
 {
     public bool EstConfigure => options.CourrielConfigure;
 
-    public async Task EnvoyerAsync(string destinataire, string sujet, string texte, string? nomPieceJointe = null, byte[]? pieceJointe = null)
+    public async Task EnvoyerAsync(string destinataire, string sujet, string texte, IEnumerable<(string Nom, byte[] Contenu)>? piecesJointes = null)
     {
         var m = new MimeMessage();
         var expediteur = string.IsNullOrWhiteSpace(options.SmtpUtilisateur) ? "garderie@exemple.test" : options.SmtpUtilisateur;
@@ -22,7 +22,7 @@ public sealed class Courriels(GarderieOptions options, ILogger<Courriels> log)
         m.To.Add(MailboxAddress.Parse(destinataire));
         m.Subject = sujet;
         var corps = new BodyBuilder { TextBody = texte };
-        if (pieceJointe is not null) corps.Attachments.Add(nomPieceJointe ?? "document.pdf", pieceJointe, new ContentType("application", "pdf"));
+        foreach (var (nom, contenu) in piecesJointes ?? []) corps.Attachments.Add(nom, contenu, new ContentType("application", "pdf"));
         m.Body = corps.ToMessageBody();
 
         if (options.DossierCourrielsTest is { } dossier)

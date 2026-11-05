@@ -30,16 +30,9 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
 {
     public static readonly TimeSpan DureeLien = TimeSpan.FromDays(14);
 
-    /// <summary>La regie interne est-elle saisie ? / Are the internal rules entered?</summary>
-    public async Task<bool> RegieDisponibleAsync() =>
-        await db.Parametres.AsNoTracking().AnyAsync(p => p.RegieTexte != null && p.RegieTexte != "");
-
-    /// <summary>PDF de la regie interne, genere du texte de Reglages ; null si absente / Internal rules PDF, or null.</summary>
-    public async Task<byte[]?> RegiePdfAsync()
-    {
-        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
-        return string.IsNullOrWhiteSpace(p?.RegieTexte) ? null : RegiePdf.Generer(p.RegieTexte, p.NomRsge, p.NomGarderie, p.RegieModifieeLe);
-    }
+    /// <summary>PDF de la regie interne, genere des sections de Reglages / Internal rules PDF, generated.</summary>
+    public async Task<byte[]> RegiePdfAsync() =>
+        RegieInterne.Pdf(await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new Parametres());
 
     // --- Renseignements / Info ---
 
@@ -96,7 +89,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             MentionLpc = p.ContratMentionLpc ?? TextesContrat.MentionLpc,
             Attestation = TextesContrat.Remplir(p.ContratAttestation ?? TextesContrat.Attestation, garderie, p.NomRsge),
             NonRespect = TextesContrat.Remplir(p.ContratNonRespect ?? TextesContrat.NonRespect, garderie, p.NomRsge),
-            Regie = p.RegieTexte, Ville = p.VilleSignature, Debut = c.Debut, Fin = c.Fin,
+            Regie = RegieInterne.Composer(p), Ville = p.VilleSignature, Debut = c.Debut, Fin = c.Fin,
         };
     }
 
@@ -182,8 +175,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
                $"Voici la formule de résiliation de l'entente de service de {e.Prenom}, à compter du {Affichage.Date(c.ResilieLe)}.\n" +
                "Vérifiez-la et signez-la ici");
         // La regie interne est jointe : le parent atteste l'avoir lue / Internal rules attached: the parent attests reading them
-        var regie = but == ButLien.Signature ? await RegiePdfAsync() : null;
-        var pieces = regie is null ? null : new List<(string, byte[])> { ("Régie interne.pdf", regie) };
+        var pieces = but == ButLien.Signature ? new List<(string, byte[])> { ("Régie interne.pdf", await RegiePdfAsync()) } : null;
         try
         {
             await courriels.EnvoyerAsync(courriel, sujet,

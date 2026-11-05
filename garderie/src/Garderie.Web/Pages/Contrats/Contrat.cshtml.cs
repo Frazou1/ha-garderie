@@ -31,7 +31,6 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         Infos = await contrats.InfosAsync(c);
         Parent = await contrats.LienParentAsync(c);
         LienActif = await db.LiensContrats.AnyAsync(l => l.ContratId == Id && l.UtiliseLe == null && l.AnnuleLe == null && l.ExpireLe > DateTime.UtcNow);
-        RegieDisponible = await contrats.RegieDisponibleAsync();
         return true;
     }
 
@@ -59,7 +58,6 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
     {
         if (!await ChargerAsync()) return NotFound();
         if (!AttendLeParent(but)) return Retour(erreur: "Ce contrat n'attend pas de signature du parent.");
-        if (but == ButLien.Signature && !RegieDisponible) return Retour(erreur: SansRegie);
         if (!EnvoiPossible) return Retour(erreur: "Le courriel ou l'adresse publique n'est pas configuré : copiez le lien ou faites signer sur place.");
         try
         {
@@ -75,7 +73,6 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
     {
         if (!await ChargerAsync()) return NotFound();
         if (!AttendLeParent(but)) return Retour(erreur: "Ce contrat n'attend pas de signature du parent.");
-        if (but == ButLien.Signature && !RegieDisponible) return Retour(erreur: SansRegie);
         if (!UrlPubliqueConfiguree) return Retour(erreur: "L'adresse publique n'est pas configurée : faites signer sur place.");
         var jeton = await contrats.CreerLienAsync(Contrat, but, null, surPlace: false);
         await journal.NoterMaintenantAsync("contrat.lien_cree", "Enfant", Contrat.EnfantId, but.ToString());
@@ -87,14 +84,11 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
     {
         if (!await ChargerAsync()) return NotFound();
         if (!AttendLeParent(but)) return Retour(erreur: "Ce contrat n'attend pas de signature du parent.");
-        if (but == ButLien.Signature && !RegieDisponible) return Retour(erreur: SansRegie);
         var jeton = await contrats.CreerLienAsync(Contrat, but, null, surPlace: true);
         await journal.NoterMaintenantAsync("contrat.sur_place", "Enfant", Contrat.EnfantId, but.ToString());
         return RedirectToPage("/Public/Contrat", new { j = jeton });
     }
 
-    public bool RegieDisponible { get; private set; }
-    private const string SansRegie = "Ajoutez d'abord la régie interne dans Réglages : le parent atteste l'avoir lue, il doit pouvoir la consulter.";
 
     private bool AttendLeParent(ButLien but) => but == ButLien.Signature
         ? Contrat.Etat == EtatContrat.Brouillon && Parent is not null

@@ -22,8 +22,14 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     public bool CourrielConfigure => courriels.EstConfigure;
     public string UrlPublique => options.UrlPublique;
     public string CompteCourriel => options.SmtpUtilisateur;
-    [BindProperty] public string? RegieTexte { get; set; }
+    /// <summary>Texte de chaque section de la regie (cle -> texte) / Text of each rules section.</summary>
+    [BindProperty] public Dictionary<string, string?> Regie { get; set; } = new();
+    [BindProperty] public string? RegieTarif { get; set; }
+    [BindProperty] public string? RegieJourPaiement { get; set; }
+    [BindProperty] public string? RegieFraisRetard { get; set; }
     public DateTime? RegieModifieeLe { get; private set; }
+    /// <summary>Sections modifiees (differentes du texte par defaut) / Edited sections.</summary>
+    public HashSet<string> RegieModifiees { get; private set; } = new();
 
     /// <summary>Textes du contrat a afficher (Reglages, sinon textes par defaut) / Contract texts to show.</summary>
     public sealed class SaisieContrat
@@ -43,7 +49,12 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     {
         Donnees = await db.Parametres.FindAsync(1) ?? new Parametres();
         Donnees.DebutPeriodes ??= FichesService.AncreParDefaut;
-        RegieTexte = Donnees.RegieTexte;
+        var saisies = RegieInterne.Lire(Donnees.RegieSections);
+        Regie = RegieInterne.Sections.ToDictionary(x => x.Cle, x => (string?)RegieInterne.Texte(x, saisies));
+        RegieModifiees = saisies.Keys.ToHashSet();
+        RegieTarif = Donnees.RegieTarif;
+        RegieJourPaiement = Donnees.RegieJourPaiement;
+        RegieFraisRetard = Donnees.RegieFraisRetard;
         RegieModifieeLe = Donnees.RegieModifieeLe;
         Contrat = new SaisieContrat
         {
@@ -129,63 +140,35 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         return RedirectToPage();
     }
 
-    public const int RegieMax = 60000;
-
-    /// <summary>Texte de la regie interne (le PDF est genere a partir de lui) / Internal rules text (PDF generated from it).</summary>
+    /// <summary>Sections et valeurs de la regie interne (le PDF est genere) / Rules sections and values (PDF generated).</summary>
     public async Task<IActionResult> OnPostRegieAsync()
     {
         var p = await db.Parametres.FindAsync(1);
         if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
-        var t = (RegieTexte ?? "").Replace("\r\n", "\n").Trim('\n', ' ');
-        if (t.Length > RegieMax) { TempData["Erreur"] = $"La régie interne dépasse {RegieMax} caractères."; return RedirectToPage(); }
-        try { if (t.Length > 0) RegiePdf.Generer(t, p.NomRsge, p.NomGarderie, DateTime.UtcNow); }
-        catch (Exception ex) { TempData["Erreur"] = $"Le PDF n'a pas pu être généré ({ex.GetType().Name})."; return RedirectToPage(); }
-        p.RegieTexte = t.Length == 0 ? null : t;
+        if (Regie.Values.Any(t => (t?.Length ?? 0) > 20000))
+        {
+            TempData["Erreur"] = "Une section dépasse 20 000 caractères.";
+            return RedirectToPage(null, null, "regie");
+        }
+        static string? Court(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim() is var t && t.Length > max ? t[..max] : s.Trim();
+        p.RegieSections = RegieInterne.Ecrire(Regie);
+        p.RegieTarif = Court(RegieTarif, 50);
+        p.RegieJourPaiement = Court(RegieJourPaiement, 30);
+        p.RegieFraisRetard = Court(RegieFraisRetard, 200);
         p.RegieModifieeLe = DateTime.UtcNow;
-        journal.Noter("parametres.regie_interne", details: $"{t.Length} caractères");
+        try { RegieInterne.Pdf(p); }
+        catch (Exception ex) { TempData["Erreur"] = $"Le PDF n'a pas pu être généré ({ex.GetType().Name})."; return RedirectToPage(null, null, "regie"); }
+        journal.Noter("parametres.regie_interne");
         await db.SaveChangesAsync();
-        TempData["Message"] = t.Length == 0 ? "Régie interne retirée : les contrats ne peuvent plus être envoyés." : "Régie interne enregistrée : le PDF remis aux parents est à jour.";
+        TempData["Message"] = "Régie interne enregistrée : le PDF remis aux parents est à jour.";
         return RedirectToPage(null, null, "regie");
     }
 
-    /// <summary>Importe la regie depuis le Word (.docx) : remplace le texte / Imports the rules from Word, replacing the text.</summary>
-    public async Task<IActionResult> OnPostImporterRegieAsync(IFormFile? word)
-    {
-        if (word is null || word.Length == 0 || word.Length > 15 * 1024 * 1024)
-        {
-            TempData["Erreur"] = "Choisissez la régie interne en Word (.docx, 15 Mo maximum).";
-            return RedirectToPage();
-        }
-        using var ms = new MemoryStream();
-        await word.CopyToAsync(ms);
-        string texte;
-        try { texte = RegiePdf.ImporterDocx(ms.ToArray()); }
-        catch (InvalidDataException)
-        {
-            TempData["Erreur"] = "Ce fichier n'est pas un document Word .docx (un ancien .doc doit d'abord être enregistré en .docx).";
-            return RedirectToPage();
-        }
-        if (texte.Trim().Length == 0 || texte.Length > RegieMax)
-        {
-            TempData["Erreur"] = texte.Trim().Length == 0 ? "Ce document Word est vide." : $"Ce document dépasse {RegieMax} caractères.";
-            return RedirectToPage();
-        }
-        var p = await db.Parametres.FindAsync(1);
-        if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
-        p.RegieTexte = texte.Trim('\n');
-        p.RegieModifieeLe = DateTime.UtcNow;
-        journal.Noter("parametres.regie_importee", details: $"{texte.Length} caractères");
-        await db.SaveChangesAsync();
-        TempData["Message"] = "Régie interne importée du Word. Vérifiez le texte et l'aperçu PDF ; vous pouvez le modifier ici.";
-        return RedirectToPage(null, null, "regie");
-    }
-
-    /// <summary>Apercu du PDF de la regie (tel que remis aux parents) / Rules PDF preview (as given to parents).</summary>
+    /// <summary>PDF de la regie (tel que remis aux parents) / Rules PDF (as given to parents).</summary>
     public async Task<IActionResult> OnGetRegiePdfAsync(bool telecharger = false)
     {
-        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
-        if (string.IsNullOrWhiteSpace(p?.RegieTexte)) return NotFound();
-        return this.Fichier(RegiePdf.Generer(p.RegieTexte, p.NomRsge, p.NomGarderie, p.RegieModifieeLe), "application/pdf", "Régie interne.pdf", !telecharger);
+        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new Parametres();
+        return this.Fichier(RegieInterne.Pdf(p), "application/pdf", "Régie interne.pdf", !telecharger);
     }
 
     /// <summary>

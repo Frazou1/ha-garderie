@@ -11,12 +11,6 @@
     <a class="btn btn-doux btn-sm" asp-page="/Parametres">Textes du contrat</a>
 </div>
 
-@if (!Model.RegieDisponible)
-{
-    <p class="bulle bulle-erreur">La régie interne n'est pas saisie : les contrats ne peuvent pas être envoyés aux parents.
-        <a asp-page="/Parametres">Ajoutez-la dans Réglages</a>.</p>
-}
-
 @if (Model.Lignes.Count == 0)
 {
     <div class="carte vide"><p class="mb-0">Aucun enfant inscrit.</p></div>

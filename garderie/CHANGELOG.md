@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+- Régie interne générée par l'application, sans document à déposer : 24 sections modifiables dans Réglages
+  (regroupées par partie, texte par défaut = régie de la RSGE). Vider une section la remet par défaut, « (aucune) »
+  la retire. Bouton « Afficher le PDF ».
+- Valeurs tirées des Réglages : nom de la RSGE, heures d'ouverture et de fermeture (retard), tarif par jour, jour de
+  paiement, frais de retard, liste et nombre des fériés, mention de la Loi sur la protection du consommateur (contrat).
+- « Veille de Noël » ajoutée aux jours fériés (12 jours, comme la régie).
+- Les contrats ne sont plus bloqués : la régie existe toujours. L'import Word de la 0.7.0 est retiré.
+
 ## 0.7.0
 - Régie interne saisie dans Réglages : « Importer depuis Word (.docx) » une fois (titres, sous-titres, gras,
   listes, lignes centrées), puis texte modifiable ; le PDF (Comic Sans, comme le Word, pages numérotées) est

@@ -215,8 +215,11 @@ public class Parametres
     /// <summary>Note sur les vacances (ex. conge des fetes a confirmer) / Holiday note.</summary>
     [MaxLength(1000)] public string? ContratNoteVacances { get; set; }
 
-    // --- Regie interne : texte modifiable, PDF genere / Internal rules: editable text, generated PDF ---
-    [MaxLength(60000)] public string? RegieTexte { get; set; }
+    // --- Regie interne generee : sections modifiees (JSON cle -> texte) et valeurs / Generated internal rules ---
+    [MaxLength(100000)] public string? RegieSections { get; set; }
+    [MaxLength(50)] public string? RegieTarif { get; set; }
+    [MaxLength(30)] public string? RegieJourPaiement { get; set; }
+    [MaxLength(200)] public string? RegieFraisRetard { get; set; }
     public DateTime? RegieModifieeLe { get; set; }
 }
 

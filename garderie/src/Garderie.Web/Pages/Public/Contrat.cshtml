@@ -94,17 +94,10 @@ else
 
                 <section class="carte regie">
                     <h2 class="h5">Régie interne</h2>
-                    @if (Model.RegieDisponible)
-                    {
-                        <p class="small mb-2">Lisez la régie interne du service de garde avant de signer : vous attestez l'avoir lue.
-                            Elle est aussi jointe au courriel.</p>
-                        <a class="btn btn-primary" asp-page-handler="Regie" asp-route-j="@Model.Jeton" target="_blank" rel="noopener">Lire la régie interne (PDF)</a>
-                        <a class="btn btn-doux" asp-page-handler="Regie" asp-route-j="@Model.Jeton" asp-route-telecharger="true">Télécharger</a>
-                    }
-                    else
-                    {
-                        <p class="small mb-0">La régie interne n'est pas disponible en ligne : demandez-la à l'éducatrice avant de signer.</p>
-                    }
+                    <p class="small mb-2">Lisez la régie interne du service de garde avant de signer : vous attestez l'avoir lue.
+                        Elle est aussi jointe au courriel.</p>
+                    <a class="btn btn-primary" asp-page-handler="Regie" asp-route-j="@Model.Jeton" target="_blank" rel="noopener">Lire la régie interne (PDF)</a>
+                    <a class="btn btn-doux" asp-page-handler="Regie" asp-route-j="@Model.Jeton" asp-route-telecharger="true">Télécharger</a>
                 </section>
             }
 

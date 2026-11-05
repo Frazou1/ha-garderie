@@ -83,10 +83,20 @@ public static class Feries
             (new DateOnly(annee, 7, 1), "Fête du Canada"),
             (Lundi(9, 1), "Fête du travail"),
             (Lundi(10, 2), "Action de grâce"),
+            (new DateOnly(annee, 12, 24), "Veille de Noël"),
             (new DateOnly(annee, 12, 25), "Jour de Noël"),
             (new DateOnly(annee, 12, 26), "Lendemain de Noël"),
         ];
     }
+
+    /// <summary>Feries decrits pour la regie interne (meme ordre) / Holidays described for the internal rules.</summary>
+    public static readonly IReadOnlyList<string> Descriptions =
+    [
+        "Jour de l'An (1er janvier)", "2 janvier", "Vendredi saint", "Lundi de Pâques",
+        "Fête des patriotes (lundi qui précède le 25 mai)", "Fête nationale (24 juin)", "Fête du Canada (1er juillet)",
+        "Fête du travail (1er lundi de septembre)", "Action de grâce (2e lundi d'octobre)", "Veille de Noël (24 décembre)",
+        "Jour de Noël (25 décembre)", "Lendemain de Noël (26 décembre)",
+    ];
 
     /// <summary>Dimanche de Paques (calendrier gregorien) / Easter Sunday (Gregorian).</summary>
     public static DateOnly Paques(int a)

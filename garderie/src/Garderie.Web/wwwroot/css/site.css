@@ -242,3 +242,5 @@ span.code.verrou { min-height: 2.5rem; opacity: .85; }
 .attestation .form-check-label { font-weight: 700; cursor: pointer; }
 .carte.regie { border: 2px solid var(--sauge); background: var(--sauge-pale); }
 .texte-regie { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .85rem; line-height: 1.45; }
+.partie-regie { border-top: 1px solid var(--bs-border-color, #e5ddd3); padding: .6rem 0; }
+.partie-regie > summary { cursor: pointer; }

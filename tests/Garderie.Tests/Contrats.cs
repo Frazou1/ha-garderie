@@ -71,18 +71,17 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         // Feries 2027 (une seule fois) / 2027 holidays (once)
         await Poster(admin, "/Fermetures", "/Fermetures?handler=Feries", [new("annee", "2027")]);
         await Poster(admin, "/Fermetures", "/Fermetures?handler=Feries", [new("annee", "2027")]);
-        Assert.Equal(11, Db(db => db.Fermetures.Count(f => f.Date.Year == 2027)));
+        Assert.Equal(12, Db(db => db.Fermetures.Count(f => f.Date.Year == 2027)));
 
         // Creation et envoi / Creation and sending
         var r = await Poster(admin, "/Contrats", "/Contrats?handler=Creer",
             [new("enfantId", $"{id}"), new("debut", "2026-09-01"), new("fin", "2027-08-31")]);
         var contratId = int.Parse(Regex.Match(r.Headers.Location!.ToString(), @"Contrat/(\d+)").Groups[1].Value);
-        // Sans regie interne : envoi bloque / Without internal rules: sending blocked
-        await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
-        Assert.DoesNotContain(Courriels(), t => t.Contains("julie@exemple.test"));
-        // Regie saisie dans Reglages ; le PDF est genere / Rules entered in Settings; the PDF is generated
+        // Regie generee : une section modifiee et le tarif dans Reglages / Generated rules: one edited section and the rate
         await Poster(admin, "/Parametres", "/Parametres?handler=Regie",
-            [new("RegieTexte", "# Régie Interne\n> ## {rsge}\n\n### Heures d'ouverture\nDu lundi au **vendredi**\n- Jour de l'An")]);
+            [new("RegieTarif", "45 $"), new("RegieJourPaiement", "mercredi"), new("Regie[covid-19]", "Voir l'annexe.")]);
+        Assert.Contains("covid-19", Db(db => db.Parametres.Find(1)!.RegieSections)!);
+        Assert.Equal("45 $", Db(db => db.Parametres.Find(1)!.RegieTarif));
         Assert.Equal("application/pdf", (await admin.GetAsync("/Parametres?handler=RegiePdf")).Content.Headers.ContentType?.MediaType);
 
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);

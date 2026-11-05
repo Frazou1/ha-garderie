@@ -111,32 +111,46 @@
 </section>
 
 <section class="carte" id="regie">
-    <h2 class="h5">Régie interne</h2>
-    @if (Model.RegieTexte is not null)
-    {
-        <p class="mb-2"><span class="badge text-bg-success">Enregistrée</span>
-            @if (Model.RegieModifieeLe is { } m) { <span class="small text-muted">modifiée le @Affichage.Horodatage(m)</span> }
-            — le PDF est généré à partir de ce texte, joint au courriel du contrat et offert sur la page de signature.</p>
-        <p class="d-flex flex-wrap gap-2">
-            <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" target="_blank" rel="noopener">Afficher le PDF</a>
-            <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" asp-route-telecharger="true">Télécharger</a>
-        </p>
-    }
-    else
-    {
-        <p class="bulle bulle-erreur">Aucune régie interne : les contrats ne peuvent pas être envoyés. Importez votre Word ci-dessous.</p>
-    }
-    <form method="post" asp-page-handler="ImporterRegie" enctype="multipart/form-data"
-          class="d-flex flex-wrap gap-2 align-items-center mb-3@(Model.RegieTexte is null ? "" : " confirmer")"
-          data-confirmer="Remplacer le texte actuel de la régie interne par celui du Word ?">
-        <label class="small" for="word">Importer depuis Word (.docx)</label>
-        <input type="file" id="word" name="word" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="form-control w-auto" required />
-        <button type="submit" class="btn btn-doux">Importer</button>
-    </form>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <h2 class="h5 mb-0 me-auto">Régie interne</h2>
+        <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" target="_blank" rel="noopener">Afficher le PDF</a>
+        <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" asp-route-telecharger="true">Télécharger</a>
+    </div>
+    <p class="small text-muted">Le PDF est généré par l'application, joint au courriel du contrat et offert sur la page de signature.
+        Le nom, les heures et la liste des fériés viennent des Réglages ; la mention de la Loi sur la protection du consommateur
+        vient des textes du contrat.@if (Model.RegieModifieeLe is { } m) { <text> Dernière modification : @Affichage.Horodatage(m).</text> }</p>
     <form method="post" asp-page-handler="Regie">
-        <label class="form-label" for="RegieTexte">Texte de la régie interne</label>
-        <textarea asp-for="RegieTexte" class="form-control texte-regie" rows="22" maxlength="@ParametresModel.RegieMax"></textarea>
-        <div class="form-text">@Garderie.Web.Services.RegiePdf.Aide</div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <label asp-for="RegieTarif" class="form-label">Tarif par jour</label>
+                <input asp-for="RegieTarif" class="form-control" placeholder="ex. 45 $" maxlength="50" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="RegieJourPaiement" class="form-label">Jour de paiement</label>
+                <input asp-for="RegieJourPaiement" class="form-control" placeholder="ex. mercredi" maxlength="30" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="RegieFraisRetard" class="form-label">Frais de retard (fin de journée)</label>
+                <input asp-for="RegieFraisRetard" class="form-control" placeholder="ex. 5 $ pour les 10 premières minutes et ensuite 1 $ la minute" maxlength="200" />
+            </div>
+        </div>
+        @foreach (var partie in Garderie.Web.Services.RegieInterne.Sections.GroupBy(x => x.Partie))
+        {
+            <details class="partie-regie">
+                <summary class="fw-bold">@partie.Key <span class="small text-muted fw-normal">(@partie.Count() section@(partie.Count() > 1 ? "s" : ""))</span></summary>
+                @foreach (var sec in partie)
+                {
+                    var id = "regie-" + sec.Cle;
+                    var texte = Model.Regie.GetValueOrDefault(sec.Cle) ?? sec.Texte;
+                    <div class="mt-2">
+                        <label class="form-label mb-1" for="@id">@(sec.Titre ?? sec.Partie)
+                            @if (Model.RegieModifiees.Contains(sec.Cle)) { <span class="badge text-bg-light border">modifiée</span> }</label>
+                        <textarea class="form-control texte-regie" id="@id" name="Regie[@sec.Cle]" rows="@Math.Clamp(texte.Length / 90 + texte.Count(c => c == '\n') + 1, 2, 18)">@texte</textarea>
+                    </div>
+                }
+            </details>
+        }
+        <div class="form-text">@Garderie.Web.Services.RegieInterne.Aide</div>
         <button type="submit" class="btn btn-primary mt-2">Enregistrer la régie interne</button>
     </form>
 </section>

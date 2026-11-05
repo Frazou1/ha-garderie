@@ -22,10 +22,31 @@
             <label asp-for="Donnees.NomRsge" class="form-label">Nom de la RSGE (sur la fiche)</label>
             <input asp-for="Donnees.NomRsge" class="form-control" />
         </div>
-        <div class="col-12">
-            <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
-            <input asp-for="Donnees.Adresse" class="form-control" />
+        <div class="col-4 col-md-2">
+            <label asp-for="Donnees.Rl24Appartement" class="form-label">App.</label>
+            <input asp-for="Donnees.Rl24Appartement" class="form-control" maxlength="10" />
         </div>
+        <div class="col-8 col-md-2">
+            <label asp-for="Donnees.Rl24Numero" class="form-label">Numéro</label>
+            <input asp-for="Donnees.Rl24Numero" class="form-control" maxlength="20" />
+        </div>
+        <div class="col-md-8">
+            <label asp-for="Donnees.Rl24Rue" class="form-label">Rue, case postale</label>
+            <input asp-for="Donnees.Rl24Rue" class="form-control" maxlength="100" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.Rl24Ville" class="form-label">Ville</label>
+            <input asp-for="Donnees.Rl24Ville" class="form-control" maxlength="60" />
+        </div>
+        <div class="col-4 col-md-2">
+            <label asp-for="Donnees.Rl24Province" class="form-label">Province</label>
+            <input asp-for="Donnees.Rl24Province" class="form-control" maxlength="2" />
+        </div>
+        <div class="col-8 col-md-4">
+            <label asp-for="Donnees.Rl24CodePostal" class="form-label">Code postal</label>
+            <input asp-for="Donnees.Rl24CodePostal" class="form-control" maxlength="7" autocomplete="postal-code" />
+        </div>
+        <div class="col-12 form-text mt-0">Comme sur les formulaires de Revenu Québec ; le contrat et la régie reprennent cette adresse.</div>
         <div class="col-md-6">
             <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
             <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
@@ -99,31 +120,7 @@
             <label asp-for="Rl24.Signataire" class="form-label">Signataire du sommaire (nom et fonction)</label>
             <input asp-for="Rl24.Signataire" class="form-control" maxlength="100" placeholder="ex. Sonia Savard, responsable" />
         </div>
-        <div class="col-12 small fw-bold">Adresse du service de garde, comme sur le formulaire</div>
-        <div class="col-4 col-md-2">
-            <label asp-for="Rl24.Appartement" class="form-label">App.</label>
-            <input asp-for="Rl24.Appartement" class="form-control" maxlength="10" />
-        </div>
-        <div class="col-8 col-md-2">
-            <label asp-for="Rl24.Numero" class="form-label">Numéro</label>
-            <input asp-for="Rl24.Numero" class="form-control" maxlength="20" />
-        </div>
-        <div class="col-md-8">
-            <label asp-for="Rl24.Rue" class="form-label">Rue, case postale</label>
-            <input asp-for="Rl24.Rue" class="form-control" maxlength="100" />
-        </div>
-        <div class="col-md-6">
-            <label asp-for="Rl24.Ville" class="form-label">Ville</label>
-            <input asp-for="Rl24.Ville" class="form-control" maxlength="60" />
-        </div>
-        <div class="col-4 col-md-2">
-            <label asp-for="Rl24.Province" class="form-label">Province</label>
-            <input asp-for="Rl24.Province" class="form-control" maxlength="2" />
-        </div>
-        <div class="col-8 col-md-4">
-            <label asp-for="Rl24.CodePostal" class="form-label">Code postal</label>
-            <input asp-for="Rl24.CodePostal" class="form-control" maxlength="7" autocomplete="postal-code" />
-        </div>
+        <div class="col-12 small text-muted">L'adresse inscrite sur les relevés est celle de « La garderie », plus haut.</div>
         <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
     </form>
 </section>

@@ -49,6 +49,14 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     {
         Donnees = await db.Parametres.FindAsync(1) ?? new Parametres();
         Donnees.DebutPeriodes ??= FichesService.AncreParDefaut;
+        if (Donnees.Rl24Rue is null && Donnees.Rl24Ville is null && !string.IsNullOrWhiteSpace(Donnees.Adresse))
+        {
+            // Ancienne adresse sur une ligne : decoupee pour la verifier / Old one-line address, split to check
+            var a = RelevesService.Decouper(Donnees.Adresse);
+            (Donnees.Rl24Appartement, Donnees.Rl24Numero, Donnees.Rl24Rue, Donnees.Rl24Ville, Donnees.Rl24Province, Donnees.Rl24CodePostal) =
+                (a.Appartement, a.Numero, a.Rue, a.Ville, a.Province, a.CodePostalAffiche);
+        }
+        Donnees.Rl24Province ??= "QC";
         var saisies = RegieInterne.Lire(Donnees.RegieSections);
         Regie = RegieInterne.Sections.ToDictionary(x => x.Cle, x => (string?)RegieInterne.Texte(x, saisies));
         RegieModifiees = saisies.Keys.ToHashSet();
@@ -59,8 +67,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         Rl24 = new SaisieRl24
         {
             Identifiant = chiffreur.DechiffrerTexte(Donnees.Rl24IdentifiantChiffre, Contextes.IdentifiantRl24) is { } id ? Masquer(id) : null,
-            Appartement = Donnees.Rl24Appartement, Numero = Donnees.Rl24Numero, Rue = Donnees.Rl24Rue, Ville = Donnees.Rl24Ville,
-            Province = Donnees.Rl24Province ?? "QC", CodePostal = Donnees.Rl24CodePostal, Signataire = Donnees.Rl24Signataire,
+            Signataire = Donnees.Rl24Signataire,
         };
         IdentifiantEnregistre = Donnees.Rl24IdentifiantChiffre is not null;
         if (System.IO.File.Exists(options.FichierRl24)
@@ -79,12 +86,33 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        ModelState.Remove("Donnees.Rl24CodePostal");   // « G1A 1A1 » : normalise plus bas / normalized below
+        if (!ModelState.IsValid)
+        {
+            TempData["Erreur"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Distinct());
+            return RedirectToPage();
+        }
         var p = await db.Parametres.FindAsync(1);
         if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
         p.NomGarderie = Vide(Donnees.NomGarderie);
         p.NomRsge = Vide(Donnees.NomRsge);
-        p.Adresse = Vide(Donnees.Adresse);
+        // Adresse decoupee comme sur les formulaires ; la ligne complete sert au contrat
+        // Address split like on the forms; the full line is used by the contract
+        var cp = new string((Donnees.Rl24CodePostal ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();
+        if (cp.Length is not (0 or 6))
+        {
+            TempData["Erreur"] = "Code postal : 6 caractères, ex. G1A 1A1.";
+            return RedirectToPage();
+        }
+        static string? V(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim() is var t && t.Length > max ? t[..max] : s.Trim();
+        p.Rl24Appartement = V(Donnees.Rl24Appartement, 10);
+        p.Rl24Numero = V(Donnees.Rl24Numero, 20);
+        p.Rl24Rue = V(Donnees.Rl24Rue, 100);
+        p.Rl24Ville = V(Donnees.Rl24Ville, 60);
+        p.Rl24Province = V(Donnees.Rl24Province, 2)?.ToUpperInvariant();
+        p.Rl24CodePostal = cp.Length == 0 ? null : cp;
+        var adresse = new Releve24.Adresse(p.Rl24Appartement, p.Rl24Numero, p.Rl24Rue, p.Rl24Ville, p.Rl24Province, p.Rl24CodePostal);
+        p.Adresse = Vide(string.Join(", ", new[] { adresse.Ligne1, adresse.Ligne2 }.Where(x => x.Length > 0)));
         p.Telephone = Vide(Donnees.Telephone);
         p.CourrielRsge = Vide(Donnees.CourrielRsge);
         p.NomBureauCoordonnateur = Vide(Donnees.NomBureauCoordonnateur);
@@ -185,12 +213,6 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     public sealed class SaisieRl24
     {
         public string? Identifiant { get; set; }
-        public string? Appartement { get; set; }
-        public string? Numero { get; set; }
-        public string? Rue { get; set; }
-        public string? Ville { get; set; }
-        public string? Province { get; set; }
-        public string? CodePostal { get; set; }
         public string? Signataire { get; set; }
     }
 
@@ -218,19 +240,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
             }
             p.Rl24IdentifiantChiffre = chiffreur.ChiffrerTexte(id, Contextes.IdentifiantRl24);
         }
-        var cp = new string((Rl24.CodePostal ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();
-        if (cp.Length is not (0 or 6))
-        {
-            TempData["Erreur"] = "Code postal : 6 caractères, ex. G1A 1A1.";
-            return RedirectToPage(null, null, "rl24");
-        }
         static string? V(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim() is var t && t.Length > max ? t[..max] : s.Trim();
-        p.Rl24Appartement = V(Rl24.Appartement, 10);
-        p.Rl24Numero = V(Rl24.Numero, 20);
-        p.Rl24Rue = V(Rl24.Rue, 100);
-        p.Rl24Ville = V(Rl24.Ville, 60);
-        p.Rl24Province = V(Rl24.Province, 2)?.ToUpperInvariant();
-        p.Rl24CodePostal = cp.Length == 0 ? null : cp;
         p.Rl24Signataire = V(Rl24.Signataire, 100);
         journal.Noter("parametres.rl24");   // jamais l'identifiant / never the identifier
         await db.SaveChangesAsync();

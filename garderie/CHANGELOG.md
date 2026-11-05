@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.1
+- Réglages → « La garderie » : adresse découpée comme sur les formulaires de Revenu Québec (app., numéro, rue, ville,
+  province, code postal). Le relevé 24 et le sommaire la reprennent ; le contrat et la régie utilisent la ligne
+  complète. L'ancienne adresse sur une ligne est découpée automatiquement à l'ouverture (à vérifier).
+- Réglages → Relevé 24 : l'adresse en double est retirée.
+- Réglages : une saisie refusée affiche maintenant son erreur au lieu de ne rien enregistrer.
+
 ## 0.12.0
 - Relevés 24 : nouvel onglet « Relevés 24 ». Un relevé par parent payeur, jours payés et montants proposés à partir des
   présences, de l'horaire et du tarif, corrigés avant de produire. Remplissage du RL-24 officiel de Revenu Québec

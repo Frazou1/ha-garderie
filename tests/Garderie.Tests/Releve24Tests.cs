@@ -65,18 +65,25 @@ public class Releve24Tests(Appli appli) : IClassFixture<Appli>
         var admin = Admin();
         async Task Enregistrer(string id) => await admin.PostAsync("/Parametres?handler=Rl24", new FormUrlEncodedContent(
         [
-            new("Rl24.Identifiant", id), new("Rl24.Numero", "456"), new("Rl24.Rue", "rue Test"), new("Rl24.Ville", "Québec"),
-            new("Rl24.Province", "qc"), new("Rl24.CodePostal", "g2b 2b2"), new("Rl24.Signataire", "Sonia (test), responsable"),
+            new("Rl24.Identifiant", id), new("Rl24.Signataire", "Sonia (test), responsable"),
             new("__RequestVerificationToken", Jeton(await admin.GetStringAsync("/Parametres"))),
         ]));
 
+        // Adresse de « La garderie », decoupee ; la ligne complete sert au contrat / Split address, full line for the contract
+        await admin.PostAsync("/Parametres", new FormUrlEncodedContent(
+        [
+            new("Donnees.NomGarderie", "Les petits moussaillons"), new("Donnees.Rl24Numero", "456"), new("Donnees.Rl24Rue", "rue Test"),
+            new("Donnees.Rl24Ville", "Québec"), new("Donnees.Rl24Province", "qc"), new("Donnees.Rl24CodePostal", "g2b 2b2"),
+            new("__RequestVerificationToken", Jeton(await admin.GetStringAsync("/Parametres"))),
+        ]));
         await Enregistrer("130 692 545");   // NAS invalide (cle de Luhn)
         Assert.Null(Db(db => db.Parametres.Find(1)?.Rl24IdentifiantChiffre));
         await Enregistrer("130 692 544");
         var p = Db(db => db.Parametres.Find(1)!);
         Assert.NotNull(p.Rl24IdentifiantChiffre);
         Assert.DoesNotContain("130692544", System.Text.Encoding.Latin1.GetString(p.Rl24IdentifiantChiffre!));   // chiffre
-        Assert.Equal(("QC", "G2B2B2"), (p.Rl24Province, p.Rl24CodePostal));
+        Assert.Equal(("QC", "G2B2B2", "rue Test"), (p.Rl24Province, p.Rl24CodePostal, p.Rl24Rue));
+        Assert.Equal("456 rue Test, Québec QC G2B 2B2", p.Adresse);
         var page = await admin.GetStringAsync("/Parametres");
         Assert.DoesNotContain("130692544", page);   // jamais affiche en clair
         Assert.Contains("2544", page);

@@ -347,6 +347,12 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
     {
         var d = await db.Documents.FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
         if (d is null) return NotFound();
+        // Le PDF d'un releve 24 se retire avec le releve (sommaire et numerotation) / An RL-24 PDF goes with its slip
+        if (await db.Releves.Where(r => r.DocumentId == d.Id).Select(r => (int?)r.Annee).FirstOrDefaultAsync() is { } annee)
+        {
+            TempData["Erreur"] = $"Ce PDF est un relevé 24 : supprimez-le dans l'onglet Relevés 24 ({annee}), qui ajuste aussi le sommaire et la numérotation.";
+            return RedirectToPage(new { id = Id });
+        }
         var e = await db.Enfants.FindAsync(Id);
         if (e?.PhotoDocumentId == d.Id) e.PhotoDocumentId = null;
         await db.Medicaments.Where(m => m.DocumentId == d.Id).ExecuteUpdateAsync(s => s.SetProperty(m => m.DocumentId, (int?)null));

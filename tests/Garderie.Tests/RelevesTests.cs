@@ -127,6 +127,13 @@ public class RelevesTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal("024000034", Db((db, _) => db.Parametres.Find(1)!.Rl24DernierNumero));
         Assert.Equal(1, Db((db, _) => db.Documents.Count(d => d.Type == TypeDocument.Releve24 && d.EnfantId == enfantId)));
 
+        // Le PDF du releve ne se supprime pas depuis le dossier / The slip PDF cannot be deleted from the child's file
+        var dossierHtml = await admin.GetStringAsync($"/Enfants/Dossier/{enfantId}");
+        Assert.Contains("Relevés 24</a>", dossierHtml);
+        await admin.PostAsync($"/Enfants/Dossier/{enfantId}?handler=SupprimerDocument", new FormUrlEncodedContent(
+            [new("documentId", $"{premier.DocumentId}"), new("__RequestVerificationToken", Jeton(dossierHtml))]));
+        Assert.Equal(1, Db((db, _) => db.Documents.Count(d => d.Id == premier.DocumentId)));
+
         // Releve modifie : nouveau numero, code A, remplace le premier / Amended slip
         jeton = Jeton(await admin.GetStringAsync(url));
         await admin.PostAsync(url + "&handler=Generer", new FormUrlEncodedContent(Champs("990.00", jeton)));

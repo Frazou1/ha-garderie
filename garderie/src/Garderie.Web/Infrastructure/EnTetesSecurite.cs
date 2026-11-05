@@ -13,7 +13,9 @@ public sealed class EnTetesSecuriteMiddleware(RequestDelegate next)
             var h = ctx.Response.Headers;
             // L'Ingress affiche l'appli dans un iframe de HA (meme origine) / Ingress shows the app in an HA iframe
             var ancetres = ctx.ZoneDe() == Zone.Ingress ? "'self'" : "'none'";
-            h["Content-Security-Policy"] =
+            var estPdf = (ctx.Response.ContentType ?? "").StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase);
+            // Le visualiseur PDF du navigateur ne supporte pas la CSP des pages / The browser PDF viewer can't run under the page CSP
+            if (!estPdf) h["Content-Security-Policy"] =
                 "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; " +
                 $"font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors {ancetres}";
             h["X-Content-Type-Options"] = "nosniff";

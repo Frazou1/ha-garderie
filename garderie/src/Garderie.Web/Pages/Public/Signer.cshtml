@@ -79,11 +79,13 @@ else
         <section class="carte">
             <h2 class="h6">Votre signature@(plusieurs ? $" (pour les {Model.Fiches.Count} fiches)" : "")</h2>
             <form method="post" asp-page-handler="Signer" asp-route-j="@Model.Jeton" class="form-signature">
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
-                    <label class="form-check-label small" for="atteste">J'atteste que les renseignements inscrits sur
-                        @(plusieurs ? "ces fiches" : "cette fiche") d'assiduité correspondent à la présence réelle de
-                        @(plusieurs ? "mes enfants" : "mon enfant") et aux contributions réduites payées et à payer.</label>
+                <div class="attestation">
+                    <p class="texte">J'atteste que les renseignements inscrits sur @(plusieurs ? "ces fiches" : "cette fiche") d'assiduité
+                        correspondent à la présence réelle de @(plusieurs ? "mes enfants" : "mon enfant") et aux contributions réduites payées et à payer.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
+                        <label class="form-check-label" for="atteste">Je confirme</label>
+                    </div>
                 </div>
                 <label class="form-label small mb-0" for="nom">Votre nom</label>
                 <input class="form-control mb-2" id="nom" name="nom" value="@premiere.NomParent" maxlength="200" required autocomplete="name" />

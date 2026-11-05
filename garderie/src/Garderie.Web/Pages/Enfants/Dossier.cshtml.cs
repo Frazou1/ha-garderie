@@ -358,7 +358,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
     /// Telechargement (pieces jointes) ou apercu de la photo (image seulement).
     /// Download (attachment) or photo preview (images only).
     /// </summary>
-    public async Task<IActionResult> OnGetDocumentAsync(int documentId, bool apercu = false)
+    public async Task<IActionResult> OnGetDocumentAsync(int documentId, bool apercu = false, bool afficher = false)
     {
         var d = await db.Documents.AsNoTracking().FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
         if (d is null) return NotFound();
@@ -366,7 +366,8 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         // Apercu de la photo (avatar) : non journalise, il s'affiche partout / Avatar preview: not logged
         if (apercu && d.Type == TypeDocument.Photo && d.TypeContenu is "image/jpeg" or "image/png")
             return File(contenu, d.TypeContenu);
-        await journal.NoterMaintenantAsync("document.telecharger", "Enfant", Id, d.NomOriginal);
-        return File(contenu, d.TypeContenu, d.NomOriginal);
+        var lisible = d.TypeContenu is "application/pdf" or "image/jpeg" or "image/png";
+        await journal.NoterMaintenantAsync(afficher && lisible ? "document.afficher" : "document.telecharger", "Enfant", Id, d.NomOriginal);
+        return this.Fichier(contenu, d.TypeContenu, d.NomOriginal, afficher && lisible);
     }
 }

@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using Garderie.Web.Configuration;
 using Garderie.Web.Data;
@@ -60,6 +61,9 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
     public bool CourrielConfigure => courriels.EstConfigure;
     public bool UrlPubliqueConfiguree => !string.IsNullOrWhiteSpace(options.UrlPublique);
     public EtatFiche Etat => Fiche?.Etat ?? EtatFiche.Brouillon;
+    /// <summary>Un lien de signature est en cours (le bouton devient « Renvoyer ») / An active link exists.</summary>
+    public bool LienActif { get; private set; }
+    public string? CourrielParent { get; private set; }
 
     private async Task<bool> ChargerAsync()
     {
@@ -82,6 +86,8 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
         }
         if (Fiche is not null)
         {
+            LienActif = (await fiches.AvecLienActifAsync([Fiche.Id])).Count > 0;
+            CourrielParent = Fiche.ParentId is { } pidc ? (await db.Parents.AsNoTracking().FirstOrDefaultAsync(p => p.Id == pidc))?.Courriel : ParentPayeur?.Courriel;
             Paiement = new SaisiePaiement
             {
                 DatePaiement1 = Fiche.DatePaiement1, MontantPaye1 = Texte(Fiche.MontantPaye1), Solde1 = Texte(Fiche.Solde1),
@@ -192,20 +198,43 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
         return Retour("Fiche reprise : corrigez, puis signez de nouveau.");
     }
 
+    /// <summary>
+    /// Renvoie une copie du PDF signe au parent ou a la RSGE (courriel perdu, demande du parent).
+    /// Re-sends a copy of the signed PDF to the parent or the RSGE.
+    /// </summary>
+    public async Task<IActionResult> OnPostCopieAsync(string pour)
+    {
+        if (!await ChargerAsync()) return NotFound();
+        if (Fiche?.DocumentId is not { } did || await db.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == did) is not { } doc)
+            return Retour(erreur: "La fiche n'est pas encore signée par le parent.");
+        if (!CourrielConfigure) return Retour(erreur: "Le courriel n'est pas configuré dans le module.");
+        var a = pour == "parent" ? CourrielParent : (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.CourrielRsge;
+        if (a is null) return Retour(erreur: pour == "parent" ? "Le parent n'a pas de courriel." : "Le courriel de la RSGE n'est pas dans Réglages.");
+        try
+        {
+            await courriels.EnvoyerAsync(a, $"Copie : fiche d'assiduité de {Enfant.Prenom} ({Affichage.Periode(Debut, Fiche.Fin)})",
+                $"Voici une copie de la fiche d'assiduité signée de {Enfant.NomComplet} pour la période du {Affichage.Periode(Debut, Fiche.Fin)}.",
+                [(doc.NomOriginal, await documents.LireAsync(doc))]);
+        }
+        catch (Exception ex) { return Retour(erreur: $"L'envoi a échoué ({ex.GetType().Name})."); }
+        await journal.NoterMaintenantAsync("fiche.copie_envoyee", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd} → {a}");
+        return Retour($"Copie envoyée à {a}.");
+    }
+
     /// <summary>PDF : final (archive) si signe par le parent, sinon apercu / Final PDF if parent signed, else preview.</summary>
-    public async Task<IActionResult> OnGetPdfAsync()
+    public async Task<IActionResult> OnGetPdfAsync(bool afficher = false)
     {
         if (!await ChargerAsync()) return NotFound();
         if (!ModeleDisponible) return Retour(erreur: "Téléversez d'abord le formulaire FO-0310 dans Réglages.");
         if (Fiche?.DocumentId is { } did && await db.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == did) is { } doc)
         {
-            await journal.NoterMaintenantAsync("fiche.telecharger", "Enfant", EnfantId, doc.NomOriginal);
-            return File(await documents.LireAsync(doc), "application/pdf", doc.NomOriginal);
+            await journal.NoterMaintenantAsync(afficher ? "fiche.afficher" : "fiche.telecharger", "Enfant", EnfantId, doc.NomOriginal);
+            return this.Fichier(await documents.LireAsync(doc), "application/pdf", doc.NomOriginal, afficher);
         }
         var f = Fiche ?? new FicheAssiduite { EnfantId = EnfantId, Debut = Debut, Enfant = Enfant };
         f.Enfant ??= Enfant;
         var pdf = await fiches.GenererPdfAsync(f);
         await journal.NoterMaintenantAsync("fiche.apercu", "Enfant", EnfantId, $"{Debut:yyyy-MM-dd}");
-        return File(pdf, "application/pdf", "Aperçu " + FichesService.NomPdf(f, Enfant));
+        return this.Fichier(pdf, "application/pdf", "Aperçu " + FichesService.NomPdf(f, Enfant), afficher);
     }
 }

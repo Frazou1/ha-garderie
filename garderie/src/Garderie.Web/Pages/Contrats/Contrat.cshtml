@@ -7,6 +7,7 @@
     ViewData["Title"] = "Contrat de " + e.Prenom;
     var resiliationEnCours = c.Etat == EtatContrat.Signe && c.ResilieLe is not null;
     var but = resiliationEnCours ? ButLien.Resiliation : ButLien.Signature;
+    var copies = (Url.Page("Contrat", "Copie", new { id = c.Id })!, Model.Parent?.Parent.Courriel, Model.EnvoiPossible);
 }
 <div class="entete-page">
     <div>
@@ -50,7 +51,7 @@
         {
             <p class="small">@Model.Parent.Parent.NomComplet complète ses renseignements (adresse, téléphones, NAS), lit l'entente et la
                 régie interne, puis signe. @(Model.LienActif ? "Un lien est déjà en cours ; un nouvel envoi l'annule." : "")</p>
-            <partial name="_ActionsParent" model="(c.Id, ButLien.Signature, Model.EnvoiPossible, Model.UrlPubliqueConfiguree, Model.Parent.Parent.Courriel)" />
+            <partial name="_ActionsParent" model="(c.Id, ButLien.Signature, Model.EnvoiPossible, Model.UrlPubliqueConfiguree, Model.Parent.Parent.Courriel, Model.LienActif)" />
         }
     </section>
 }
@@ -87,7 +88,7 @@ else if (c.Etat == EtatContrat.Signe)
         {
             <p class="small">Résiliation à compter du <strong>@Affichage.Date(c.ResilieLe)</strong> : le parent doit signer la formule.
                 @(Model.LienActif ? "Un lien est en cours." : "")</p>
-            <partial name="_ActionsParent" model="(c.Id, ButLien.Resiliation, Model.EnvoiPossible, Model.UrlPubliqueConfiguree, Model.Parent?.Parent.Courriel)" />
+            <partial name="_ActionsParent" model="(c.Id, ButLien.Resiliation, Model.EnvoiPossible, Model.UrlPubliqueConfiguree, Model.Parent?.Parent.Courriel, Model.LienActif)" />
             <form method="post" asp-page-handler="AnnulerResiliation" asp-route-id="@c.Id" class="mt-2">
                 <button class="btn btn-sm btn-outline-secondary" type="submit">Annuler la résiliation</button>
             </form>
@@ -115,7 +116,18 @@ else
 
 <section class="carte">
     <h2 class="h5">Contenu</h2>
-    <p><a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@c.Id">@(c.DocumentId is null ? "Voir l'aperçu PDF" : "Télécharger le contrat signé")</a></p>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@c.Id" asp-route-afficher="true" target="_blank" rel="noopener">@(c.DocumentId is null ? "Afficher l'aperçu" : "Afficher le contrat signé")</a>
+        <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@c.Id">Télécharger</a>
+        @if (c.DocumentResiliationId is not null)
+        {
+            <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@c.Id" asp-route-resiliation="true" asp-route-afficher="true" target="_blank" rel="noopener">Afficher la résiliation</a>
+        }
+    </div>
+    @if (c.DocumentId is not null)
+    {
+        <div class="mb-3"><partial name="_Copies" model="copies" /></div>
+    }
     <dl class="row small-dl small mb-0">
         <dt class="col-sm-4">Parent</dt><dd class="col-sm-8">@(string.IsNullOrEmpty(i.ParentNom) ? "—" : i.ParentNom) @(i.ParentLien is null ? "" : $"({i.ParentLien})")</dd>
         <dt class="col-sm-4">Fermetures</dt><dd class="col-sm-8">@(i.Fermetures.Count == 0 ? "—" : string.Join(" · ", i.Fermetures))</dd>

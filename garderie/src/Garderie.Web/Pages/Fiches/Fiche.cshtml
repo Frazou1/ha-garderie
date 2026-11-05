@@ -8,6 +8,7 @@
     var debut = Model.Debut.ToString("yyyy-MM-dd");
     var grille = new GrilleFicheVue(Model.Debut, Model.Codes, e);
     var fin = Model.Debut.AddDays(13);
+    var copies = (Url.Page("Fiche", "Copie", new { enfantId = e.Id, debut })!, Model.CourrielParent, Model.CourrielConfigure);
 }
 <div class="entete-page">
     <div>
@@ -91,8 +92,11 @@
     <h2 class="h5">Signatures</h2>
     @if (Model.ModeleDisponible)
     {
-        <p><a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
-            @(Model.Etat == EtatFiche.SigneeParent ? "Télécharger le PDF signé" : "Voir l'aperçu PDF")</a></p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-enfantId="@e.Id" asp-route-debut="@debut" asp-route-afficher="true" target="_blank" rel="noopener">
+                @(Model.Etat == EtatFiche.SigneeParent ? "Afficher le PDF signé" : "Afficher l'aperçu")</a>
+            <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-enfantId="@e.Id" asp-route-debut="@debut">Télécharger</a>
+        </div>
     }
 
     @if (Model.Etat == EtatFiche.Brouillon)
@@ -117,7 +121,7 @@
         <p>Signée par la RSGE le @Affichage.Horodatage(f!.SigneRsgeLe!.Value). En attente de @(f.NomParent).</p>
         <div class="d-flex flex-wrap gap-2">
             <form method="post" asp-page-handler="Envoyer" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
-                <button class="btn btn-primary" type="submit" disabled="@(!Model.CourrielConfigure || !Model.UrlPubliqueConfiguree)">Envoyer au parent par courriel</button>
+                <button class="btn btn-primary" type="submit" disabled="@(!Model.CourrielConfigure || !Model.UrlPubliqueConfiguree)">@(Model.LienActif ? "Renvoyer le courriel au parent" : "Envoyer au parent par courriel")</button>
             </form>
             <form method="post" asp-page-handler="SurPlace" asp-route-enfantId="@e.Id" asp-route-debut="@debut">
                 <button class="btn btn-outline-primary" type="submit">Faire signer ici (tablette)</button>
@@ -137,7 +141,8 @@
     }
     else
     {
-        <p class="mb-0">Signée par @f!.SignataireParent le @Affichage.Horodatage(f.SigneParentLe!.Value)@(f.SigneSurPlace ? " (sur place)" : "").
+        <p>Signée par @f!.SignataireParent le @Affichage.Horodatage(f.SigneParentLe!.Value)@(f.SigneSurPlace ? " (sur place)" : "").
             Le PDF est rangé dans les documents du dossier.</p>
+        <partial name="_Copies" model="copies" />
     }
 </section>

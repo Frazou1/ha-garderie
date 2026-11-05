@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+- Pages des parents : la case à cocher est dans un encadré bien visible (« J'ai lu et j'accepte… » /
+  « Je confirme »), sous le texte complet de l'attestation.
+- PDF : boutons « Afficher » (dans le navigateur) et « Télécharger » pour les documents du dossier, les fiches et
+  les contrats (et la résiliation).
+- Renvoyer : « Renvoyer le courriel » quand un lien est déjà en cours ; « Envoyer une copie au parent » et
+  « M'envoyer une copie » pour une fiche ou un contrat signé.
+
 ## 0.5.0
 - Contrats (entente de service) : création par enfant, lien unique au parent (courriel, lien à copier ou
   signature sur place) ; le parent vérifie et complète ses renseignements (adresse, téléphones, lien, NAS,

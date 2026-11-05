@@ -1,0 +1,16 @@
+@model (string Action, string? CourrielParent, bool CourrielConfigure)
+@* Renvoi d'une copie du PDF signe (courriel perdu, demande du parent) / Re-send a copy of the signed PDF *@
+<div class="d-flex flex-wrap gap-2">
+    <form method="post" action="@Model.Action">
+        <input type="hidden" name="pour" value="parent" />
+        <button class="btn btn-sm btn-outline-primary" type="submit" disabled="@(!Model.CourrielConfigure || Model.CourrielParent is null)">Envoyer une copie au parent</button>
+    </form>
+    <form method="post" action="@Model.Action">
+        <input type="hidden" name="pour" value="rsge" />
+        <button class="btn btn-sm btn-outline-primary" type="submit" disabled="@(!Model.CourrielConfigure)">M'envoyer une copie</button>
+    </form>
+</div>
+@if (Model.CourrielParent is not null)
+{
+    <p class="small text-muted mt-1 mb-0">Courriel du parent : @Model.CourrielParent</p>
+}

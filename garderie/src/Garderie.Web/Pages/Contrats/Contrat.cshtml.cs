@@ -1,3 +1,4 @@
+using Garderie.Web.Infrastructure;
 using Garderie.Web.Configuration;
 using Garderie.Web.Data;
 using Garderie.Web.Securite;
@@ -149,19 +150,46 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         return Retour("Résiliation annulée.");
     }
 
+    /// <summary>
+    /// Renvoie une copie du contrat signe (et de la resiliation) au parent ou a la RSGE.
+    /// Re-sends a copy of the signed contract (and termination) to the parent or the RSGE.
+    /// </summary>
+    public async Task<IActionResult> OnPostCopieAsync(string pour)
+    {
+        if (!await ChargerAsync()) return NotFound();
+        if (!courriels.EstConfigure) return Retour(erreur: "Le courriel n'est pas configuré dans le module.");
+        var ids = new[] { Contrat.DocumentId, Contrat.DocumentResiliationId }.OfType<int>().ToList();
+        if (ids.Count == 0) return Retour(erreur: "Le contrat n'est pas encore signé par les deux parties.");
+        var a = pour == "parent" ? Parent?.Parent.Courriel : (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.CourrielRsge;
+        if (a is null) return Retour(erreur: pour == "parent" ? "Le parent n'a pas de courriel." : "Le courriel de la RSGE n'est pas dans Réglages.");
+        var docs = HttpContext.RequestServices.GetRequiredService<DocumentsService>();
+        var pieces = new List<(string, byte[])>();
+        foreach (var d in await db.Documents.AsNoTracking().Where(d => ids.Contains(d.Id)).ToListAsync())
+            pieces.Add((d.NomOriginal, await docs.LireAsync(d)));
+        try
+        {
+            await courriels.EnvoyerAsync(a, $"Copie : entente de service de {Contrat.Enfant.NomComplet}",
+                $"Voici une copie de l'entente de service de {Contrat.Enfant.NomComplet} (du {Affichage.Date(Contrat.Debut)} au {Affichage.Date(Contrat.Fin)})" +
+                (Contrat.DocumentResiliationId is null ? "." : ", avec la formule de résiliation."), pieces);
+        }
+        catch (Exception ex) { return Retour(erreur: $"L'envoi a échoué ({ex.GetType().Name})."); }
+        await journal.NoterMaintenantAsync("contrat.copie_envoyee", "Enfant", Contrat.EnfantId, a);
+        return Retour($"Copie envoyée à {a}.");
+    }
+
     /// <summary>PDF : document signe s'il existe, sinon apercu / Signed document if any, else preview.</summary>
-    public async Task<IActionResult> OnGetPdfAsync(bool resiliation = false)
+    public async Task<IActionResult> OnGetPdfAsync(bool resiliation = false, bool afficher = false)
     {
         if (!await ChargerAsync()) return NotFound();
         var docId = resiliation ? Contrat.DocumentResiliationId : Contrat.DocumentId;
         if (docId is { } did && await db.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == did) is { } doc)
         {
-            await journal.NoterMaintenantAsync("contrat.telecharger", "Enfant", Contrat.EnfantId, doc.NomOriginal);
+            await journal.NoterMaintenantAsync(afficher ? "contrat.afficher" : "contrat.telecharger", "Enfant", Contrat.EnfantId, doc.NomOriginal);
             var docs = HttpContext.RequestServices.GetRequiredService<DocumentsService>();
-            return File(await docs.LireAsync(doc), "application/pdf", doc.NomOriginal);
+            return this.Fichier(await docs.LireAsync(doc), "application/pdf", doc.NomOriginal, afficher);
         }
         var pdf = resiliation ? await contrats.PdfResiliationAsync(Contrat) : await contrats.PdfAsync(Contrat);
         await journal.NoterMaintenantAsync("contrat.apercu", "Enfant", Contrat.EnfantId);
-        return File(pdf, "application/pdf", "Aperçu " + ContratsService.NomPdf(Contrat, Contrat.Enfant));
+        return this.Fichier(pdf, "application/pdf", "Aperçu " + ContratsService.NomPdf(Contrat, Contrat.Enfant), afficher);
     }
 }

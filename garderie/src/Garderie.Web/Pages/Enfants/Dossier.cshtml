@@ -322,7 +322,9 @@
                 {
                     <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                         <span class="badge text-bg-light border">@Affichage.Nom(d.Type)</span>
-                        <a class="me-auto" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">@d.NomOriginal</a>
+                        <a class="me-auto" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id, afficher = true })" target="_blank" rel="noopener">@d.NomOriginal</a>
+                        <a class="btn btn-sm btn-doux" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id, afficher = true })" target="_blank" rel="noopener">Afficher</a>
+                        <a class="btn btn-sm btn-doux" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">Télécharger</a>
                         <span class="small text-muted">@Affichage.Taille(d.Taille) · @Affichage.Horodatage(d.TeleverseLe)</span>
                         @if (d.Note is not null) { <span class="small w-100">@d.Note</span> }
                         <form method="post" asp-page-handler="SupprimerDocument" asp-route-id="@e.Id" class="confirmer" data-confirmer="Supprimer définitivement « @d.NomOriginal » ?">

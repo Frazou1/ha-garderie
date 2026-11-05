@@ -67,7 +67,7 @@ public class ContratModel(ContratsService contrats, Chiffreur chiffreur, Garderi
         var signataire = (nom ?? "").Trim();
         if (png is null || !atteste || signataire.Length is < 2 or > 200)
         {
-            ModelState.AddModelError("", "Cochez l'attestation, écrivez votre nom et signez dans le cadre.");
+            ModelState.AddModelError("", "Cochez la case « J'ai lu et j'accepte » / « Je confirme », écrivez votre nom et signez dans le cadre.");
             return Page();
         }
         var ip = HttpContext.IpClient();

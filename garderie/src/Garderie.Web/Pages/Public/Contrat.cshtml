@@ -99,11 +99,18 @@ else
 
             <section class="carte">
                 <h2 class="h6">Votre signature</h2>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
-                    <label class="form-check-label small" for="atteste">
-                        @(Model.EstResiliation ? "Je résilie l'entente de service aux conditions ci-dessus." : i.Attestation + " " + i.NonRespect)
-                    </label>
+                <div class="attestation">
+                    @if (!Model.EstResiliation)
+                    {
+                        <p class="texte">@i.Attestation</p>
+                        <p class="texte">@i.NonRespect</p>
+                    }
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
+                        <label class="form-check-label" for="atteste">
+                            @(Model.EstResiliation ? "Je résilie l'entente de service aux conditions ci-dessus." : "J'ai lu et j'accepte l'entente de service et la régie interne.")
+                        </label>
+                    </div>
                 </div>
                 <label class="form-label small mb-0" for="nom">Votre nom</label>
                 <input class="form-control mb-2" id="nom" name="nom" value="@i.ParentNom" maxlength="200" required autocomplete="name" />

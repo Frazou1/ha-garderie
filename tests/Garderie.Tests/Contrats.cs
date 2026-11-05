@@ -118,6 +118,20 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // copie au parent (LPC)
         Assert.Contains(Courriels(), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
 
+        // Afficher (inline, sans CSP de page) et telecharger / Show inline (no page CSP) and download
+        var vue = await admin.GetAsync($"/Contrats/Contrat/{contratId}?handler=Pdf&afficher=true");
+        Assert.Equal("application/pdf", vue.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("inline", vue.Content.Headers.ContentDisposition?.ToString());
+        Assert.False(vue.Headers.Contains("Content-Security-Policy"));
+        var tele = await admin.GetAsync($"/Contrats/Contrat/{contratId}?handler=Pdf");
+        Assert.StartsWith("attachment", tele.Content.Headers.ContentDisposition?.ToString());
+
+        // Renvoyer une copie au parent / Re-send a copy to the parent
+        var avant = Courriels().Count(t => t.Contains("julie@exemple.test"));
+        await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Copie", [new("pour", "parent")]);
+        Assert.Equal(avant + 1, Courriels().Count(t => t.Contains("julie@exemple.test")));
+        Assert.Contains(Courriels(), t => t.Contains("Copie : entente de service") && t.Contains("application/pdf"));
+
         // Resiliation : preparee, envoyee, signee / Termination: prepared, sent, signed
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Resilier", [new("date", "2027-01-15")]);
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer&but=Resiliation", []);

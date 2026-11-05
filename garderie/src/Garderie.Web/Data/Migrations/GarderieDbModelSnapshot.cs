@@ -720,6 +720,13 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("RegieModifieeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegieTexte")
+                        .HasMaxLength(60000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Telephone")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+- Régie interne saisie dans Réglages : « Importer depuis Word (.docx) » une fois (titres, sous-titres, gras,
+  listes, lignes centrées), puis texte modifiable ; le PDF (Comic Sans, comme le Word, pages numérotées) est
+  généré automatiquement, joint au courriel du contrat et offert sur la page de signature. Aperçu dans Réglages.
+- Le texte de la régie lue par le parent est figé avec son contrat.
+- Le téléversement d'un PDF de régie est retiré (remplacé par le texte).
+
 ## 0.6.0
 - Contrat PDF fidèle au modèle Word de la RSGE : titres, sections, valeurs soulignées, fériés « ( X ) jj/mm/aaaa »
   sur deux colonnes, vacances « *** », clauses en un paragraphe Times 9 gras, mêmes polices.

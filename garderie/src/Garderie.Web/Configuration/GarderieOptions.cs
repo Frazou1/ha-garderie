@@ -66,7 +66,6 @@ public sealed class GarderieOptions
     public string DossierDocuments => Path.Combine(DataDir, "docs");
     public string DossierCles => Path.Combine(DataDir, "keys");
     public string FichierModeleFo0310 => Path.Combine(DataDir, "modeles", "FO-0310.pdf");
-    public string FichierRegieInterne => Path.Combine(DataDir, "modeles", "regie-interne.pdf");
     /// <summary>Polices du contrat televersees (jamais dans le depot) / Uploaded contract fonts (never in the repo).</summary>
     public string DossierPolices => Path.Combine(DataDir, "modeles", "polices");
 

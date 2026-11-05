@@ -1,9 +1,11 @@
 using Garderie.Web.Configuration;
 using Garderie.Web.Data;
+using Garderie.Web.Infrastructure;
 using Garderie.Web.Securite;
 using Garderie.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace Garderie.Web.Pages;
 
@@ -20,7 +22,8 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     public bool CourrielConfigure => courriels.EstConfigure;
     public string UrlPublique => options.UrlPublique;
     public string CompteCourriel => options.SmtpUtilisateur;
-    public bool RegieDisponible => System.IO.File.Exists(options.FichierRegieInterne);
+    [BindProperty] public string? RegieTexte { get; set; }
+    public DateTime? RegieModifieeLe { get; private set; }
 
     /// <summary>Textes du contrat a afficher (Reglages, sinon textes par defaut) / Contract texts to show.</summary>
     public sealed class SaisieContrat
@@ -40,6 +43,8 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     {
         Donnees = await db.Parametres.FindAsync(1) ?? new Parametres();
         Donnees.DebutPeriodes ??= FichesService.AncreParDefaut;
+        RegieTexte = Donnees.RegieTexte;
+        RegieModifieeLe = Donnees.RegieModifieeLe;
         Contrat = new SaisieContrat
         {
             VilleSignature = Donnees.VilleSignature, NoteVacances = Donnees.ContratNoteVacances,
@@ -124,26 +129,63 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         return RedirectToPage();
     }
 
-    /// <summary>Televerse la regie interne (PDF) / Uploads the internal rules (PDF).</summary>
-    public async Task<IActionResult> OnPostRegieAsync(IFormFile? regie)
+    public const int RegieMax = 60000;
+
+    /// <summary>Texte de la regie interne (le PDF est genere a partir de lui) / Internal rules text (PDF generated from it).</summary>
+    public async Task<IActionResult> OnPostRegieAsync()
     {
-        if (regie is null || regie.Length == 0 || regie.Length > 15 * 1024 * 1024)
+        var p = await db.Parametres.FindAsync(1);
+        if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
+        var t = (RegieTexte ?? "").Replace("\r\n", "\n").Trim('\n', ' ');
+        if (t.Length > RegieMax) { TempData["Erreur"] = $"La régie interne dépasse {RegieMax} caractères."; return RedirectToPage(); }
+        try { if (t.Length > 0) RegiePdf.Generer(t, p.NomRsge, p.NomGarderie, DateTime.UtcNow); }
+        catch (Exception ex) { TempData["Erreur"] = $"Le PDF n'a pas pu être généré ({ex.GetType().Name})."; return RedirectToPage(); }
+        p.RegieTexte = t.Length == 0 ? null : t;
+        p.RegieModifieeLe = DateTime.UtcNow;
+        journal.Noter("parametres.regie_interne", details: $"{t.Length} caractères");
+        await db.SaveChangesAsync();
+        TempData["Message"] = t.Length == 0 ? "Régie interne retirée : les contrats ne peuvent plus être envoyés." : "Régie interne enregistrée : le PDF remis aux parents est à jour.";
+        return RedirectToPage(null, null, "regie");
+    }
+
+    /// <summary>Importe la regie depuis le Word (.docx) : remplace le texte / Imports the rules from Word, replacing the text.</summary>
+    public async Task<IActionResult> OnPostImporterRegieAsync(IFormFile? word)
+    {
+        if (word is null || word.Length == 0 || word.Length > 15 * 1024 * 1024)
         {
-            TempData["Erreur"] = "Choisissez la régie interne en PDF (15 Mo maximum).";
+            TempData["Erreur"] = "Choisissez la régie interne en Word (.docx, 15 Mo maximum).";
             return RedirectToPage();
         }
         using var ms = new MemoryStream();
-        await regie.CopyToAsync(ms);
-        if (DocumentsService.DetecterType(ms.ToArray()) != "application/pdf")
+        await word.CopyToAsync(ms);
+        string texte;
+        try { texte = RegiePdf.ImporterDocx(ms.ToArray()); }
+        catch (InvalidDataException)
         {
-            TempData["Erreur"] = "La régie interne doit être un PDF.";
+            TempData["Erreur"] = "Ce fichier n'est pas un document Word .docx (un ancien .doc doit d'abord être enregistré en .docx).";
             return RedirectToPage();
         }
-        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierRegieInterne)!);
-        await System.IO.File.WriteAllBytesAsync(options.FichierRegieInterne, ms.ToArray());
-        await journal.NoterMaintenantAsync("parametres.regie_interne", details: $"{ms.Length} octets");
-        TempData["Message"] = "Régie interne enregistrée.";
-        return RedirectToPage();
+        if (texte.Trim().Length == 0 || texte.Length > RegieMax)
+        {
+            TempData["Erreur"] = texte.Trim().Length == 0 ? "Ce document Word est vide." : $"Ce document dépasse {RegieMax} caractères.";
+            return RedirectToPage();
+        }
+        var p = await db.Parametres.FindAsync(1);
+        if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
+        p.RegieTexte = texte.Trim('\n');
+        p.RegieModifieeLe = DateTime.UtcNow;
+        journal.Noter("parametres.regie_importee", details: $"{texte.Length} caractères");
+        await db.SaveChangesAsync();
+        TempData["Message"] = "Régie interne importée du Word. Vérifiez le texte et l'aperçu PDF ; vous pouvez le modifier ici.";
+        return RedirectToPage(null, null, "regie");
+    }
+
+    /// <summary>Apercu du PDF de la regie (tel que remis aux parents) / Rules PDF preview (as given to parents).</summary>
+    public async Task<IActionResult> OnGetRegiePdfAsync(bool telecharger = false)
+    {
+        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
+        if (string.IsNullOrWhiteSpace(p?.RegieTexte)) return NotFound();
+        return this.Fichier(RegiePdf.Generer(p.RegieTexte, p.NomRsge, p.NomGarderie, p.RegieModifieeLe), "application/pdf", "Régie interne.pdf", !telecharger);
     }
 
     /// <summary>

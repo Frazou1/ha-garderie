@@ -214,6 +214,10 @@ public class Parametres
     [MaxLength(2000)] public string? ContratNonRespect { get; set; }
     /// <summary>Note sur les vacances (ex. conge des fetes a confirmer) / Holiday note.</summary>
     [MaxLength(1000)] public string? ContratNoteVacances { get; set; }
+
+    // --- Regie interne : texte modifiable, PDF genere / Internal rules: editable text, generated PDF ---
+    [MaxLength(60000)] public string? RegieTexte { get; set; }
+    public DateTime? RegieModifieeLe { get; set; }
 }
 
 public enum EtatContrat

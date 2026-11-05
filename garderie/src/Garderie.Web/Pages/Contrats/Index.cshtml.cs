@@ -18,10 +18,11 @@ public class IndexModel(GarderieDb db, ContratsService contrats, Journal journal
     public List<Ligne> Lignes { get; private set; } = new();
     public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
     public int AContresigner => Lignes.Count(l => l.Contrat?.Etat == EtatContrat.SigneParent);
-    public bool RegieDisponible => contrats.RegieDisponible;
+    public bool RegieDisponible { get; private set; }
 
     public async Task OnGetAsync()
     {
+        RegieDisponible = await contrats.RegieDisponibleAsync();
         var enfants = await db.Enfants.AsNoTracking().Where(e => e.DateFin == null || e.DateFin >= Aujourdhui)
             .OrderBy(e => e.Prenom).ThenBy(e => e.Nom).ToListAsync();
         var ids = enfants.Select(e => e.Id).ToList();

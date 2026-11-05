@@ -241,3 +241,4 @@ span.code.verrou { min-height: 2.5rem; opacity: .85; }
 .attestation .form-check-input { float: none; flex: none; width: 1.9em; height: 1.9em; margin: 0; border: 2px solid var(--corail); cursor: pointer; }
 .attestation .form-check-label { font-weight: 700; cursor: pointer; }
 .carte.regie { border: 2px solid var(--sauge); background: var(--sauge-pale); }
+.texte-regie { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .85rem; line-height: 1.45; }

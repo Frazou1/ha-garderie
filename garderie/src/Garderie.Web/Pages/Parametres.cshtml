@@ -108,21 +108,42 @@
         </div>
         <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer les textes</button></div>
     </form>
-    <hr />
-    <h3 class="h6">Régie interne (PDF remis aux parents)</h3>
-    @if (Model.RegieDisponible)
+</section>
+
+<section class="carte" id="regie">
+    <h2 class="h5">Régie interne</h2>
+    @if (Model.RegieTexte is not null)
     {
-        <p class="mb-2"><span class="badge text-bg-success">Enregistrée</span> Les parents peuvent l'ouvrir avant de signer leur contrat.</p>
+        <p class="mb-2"><span class="badge text-bg-success">Enregistrée</span>
+            @if (Model.RegieModifieeLe is { } m) { <span class="small text-muted">modifiée le @Affichage.Horodatage(m)</span> }
+            — le PDF est généré à partir de ce texte, joint au courriel du contrat et offert sur la page de signature.</p>
+        <p class="d-flex flex-wrap gap-2">
+            <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" target="_blank" rel="noopener">Afficher le PDF</a>
+            <a class="btn btn-doux btn-sm" asp-page-handler="RegiePdf" asp-route-telecharger="true">Télécharger</a>
+        </p>
     }
-    <form method="post" asp-page-handler="Regie" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
-        <input type="file" name="regie" accept="application/pdf,.pdf" class="form-control w-auto" required aria-label="Régie interne" />
-        <button type="submit" class="btn btn-doux">Téléverser</button>
+    else
+    {
+        <p class="bulle bulle-erreur">Aucune régie interne : les contrats ne peuvent pas être envoyés. Importez votre Word ci-dessous.</p>
+    }
+    <form method="post" asp-page-handler="ImporterRegie" enctype="multipart/form-data"
+          class="d-flex flex-wrap gap-2 align-items-center mb-3@(Model.RegieTexte is null ? "" : " confirmer")"
+          data-confirmer="Remplacer le texte actuel de la régie interne par celui du Word ?">
+        <label class="small" for="word">Importer depuis Word (.docx)</label>
+        <input type="file" id="word" name="word" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="form-control w-auto" required />
+        <button type="submit" class="btn btn-doux">Importer</button>
+    </form>
+    <form method="post" asp-page-handler="Regie">
+        <label class="form-label" for="RegieTexte">Texte de la régie interne</label>
+        <textarea asp-for="RegieTexte" class="form-control texte-regie" rows="22" maxlength="@ParametresModel.RegieMax"></textarea>
+        <div class="form-text">@Garderie.Web.Services.RegiePdf.Aide</div>
+        <button type="submit" class="btn btn-primary mt-2">Enregistrer la régie interne</button>
     </form>
 </section>
 
 <section class="carte">
     <h2 class="h5">Polices du contrat</h2>
-    <p class="small text-muted">Pour que le contrat PDF ait les polices de votre modèle Word. Ces polices appartiennent à Microsoft :
+    <p class="small text-muted">Pour que le contrat et la régie interne en PDF aient les polices de vos modèles Word. Ces polices appartiennent à Microsoft :
         elles ne sont pas fournies avec le module. Copiez-les depuis votre ordinateur (dossier C:\Windows\Fonts) ; elles restent
         dans les données du module. Sans police, une police de remplacement est utilisée.</p>
     <ul class="list-group mb-0">

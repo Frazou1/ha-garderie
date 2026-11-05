@@ -36,6 +36,8 @@ public sealed record InfosContrat
     public string MentionLpc { get; init; } = "";
     public string Attestation { get; init; } = "";
     public string NonRespect { get; init; } = "";
+    /// <summary>Regie interne (balisage) lue par le parent, figee avec le contrat / Internal rules read by the parent, frozen.</summary>
+    public string? Regie { get; init; }
     public string? Ville { get; init; }
     public DateOnly Debut { get; init; }
     public DateOnly Fin { get; init; }

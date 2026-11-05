@@ -13,7 +13,7 @@ namespace Garderie.Web.Pages.Public;
 /// ou formule de resiliation.
 /// Parent page for a contract (one-time link): signature (info to complete, agreement, internal rules) or termination.
 /// </summary>
-public class ContratModel(ContratsService contrats, Chiffreur chiffreur, GarderieOptions options, Journal journal) : PageModel
+public class ContratModel(ContratsService contrats, Journal journal) : PageModel
 {
     [BindProperty(SupportsGet = true, Name = "j")] public string? Jeton { get; set; }
     [BindProperty] public SaisieParent Saisie { get; set; } = new();
@@ -23,7 +23,7 @@ public class ContratModel(ContratsService contrats, Chiffreur chiffreur, Garderi
     public bool NasEnregistre { get; private set; }
     public bool Termine { get; private set; }
     public bool DejaUtilise { get; private set; }
-    public bool RegieDisponible => contrats.RegieDisponible;
+    public bool RegieDisponible { get; private set; }
     public bool EstResiliation => Lien?.But == ButLien.Resiliation;
 
     private async Task<bool> ChargerAsync()
@@ -37,6 +37,7 @@ public class ContratModel(ContratsService contrats, Chiffreur chiffreur, Garderi
         Infos = await contrats.InfosAsync(Lien.Contrat);
         Parent = await contrats.LienParentAsync(Lien.Contrat);
         NasEnregistre = Parent?.Parent.NasChiffre is not null;
+        RegieDisponible = await contrats.RegieDisponibleAsync();
         return true;
     }
 
@@ -56,9 +57,9 @@ public class ContratModel(ContratsService contrats, Chiffreur chiffreur, Garderi
     /// <summary>Regie interne (PDF) accessible avec le lien / Internal rules PDF, available with the link.</summary>
     public async Task<IActionResult> OnGetRegieAsync(bool telecharger = false)
     {
-        if (!await ChargerAsync() || !RegieDisponible) return NotFound();
+        if (!await ChargerAsync() || await contrats.RegiePdfAsync() is not { } pdf) return NotFound();
         await journal.NoterMaintenantAsync("contrat.regie_ouverte", "Enfant", Lien!.Contrat.EnfantId);
-        return this.Fichier(await System.IO.File.ReadAllBytesAsync(options.FichierRegieInterne), "application/pdf", "Régie interne.pdf", !telecharger);
+        return this.Fichier(pdf, "application/pdf", "Régie interne.pdf", !telecharger);
     }
 
     public async Task<IActionResult> OnPostSignerAsync(string? signature, string? nom, bool atteste)

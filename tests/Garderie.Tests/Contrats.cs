@@ -80,9 +80,10 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         // Sans regie interne : envoi bloque / Without internal rules: sending blocked
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
         Assert.DoesNotContain(Courriels(), t => t.Contains("julie@exemple.test"));
-        var options = appli.Services.GetRequiredService<Garderie.Web.Configuration.GarderieOptions>();
-        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierRegieInterne)!);
-        File.WriteAllBytes(options.FichierRegieInterne, ModeleTest.Creer());
+        // Regie saisie dans Reglages ; le PDF est genere / Rules entered in Settings; the PDF is generated
+        await Poster(admin, "/Parametres", "/Parametres?handler=Regie",
+            [new("RegieTexte", "# Régie Interne\n> ## {rsge}\n\n### Heures d'ouverture\nDu lundi au **vendredi**\n- Jour de l'An")]);
+        Assert.Equal("application/pdf", (await admin.GetAsync("/Parametres?handler=RegiePdf")).Content.Headers.ContentType?.MediaType);
 
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
         var jeton = DernierJeton("julie@exemple.test");

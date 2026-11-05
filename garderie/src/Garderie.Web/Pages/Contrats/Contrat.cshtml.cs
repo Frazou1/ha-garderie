@@ -31,6 +31,7 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         Infos = await contrats.InfosAsync(c);
         Parent = await contrats.LienParentAsync(c);
         LienActif = await db.LiensContrats.AnyAsync(l => l.ContratId == Id && l.UtiliseLe == null && l.AnnuleLe == null && l.ExpireLe > DateTime.UtcNow);
+        RegieDisponible = await contrats.RegieDisponibleAsync();
         return true;
     }
 
@@ -92,8 +93,8 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         return RedirectToPage("/Public/Contrat", new { j = jeton });
     }
 
-    public bool RegieDisponible => contrats.RegieDisponible;
-    private const string SansRegie = "Téléversez d'abord la régie interne dans Réglages : le parent atteste l'avoir lue, il doit pouvoir la consulter.";
+    public bool RegieDisponible { get; private set; }
+    private const string SansRegie = "Ajoutez d'abord la régie interne dans Réglages : le parent atteste l'avoir lue, il doit pouvoir la consulter.";
 
     private bool AttendLeParent(ButLien but) => but == ButLien.Signature
         ? Contrat.Etat == EtatContrat.Brouillon && Parent is not null

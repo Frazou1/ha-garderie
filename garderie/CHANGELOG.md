@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.2
+- Relevés 24 : bouton « Supprimer » pour un relevé produit par erreur (jamais remis ni posté) ; le relevé précédent
+  redevient en vigueur et la numérotation reprend après le dernier relevé restant.
+- Supprimer le dossier d'un enfant retire aussi ses relevés 24.
+
 ## 0.12.1
 - Réglages → « La garderie » : adresse découpée comme sur les formulaires de Revenu Québec (app., numéro, rue, ville,
   province, code postal). Le relevé 24 et le sommaire la reprennent ; le contrat et la régie utilisent la ligne

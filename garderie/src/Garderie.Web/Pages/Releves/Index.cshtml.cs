@@ -39,6 +39,20 @@ public class IndexModel(GarderieDb db, RelevesService releves, Journal journal) 
 
     public bool CourrielConfigure => releves.CourrielConfigure;
 
+    /// <summary>Supprime un releve produit par erreur / Deletes a slip issued by mistake.</summary>
+    public async Task<IActionResult> OnPostSupprimerAsync(int id)
+    {
+        var r = await db.Releves.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (r is null) return NotFound();
+        if (await releves.SupprimerAsync(id) is { } erreur) TempData["Erreur"] = erreur;
+        else
+        {
+            await journal.NoterMaintenantAsync("releve24.supprimer", "Enfant", r.EnfantId, $"{r.Annee} no {r.Numero}");
+            TempData["Message"] = $"Relevé no {r.Numero} supprimé.";
+        }
+        return RedirectToPage(new { annee = r.Annee });
+    }
+
     /// <summary>Envoie un releve par courriel (consentement requis) / Emails one slip (consent required).</summary>
     public async Task<IActionResult> OnPostEnvoyerAsync(int id)
     {

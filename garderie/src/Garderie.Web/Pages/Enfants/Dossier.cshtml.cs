@@ -301,6 +301,9 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             photos.AddRange([c.SignatureParentFichier, c.SignatureRsgeFichier, c.SignatureResiliationFichier]);
         await using var tx = await db.Database.BeginTransactionAsync();
         await db.Presences.Where(p => p.EnfantId == Id).ExecuteDeleteAsync();
+        // Releves 24 classes dans ce dossier (leurs PDF partent avec les documents) / RL-24 slips filed in this record
+        await HttpContext.RequestServices.GetRequiredService<RelevesService>()
+            .RetirerAsync(await db.Releves.Where(r => r.EnfantId == Id).ToListAsync());
         db.Enfants.Remove(e); // cascade : liens parents, contacts, allergies, medicaments, horaires, documents
         journal.Noter("enfant.supprimer", "Enfant", Id, $"{nom} ({fichiers.Count} document(s))");
         await db.SaveChangesAsync();

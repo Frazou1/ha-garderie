@@ -157,6 +157,11 @@ public class RelevesTests(Appli appli) : IClassFixture<Appli>
         var totaux = Db((db, _) => (db.Releves.Count(x => x.RemplaceParId == null)));
         Assert.Equal(1, totaux);
 
+        // Suppression d'un releve produit par erreur : le precedent revient, la numerotation recule
+        // Deleting a mistaken slip: the previous one is current again, numbering steps back
+        var temoin = await admin.GetStringAsync("/Releves?annee=2025");
+        await admin.PostAsync($"/Releves?handler=Supprimer&id={premier.Id}", new FormUrlEncodedContent([new("__RequestVerificationToken", Jeton(temoin))]));
+        Assert.Equal(2, Db((db, _) => db.Releves.Count()));   // refuse : il a ete remplace
         var pdf = await admin.GetAsync($"/Releves?handler=Pdf&id={modifie.Id}");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
         var sommaire = await admin.GetAsync("/Releves?handler=Sommaire&annee=2025");
@@ -167,5 +172,18 @@ public class RelevesTests(Appli appli) : IClassFixture<Appli>
             File.WriteAllBytes(Path.Combine(sortie, "releve_modifie.pdf"), await pdf.Content.ReadAsByteArrayAsync());
             File.WriteAllBytes(Path.Combine(sortie, "sommaire_2025.pdf"), await sommaire.Content.ReadAsByteArrayAsync());
         }
+
+        temoin = await admin.GetStringAsync("/Releves?annee=2025");
+        await admin.PostAsync($"/Releves?handler=Supprimer&id={modifie.Id}", new FormUrlEncodedContent([new("__RequestVerificationToken", Jeton(temoin))]));
+        Assert.Null(Db((db, _) => db.Releves.Find(premier.Id)!.RemplaceParId));   // le premier redevient en vigueur
+        Assert.Equal("024000034", Db((db, _) => db.Parametres.Find(1)!.Rl24DernierNumero));
+        Assert.Equal(1, Db((db, _) => db.Documents.Count(d => d.Type == TypeDocument.Releve24)));
+
+        // Dossier de l'enfant supprime : ses releves partent aussi / Child record deleted: its slips go too
+        var dossier = await admin.GetStringAsync($"/Enfants/Dossier/{enfantId}");
+        await admin.PostAsync($"/Enfants/Dossier/{enfantId}?handler=SupprimerEnfant",
+            new FormUrlEncodedContent([new("confirmation", "Léa"), new("__RequestVerificationToken", Jeton(dossier))]));
+        Assert.Equal(0, Db((db, _) => db.Releves.Count()));
+        Assert.Null(Db((db, _) => db.Parametres.Find(1)!.Rl24DernierNumero));
     }
 }

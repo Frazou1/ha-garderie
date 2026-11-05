@@ -294,6 +294,47 @@ public sealed partial class RelevesService(GarderieDb db, GarderieOptions option
             annee, await FournisseurAsync(p), releves, enfants, jours, admissible, p.Rl24Signataire, p.Telephone, Temps.Aujourdhui())));
     }
 
+    // --- Suppression / Deletion ---
+
+    /// <summary>
+    /// Supprime un releve produit par erreur (jamais remis ni transmis) : le precedent redevient en vigueur, le PDF est
+    /// efface et la numerotation reprend apres le dernier releve restant. Le releve modifie doit etre supprime d'abord.
+    /// Deletes a slip issued by mistake: the previous one is current again, the PDF is erased, numbering steps back.
+    /// </summary>
+    public async Task<string?> SupprimerAsync(int id)
+    {
+        var r = await db.Releves.FirstOrDefaultAsync(x => x.Id == id);
+        if (r is null) return "Relevé introuvable.";
+        if (r.RemplaceParId is not null) return "Ce relevé a été remplacé : supprimez d'abord le relevé modifié.";
+        var doc = r.DocumentId is { } did ? await db.Documents.FirstOrDefaultAsync(d => d.Id == did) : null;
+        await RetirerAsync([r]);
+        if (doc is not null) db.Documents.Remove(doc);
+        await db.SaveChangesAsync();
+        if (doc is not null) documents.Supprimer(doc);
+        return null;
+    }
+
+    /// <summary>
+    /// Retire des releves (ex. dossier de l'enfant supprime ; ses documents partent avec lui). A sauvegarder ensuite.
+    /// Removes slips (e.g. child record deleted; its documents go with it). Save afterwards.
+    /// </summary>
+    public async Task RetirerAsync(IReadOnlyCollection<Releve> aRetirer)
+    {
+        if (aRetirer.Count == 0) return;
+        var ids = aRetirer.Select(r => r.Id).ToList();
+        foreach (var precedent in await db.Releves.Where(x => x.RemplaceParId != null && ids.Contains(x.RemplaceParId.Value) && !ids.Contains(x.Id)).ToListAsync())
+            precedent.RemplaceParId = null;
+        db.Releves.RemoveRange(aRetirer);
+        var p = await db.Parametres.FirstOrDefaultAsync();
+        if (p?.Rl24DernierNumero is { } dernier && aRetirer.Any(r => r.Numero == dernier))
+        {
+            // Dernier numero encore utilise pour ce formulaire / Last number still used for this form
+            var restants = await db.Releves.Where(x => !ids.Contains(x.Id) && x.Numero.StartsWith(dernier.Substring(0, 5)))
+                .Select(x => x.Numero).ToListAsync();
+            p.Rl24DernierNumero = restants.OrderBy(n => n.Substring(5, 3)).LastOrDefault();
+        }
+    }
+
     // --- Envoi / Sending ---
 
     public bool CourrielConfigure => courriels.EstConfigure;

@@ -27,7 +27,7 @@ public class IndexModel(PresencesService presences, Journal journal) : PageModel
     public IReadOnlyList<DateOnly> Jours { get; private set; } = [];
     public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
     public List<LigneSemaine> Lignes { get; private set; } = new();
-    public bool AuMoinsUnPropose => Lignes.Any(l => l.Jours.Any(j => j.Inscrit && new[] { j.Matin, j.Pm }.Any(c => !c.Enregistre && c.Code != "")));
+    public bool AuMoinsUnPropose => Lignes.Any(l => !l.Verrouillee && l.Jours.Any(j => j.Inscrit && new[] { j.Matin, j.Pm }.Any(c => !c.Enregistre && c.Code != "")));
 
     public async Task OnGetAsync()
     {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+- Présences : une semaine dont la fiche est signée affiche « ✓ Fiche signée » ou « Fiche en attente du parent »
+  (lien vers la fiche) et passe en lecture seule (aussi refusé côté serveur). « Reprendre la fiche » la
+  rend de nouveau modifiable tant que le parent n'a pas signé.
+
 ## 0.3.1
 - Signature du parent : le bouton se désactive au premier toucher ; un lien déjà utilisé pour signer affiche
   « Merci » au lieu de « Lien invalide » (double toucher).

@@ -332,6 +332,35 @@ public class FichesParcoursTests(Appli appli) : IClassFixture<Appli>
     }
 
     [Fact]
+    public async Task SemaineSigneeVerrouilleeDansPresences()
+    {
+        var id = Preparer("Verrou");
+        var admin = Admin();
+        await PosterFiche(admin, id, "SignerRsge", new() { ["signature"] = ModeleTest.Png });
+
+        var semaine = $"/Presences?semaine={Debut:yyyy-MM-dd}";
+        var html = await admin.GetStringAsync(semaine);
+        var carte = html[html.IndexOf(">Verrou <", StringComparison.Ordinal)..];
+        carte = carte[..carte.IndexOf("</section>", StringComparison.Ordinal)];
+        Assert.Contains("Fiche en attente du parent", carte);
+        Assert.DoesNotContain("<select", carte);                    // lecture seule / read-only
+
+        // Une modification forcee est ignoree par le serveur / A forced change is ignored by the server
+        await admin.PostAsync(semaine, new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Jeton(html),
+            ["codes[0].EnfantId"] = $"{id}", ["codes[0].Date"] = $"{Debut:yyyy-MM-dd}", ["codes[0].Demi"] = "Matin", ["codes[0].Code"] = "A",
+        }));
+        Assert.Equal("P", Db(db => db.Presences.Single(p => p.EnfantId == id && p.Date == Debut && p.Demi == DemiJournee.Matin).Code));
+
+        // Apres « Reprendre », la semaine redevient modifiable / After reopening, editable again
+        await PosterFiche(admin, id, "Reprendre");
+        html = await admin.GetStringAsync(semaine);
+        carte = html[html.IndexOf(">Verrou <", StringComparison.Ordinal)..];
+        Assert.Contains("<select", carte[..carte.IndexOf("</section>", StringComparison.Ordinal)]);
+    }
+
+    [Fact]
     public async Task PagesFichesInvisiblesSurLePortPublic()
     {
         var r = await Parent().GetAsync("/garderie/Fiches");

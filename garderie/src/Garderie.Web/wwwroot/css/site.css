@@ -220,3 +220,9 @@ span.code { display: grid; place-items: center; min-height: 2.3rem; border-radiu
 details.carte > summary { cursor: pointer; }
 .btn:disabled { opacity: .45; }
 .validation-summary-valid { display: none; }
+
+/* Semaine dont la fiche est signee : lecture seule / Week with a signed sheet: read-only */
+.badge-fiche { display: inline-block; margin: -.3rem 0 .6rem; padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 700; text-decoration: none; }
+.badge-fiche.signee { background: var(--sauge-pale); color: #2f6b4f; }
+.badge-fiche.attente { background: var(--ciel-pale); color: #2f6890; }
+span.code.verrou { min-height: 2.5rem; opacity: .85; }

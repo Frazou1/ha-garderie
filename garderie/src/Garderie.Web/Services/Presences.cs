@@ -18,8 +18,14 @@ public sealed record CaseDemi(DemiJournee Demi, string Code, bool Enregistre);
 /// <summary>Un jour : 2 demi-cases, ou rien si l'enfant n'est pas inscrit / One day: 2 half cells.</summary>
 public sealed record JourSemaine(DateOnly Date, bool Inscrit, CaseDemi Matin, CaseDemi Pm);
 
-/// <summary>Une ligne (un enfant, une semaine) / One row: one child, one week.</summary>
-public sealed record LigneSemaine(Enfant Enfant, IReadOnlyList<JourSemaine> Jours);
+/// <summary>
+/// Une ligne (un enfant, une semaine). Fiche : fiche d'assiduite deja signee qui couvre la semaine (verrouillee).
+/// One row: one child, one week. Fiche: already-signed sheet covering the week (locked).
+/// </summary>
+public sealed record LigneSemaine(Enfant Enfant, IReadOnlyList<JourSemaine> Jours, FicheAssiduite? Fiche = null)
+{
+    public bool Verrouillee => Fiche is not null;
+}
 
 public sealed class PresencesService(GarderieDb db)
 {
@@ -72,6 +78,7 @@ public sealed class PresencesService(GarderieDb db)
             .ToListAsync();
         var presences = await db.Presences.AsNoTracking().Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
         var fermetures = await db.Fermetures.AsNoTracking().Where(f => f.Date >= debut && f.Date <= fin).ToListAsync();
+        var signees = await FichesSigneesAsync(debut, fin);
 
         CaseDemi Case(Enfant e, DateOnly d, DemiJournee demi)
         {
@@ -81,8 +88,22 @@ public sealed class PresencesService(GarderieDb db)
         return enfants.Select(e => new LigneSemaine(e, jours.Select(d => e.EstInscritLe(d)
             ? new JourSemaine(d, true, Case(e, d, DemiJournee.Matin), Case(e, d, DemiJournee.Pm))
             : new JourSemaine(d, false, new CaseDemi(DemiJournee.Matin, "", false), new CaseDemi(DemiJournee.Pm, "", false))
-        ).ToList())).ToList();
+        ).ToList(), signees.FirstOrDefault(f => f.EnfantId == e.Id && f.Debut <= debut && f.Fin >= debut))).ToList();
     }
+
+    /// <summary>
+    /// Fiches signees (RSGE ou parent) qui touchent la plage : leurs jours ne se modifient plus ici.
+    /// Signed sheets touching the range: their days can no longer be changed here.
+    /// </summary>
+    public async Task<List<FicheAssiduite>> FichesSigneesAsync(DateOnly debut, DateOnly fin)
+    {
+        var min = debut.AddDays(-13);
+        return await db.Fiches.AsNoTracking()
+            .Where(f => f.Etat != EtatFiche.Brouillon && f.Debut >= min && f.Debut <= fin).ToListAsync();
+    }
+
+    public static bool EstVerrouille(IEnumerable<FicheAssiduite> signees, int enfantId, DateOnly jour) =>
+        signees.Any(f => f.EnfantId == enfantId && f.Debut <= jour && f.Fin >= jour);
 
     /// <summary>
     /// Enregistre des codes (code vide = supprime). Ignore les jours ou l'enfant n'est pas inscrit.
@@ -95,11 +116,13 @@ public sealed class PresencesService(GarderieDb db)
         var (debut, fin) = (liste.Min(c => c.Date), liste.Max(c => c.Date));
         var existantes = await db.Presences.Where(p => p.Date >= debut && p.Date <= fin).ToListAsync();
         var enfants = await db.Enfants.AsNoTracking().ToDictionaryAsync(e => e.Id);
+        var signees = await FichesSigneesAsync(debut, fin);
         var changements = 0;
         foreach (var (enfantId, date, demi, brut) in liste)
         {
             var code = (brut ?? "").Trim();
             if (!enfants.TryGetValue(enfantId, out var e) || !e.EstInscritLe(date) || !Enum.IsDefined(demi) || !CodesPresence.EstValide(code)) continue;
+            if (EstVerrouille(signees, enfantId, date)) continue;   // fiche deja signee / sheet already signed
             var p = existantes.FirstOrDefault(x => x.EnfantId == enfantId && x.Date == date && x.Demi == demi);
             if (string.IsNullOrEmpty(code))
             {

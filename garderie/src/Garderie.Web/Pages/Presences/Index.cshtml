@@ -45,6 +45,14 @@ else
                     <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
                     <span class="enfant-nom">@e.Prenom <span class="text-muted fw-normal">@e.Nom</span></span>
                 </a>
+                @if (l.Fiche is { } fiche)
+                {
+                    <a class="badge-fiche @(fiche.Etat == EtatFiche.SigneeParent ? "signee" : "attente")"
+                       asp-page="/Fiches/Fiche" asp-route-enfantId="@e.Id" asp-route-debut="@fiche.Debut.ToString("yyyy-MM-dd")"
+                       title="Ces jours ne se modifient plus ici. Ouvrir la fiche.">
+                        @(fiche.Etat == EtatFiche.SigneeParent ? "✓ Fiche signée" : "✎ Fiche en attente du parent")
+                    </a>
+                }
                 <div class="grille-semaine">
                     <div class="jour demis-libelles" aria-hidden="true">
                         <span class="jour-nom">&nbsp;</span>
@@ -60,6 +68,13 @@ else
                             {
                                 <a class="code code-hors" asp-page="/Enfants/Edition" asp-route-id="@e.Id"
                                    title="Pas encore inscrit ce jour-là (date de début : @Affichage.Date(e.DateDebut)). Toucher pour la changer.">·</a>
+                            }
+                            else if (l.Verrouillee)
+                            {
+                                @foreach (var d in new[] { j.Matin, j.Pm })
+                                {
+                                    <span class="code @Affichage.ClasseCode(d.Code) verrou" title="@CodesPresence.Libelle(d.Code)">@(d.Code == "" ? "—" : CodesPresence.Court(d.Code))</span>
+                                }
                             }
                             else
                             {

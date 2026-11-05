@@ -19,9 +19,11 @@ namespace Garderie.Web.Services;
 public static partial class FormulaireProtege
 {
     /// <summary>Valeur d'un champ et texte affiche (masque du formulaire), sinon la valeur / Field value and shown text.</summary>
+    /// <param name="RendreVisible">Rend visible un champ cache par defaut (comme le script du formulaire)
+    /// / Shows a field hidden by default (as the form's script does).</param>
     /// <param name="Cases">Nombre de cases d'un champ en peigne, si le formulaire se trompe (ex. NAS a 9 cases
     /// declare a 8) / Comb cell count when the form declares it wrong.</param>
-    public sealed record Champ(string Valeur, string? Affichage = null, int? Cases = null)
+    public sealed record Champ(string Valeur, string? Affichage = null, int? Cases = null, bool RendreVisible = false)
     {
         public string Texte => Affichage ?? Valeur;
     }
@@ -82,6 +84,7 @@ public static partial class FormulaireProtege
                 var flux = Apparence(w, champ, valeur.Texte, polices, valeur.Cases);
                 Ecrire(ap, n => Flux(brut.Cle, n, flux.Dict, flux.Contenu));
                 var remplacements = new Dictionary<string, string> { ["/AP"] = $"<< /N {ap} 0 R >>" };
+                if (valeur.RendreVisible) remplacements["/F"] = "4";   // imprimable, visible / printable, visible
                 if (ReferenceEquals(w, champ)) remplacements["/V"] = Chaine(brut.Cle, Numero(champ), valeur.Valeur);
                 Ecrire(Numero(w), n => Encoding.ASCII.GetBytes(Dictionnaire(brut.Cle, n, w, remplacements)));
             }

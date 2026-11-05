@@ -16,6 +16,7 @@ public enum TypeDocument
     [Display(Name = "Fiche d'assiduité signée")] FicheAssiduite = 6,
     [Display(Name = "Contrat signé")] Contrat = 7,
     [Display(Name = "Résiliation de contrat")] Resiliation = 8,
+    [Display(Name = "Relevé 24")] Releve24 = 9,
     [Display(Name = "Autre")] Autre = 99,
 }
 
@@ -393,4 +394,31 @@ public class LienFiche
     public LienSignature Lien { get; set; } = null!;
     public int FicheId { get; set; }
     public FicheAssiduite Fiche { get; set; } = null!;
+}
+
+/// <summary>
+/// Releve 24 produit pour un parent payeur et une annee. Le contenu est fige en JSON (sans NAS) ; le PDF rempli est
+/// dans le dossier du premier enfant. Un releve modifie (code A) remplace le precedent.
+/// RL-24 slip issued to a paying parent for a year: frozen JSON content (no SIN), filled PDF in the first child's file.
+/// </summary>
+public class Releve
+{
+    public int Id { get; set; }
+    public int Annee { get; set; }
+    /// <summary>null si le parent a ete supprime (le releve reste, pour l'impot) / null if the parent was deleted.</summary>
+    public int? ParentId { get; set; }
+    public Parent? Parent { get; set; }
+    [MaxLength(9)] public string Numero { get; set; } = "";
+    /// <summary>R original, A modifie / R original, A amended.</summary>
+    [MaxLength(1)] public string Code { get; set; } = "R";
+    [MaxLength(9)] public string? NumeroOriginal { get; set; }
+    public string Contenu { get; set; } = "";
+    public int EnfantId { get; set; }
+    public int? DocumentId { get; set; }
+    /// <summary>Remplace par un releve modifie / Replaced by an amended slip.</summary>
+    public int? RemplaceParId { get; set; }
+    public DateTime CreeLe { get; set; }
+    [MaxLength(100)] public string? CreePar { get; set; }
+    public DateTime? EnvoyeLe { get; set; }
+    [MaxLength(200)] public string? EnvoyeA { get; set; }
 }

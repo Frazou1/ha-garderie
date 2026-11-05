@@ -1,0 +1,96 @@
+@page
+@model Garderie.Web.Pages.Releves.PreparerModel
+@{
+    ViewData["Title"] = "Relevé 24";
+}
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Relevé 24 @Model.Annee</h1>
+        <p class="sous-titre">@Model.Parent.Prenom @Model.Parent.Nom</p>
+    </div>
+    <a class="btn btn-doux btn-sm" asp-page="Index" asp-route-annee="@Model.Annee">Retour aux relevés</a>
+</div>
+
+<div asp-validation-summary="All" class="bulle bulle-erreur"></div>
+@if (Model.Manque.Count > 0)
+{
+    <p class="bulle bulle-erreur">Complétez d'abord dans <a asp-page="/Parametres" asp-fragment="rl24">Réglages</a> : @string.Join(", ", Model.Manque).</p>
+}
+@if (Model.Dernier is { } d)
+{
+    <p class="bulle">Le relevé no <strong>@d.Numero</strong> a déjà été produit le @Affichage.Horodatage(d.CreeLe). En produire un autre crée un
+        <strong>relevé modifié</strong> (code A) qui le remplace : remettez-le au parent et postez sa copie 1 à Revenu Québec.</p>
+}
+@if (!Model.NasAuDossier)
+{
+    <p class="bulle bulle-erreur">Le NAS de ce parent n'est pas au dossier (case G). Revenu Québec exige des efforts raisonnables pour l'obtenir :
+        @if (Model.EnfantDuParent is { } eid)
+        {
+            <a asp-page="/Enfants/Parent" asp-route-enfantId="@eid" asp-route-parentId="@Model.ParentId">ajoutez-le dans la fiche du parent</a>
+        }
+        (il est aussi demandé au parent à la signature du contrat).</p>
+}
+@if (Model.EnTrop > 0)
+{
+    <p class="bulle bulle-erreur">Ce parent a plus de 3 enfants : un relevé en compte 3 au maximum. Les @Model.EnTrop autre(s) demandent un deuxième relevé.</p>
+}
+
+<form method="post">
+    <section class="carte">
+        <h2 class="h5">Enfants et frais payés en @Model.Annee</h2>
+        <p class="small text-muted">Jours payés : présences, absences et fermetures (selon les présences et l'horaire). Montant proposé : jours × tarif
+            de la régie. <strong>Inscrivez les sommes réellement payées</strong> (case C). Case D : frais qui ne donnent pas droit au crédit
+            (ex. pénalité de retard de paiement, sorties, transport, repas facturés à part). Case E = C − D.</p>
+        @for (var i = 0; i < Model.Saisie.Enfants.Count; i++)
+        {
+            var e = Model.Saisie.Enfants[i];
+            var p = Model.Proposes.GetValueOrDefault(e.EnfantId);
+            <div class="row g-2 align-items-end mb-2">
+                <input type="hidden" name="Saisie.Enfants[@i].EnfantId" value="@e.EnfantId" />
+                <div class="col-12 col-md-3 fw-bold">@p?.Prenom @p?.Nom
+                    <span class="small text-muted d-block">né(e) le @(p?.Naissance is { } n ? Affichage.Date(n) : "—")</span></div>
+                <div class="col-4 col-md-2">
+                    <label class="form-label small mb-0" for="j@i">Jours (B.1)</label>
+                    <input class="form-control" id="j@i" name="Saisie.Enfants[@i].Jours" value="@e.Jours" type="number" min="0" max="366" required />
+                </div>
+                <div class="col-4 col-md-3">
+                    <label class="form-label small mb-0" for="t@i">Total payé (C)</label>
+                    <input class="form-control" id="t@i" name="Saisie.Enfants[@i].Total" value="@e.Total" inputmode="decimal" required />
+                </div>
+                <div class="col-4 col-md-3">
+                    <label class="form-label small mb-0" for="n@i">Non admissible (D)</label>
+                    <input class="form-control" id="n@i" name="Saisie.Enfants[@i].NonAdmissible" value="@e.NonAdmissible" inputmode="decimal" />
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="carte">
+        <h2 class="h5">Personne qui a payé (comme sur le formulaire)</h2>
+        <p class="small text-muted">L'adresse vient de la fiche du parent, découpée automatiquement : vérifiez-la.</p>
+        <div class="row g-2">
+            <div class="col-md-6"><label asp-for="Saisie.Nom" class="form-label small mb-0">Nom de famille</label>
+                <input asp-for="Saisie.Nom" class="form-control" required maxlength="60" /></div>
+            <div class="col-md-6"><label asp-for="Saisie.Prenom" class="form-label small mb-0">Prénom</label>
+                <input asp-for="Saisie.Prenom" class="form-control" required maxlength="60" /></div>
+            <div class="col-4 col-md-2"><label asp-for="Saisie.Appartement" class="form-label small mb-0">App.</label>
+                <input asp-for="Saisie.Appartement" class="form-control" maxlength="10" /></div>
+            <div class="col-8 col-md-2"><label asp-for="Saisie.Numero" class="form-label small mb-0">Numéro</label>
+                <input asp-for="Saisie.Numero" class="form-control" maxlength="20" /></div>
+            <div class="col-md-8"><label asp-for="Saisie.Rue" class="form-label small mb-0">Rue, case postale</label>
+                <input asp-for="Saisie.Rue" class="form-control" maxlength="100" /></div>
+            <div class="col-md-6"><label asp-for="Saisie.Ville" class="form-label small mb-0">Ville</label>
+                <input asp-for="Saisie.Ville" class="form-control" maxlength="60" /></div>
+            <div class="col-4 col-md-2"><label asp-for="Saisie.Province" class="form-label small mb-0">Province</label>
+                <input asp-for="Saisie.Province" class="form-control" maxlength="2" /></div>
+            <div class="col-8 col-md-4"><label asp-for="Saisie.CodePostal" class="form-label small mb-0">Code postal</label>
+                <input asp-for="Saisie.CodePostal" class="form-control" maxlength="7" /></div>
+        </div>
+    </section>
+
+    <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-doux" asp-page-handler="Apercu" formtarget="_blank" disabled="@(Model.Manque.Count > 0)">Aperçu</button>
+        <button type="submit" class="btn btn-primary ms-auto" asp-page-handler="Generer" disabled="@(Model.Manque.Count > 0)">
+            @(Model.Dernier is null ? "Produire le relevé" : "Produire le relevé modifié")</button>
+    </div>
+</form>

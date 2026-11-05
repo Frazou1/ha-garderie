@@ -21,6 +21,7 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
     public DbSet<LienFiche> LiensFiches => Set<LienFiche>();
     public DbSet<Contrat> Contrats => Set<Contrat>();
     public DbSet<LienContrat> LiensContrats => Set<LienContrat>();
+    public DbSet<Releve> Releves => Set<Releve>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -53,5 +54,8 @@ public class GarderieDb(DbContextOptions<GarderieDb> options) : DbContext(option
         b.Entity<LienContrat>().HasIndex(l => l.JetonHash).IsUnique();
         b.Entity<LienFiche>().HasOne(x => x.Lien).WithMany(l => l.Groupe).HasForeignKey(x => x.LienId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<LienFiche>().HasOne(x => x.Fiche).WithMany().HasForeignKey(x => x.FicheId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Releve>().HasOne(r => r.Parent).WithMany().HasForeignKey(r => r.ParentId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<Releve>().HasIndex(r => new { r.Annee, r.ParentId });
+        b.Entity<Releve>().HasIndex(r => r.Numero).IsUnique();
     }
 }

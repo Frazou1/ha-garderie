@@ -96,6 +96,9 @@ public static class Affichage
     public static string ResumeJour(HoraireType h) =>
         h.Matin && h.Pm ? "journée" : h.Matin ? "matin" : h.Pm ? "après-midi" : "—";
 
+    /// <summary>Montant en dollars a la quebecoise : 9 540,00 $ / Amount, Quebec style.</summary>
+    public static string Argent(decimal m) => m.ToString("#,##0.00", new System.Globalization.CultureInfo("fr-CA")) + " $";
+
     /// <summary>Lien Facebook valide (https, facebook.com) sinon null / Valid Facebook link, else null.</summary>
     public static string? Facebook(string? lien) =>
         Uri.TryCreate(lien?.Trim(), UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps

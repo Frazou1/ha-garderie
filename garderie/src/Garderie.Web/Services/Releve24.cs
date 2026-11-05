@@ -133,7 +133,11 @@ public static class Releve24
             ["rep_payeur"] = T($"{c.PayeurNom} {c.PayeurPrenom}\n{c.PayeurAdresse.Ligne1}\n{c.PayeurAdresse.Ligne2}"),
             ["rep_service"] = T(string.Join("\n", new[] { f.Nom, f.Nom2, f.Adresse.Ligne1, f.Adresse.Ligne2 }.Where(x => !string.IsNullOrWhiteSpace(x)))),
         };
-        if (c.Code == 'A' && c.NumeroOriginal is { } o) { v["noOriginal"] = T(o); v["rep_noOriginal"] = T(o); }
+        if (c.Code == 'A' && c.NumeroOriginal is { } o)
+        {
+            v["noOriginal"] = new(o, null, null, RendreVisible: true);
+            v["rep_noOriginal"] = new(o, null, null, RendreVisible: true);
+        }
         for (var i = 0; i < c.Enfants.Count; i++)
         {
             var e = c.Enfants[i];

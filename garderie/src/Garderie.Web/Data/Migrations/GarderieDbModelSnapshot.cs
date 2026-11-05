@@ -878,6 +878,71 @@ namespace Garderie.Web.Data.Migrations
                     b.ToTable("Presences");
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.Releve", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Annee")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Contenu")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreePar")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EnfantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EnvoyeA")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EnvoyeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NumeroOriginal")
+                        .HasMaxLength(9)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("RemplaceParId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Numero")
+                        .IsUnique();
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("Annee", "ParentId");
+
+                    b.ToTable("Releves");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.Allergie", b =>
                 {
                     b.HasOne("Garderie.Web.Data.Enfant", null)
@@ -1014,6 +1079,16 @@ namespace Garderie.Web.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Enfant");
+                });
+
+            modelBuilder.Entity("Garderie.Web.Data.Releve", b =>
+                {
+                    b.HasOne("Garderie.Web.Data.Parent", "Parent")
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Garderie.Web.Data.Enfant", b =>

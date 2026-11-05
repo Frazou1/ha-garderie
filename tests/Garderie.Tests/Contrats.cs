@@ -118,6 +118,11 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // copie au parent (LPC)
         Assert.Contains(Courriels(), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
 
+        // Chaque formulaire POST de la page porte son jeton antiforgery / Every POST form carries its token
+        JetonsPartout(await admin.GetStringAsync($"/Contrats/Contrat/{contratId}"));
+        JetonsPartout(await admin.GetStringAsync("/Contrats"));
+        JetonsPartout(await admin.GetStringAsync($"/Enfants/Dossier/{id}"));
+
         // Afficher (inline, sans CSP de page) et telecharger / Show inline (no page CSP) and download
         var vue = await admin.GetAsync($"/Contrats/Contrat/{contratId}?handler=Pdf&afficher=true");
         Assert.Equal("application/pdf", vue.Content.Headers.ContentType?.MediaType);
@@ -148,6 +153,15 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
 
         // Le lien de signature deja utilise remercie / Used link thanks
         Assert.Contains("Merci", await parent.GetStringAsync(url));
+    }
+
+    /// <summary>Aucun formulaire POST sans jeton (sinon refus 400 en vrai) / No POST form without a token.</summary>
+    public static void JetonsPartout(string html)
+    {
+        var formulaires = Regex.Matches(html, "<form[^>]*method=\"post\"[^>]*>(.*?)</form>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        Assert.NotEmpty(formulaires);
+        foreach (Match f in formulaires)
+            Assert.True(f.Groups[1].Value.Contains("__RequestVerificationToken"), "Formulaire sans jeton : " + f.Value[..Math.Min(160, f.Value.Length)]);
     }
 
     [Fact]

@@ -259,6 +259,13 @@ public class FichesParcoursTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal("Julie F", Db(db => db.Fiches.Single(f => f.EnfantId == id).SignataireParent));
         Assert.Single(Db(db => db.Documents.Where(d => d.EnfantId == id && d.Type == TypeDocument.FicheAssiduite).ToList()));
 
+        // Chaque formulaire POST porte son jeton (dont « Envoyer une copie ») / Every POST form carries its token
+        ContratsTests.JetonsPartout(await admin.GetStringAsync($"/Fiches/Fiche/{id}?debut={Debut:yyyy-MM-dd}"));
+        ContratsTests.JetonsPartout(await admin.GetStringAsync($"/Fiches?periode={Debut:yyyy-MM-dd}"));
+        ContratsTests.JetonsPartout(await admin.GetStringAsync($"/Presences?semaine={Debut:yyyy-MM-dd}"));
+        ContratsTests.JetonsPartout(await admin.GetStringAsync("/Parametres"));
+        ContratsTests.JetonsPartout(await admin.GetStringAsync("/Fermetures"));
+
         // PDF final telechargeable par la RSGE / Final PDF downloadable
         var pdf = await admin.GetAsync($"/Fiches/Fiche/{id}?debut={Debut:yyyy-MM-dd}&handler=Pdf");
         Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);

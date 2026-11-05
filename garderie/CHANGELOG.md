@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+- Correctif : « Envoyer une copie au parent » / « M'envoyer une copie » étaient refusés (jeton antiforgery manquant).
+  Test ajouté : chaque formulaire POST des pages principales porte son jeton.
+
 ## 0.5.1
 - Pages des parents : la case à cocher est dans un encadré bien visible (« J'ai lu et j'accepte… » /
   « Je confirme »), sous le texte complet de l'attestation.

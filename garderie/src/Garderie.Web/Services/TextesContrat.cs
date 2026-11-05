@@ -75,15 +75,15 @@ public static class Feries
         return
         [
             (new DateOnly(annee, 1, 1), "Jour de l'an"),
-            (new DateOnly(annee, 1, 2), "Lendemain du jour de l'an"),
+            (new DateOnly(annee, 1, 2), "Le 2 janvier"),
             (paques.AddDays(-2), "Vendredi saint"),
             (paques.AddDays(1), "Lundi de Pâques"),
-            (patriotes, "Journée nationale des patriotes"),
+            (patriotes, "Fête des patriotes"),
             (new DateOnly(annee, 6, 24), "Fête nationale"),
             (new DateOnly(annee, 7, 1), "Fête du Canada"),
-            (Lundi(9, 1), "Fête du Travail"),
+            (Lundi(9, 1), "Fête du travail"),
             (Lundi(10, 2), "Action de grâce"),
-            (new DateOnly(annee, 12, 25), "Noël"),
+            (new DateOnly(annee, 12, 25), "Jour de Noël"),
             (new DateOnly(annee, 12, 26), "Lendemain de Noël"),
         ];
     }

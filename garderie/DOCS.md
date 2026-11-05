@@ -51,7 +51,9 @@ Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du P
 ## Contrats (entente de service)
 
 1. **Réglages** : vérifier les textes du contrat (préremplis), la ville de signature, la note sur les vacances,
-   et téléverser la **régie interne** (PDF).
+   téléverser la **régie interne** (PDF, obligatoire avant d'envoyer un contrat) et, pour respecter le modèle Word,
+   les **polices du contrat** depuis C:\Windows\Fonts (comic.ttf, comicbd.ttf, timesbd.ttf, calibrib.ttf ; Elephant
+   si disponible). Ces polices Microsoft ne sont jamais incluses dans le module.
 2. **Fermetures** : « Ajouter les jours fériés » de l'année, plus les vacances de la RSGE (motif ex. « Relâche »).
 3. **Contrats** (ou le dossier de l'enfant) : « + Nouveau », choisir les dates, puis envoyer au parent (courriel,
    lien à copier ou signature sur place).

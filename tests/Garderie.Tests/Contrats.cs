@@ -77,8 +77,16 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         var r = await Poster(admin, "/Contrats", "/Contrats?handler=Creer",
             [new("enfantId", $"{id}"), new("debut", "2026-09-01"), new("fin", "2027-08-31")]);
         var contratId = int.Parse(Regex.Match(r.Headers.Location!.ToString(), @"Contrat/(\d+)").Groups[1].Value);
+        // Sans regie interne : envoi bloque / Without internal rules: sending blocked
+        await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
+        Assert.DoesNotContain(Courriels(), t => t.Contains("julie@exemple.test"));
+        var options = appli.Services.GetRequiredService<Garderie.Web.Configuration.GarderieOptions>();
+        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierRegieInterne)!);
+        File.WriteAllBytes(options.FichierRegieInterne, ModeleTest.Creer());
+
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
         var jeton = DernierJeton("julie@exemple.test");
+        Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // regie jointe
 
         // Le parent voit l'entente et les feries ; NAS invalide refuse / Parent sees the agreement; invalid SIN refused
         var parent = Parent();
@@ -87,6 +95,10 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains("Entente de service", page);
         Assert.Contains("Lundi de Pâques", page);
         Assert.Contains("Les petits moussaillons appartenant à Sonia", page);
+        Assert.Contains("Lire la régie interne", page);
+        var regie = await parent.GetAsync($"/garderie/Public/Contrat?j={jeton}&handler=Regie");
+        Assert.Equal("application/pdf", regie.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("inline", regie.Content.Headers.ContentDisposition?.ToString());
 
         KeyValuePair<string, string>[] Saisie(string nas) =>
         [

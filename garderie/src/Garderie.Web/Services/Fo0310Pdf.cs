@@ -201,11 +201,64 @@ public sealed class PolicesPdf : IFontResolver
         @"C:\Windows\Fonts\arialbd.ttf",
     ];
 
-    public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic) =>
-        new(isBold ? "Garderie-Gras" : "Garderie-Normal");
+    /// <summary>Dossier des polices televersees (Reglages) ; defini au demarrage / Uploaded fonts folder.</summary>
+    public static string? DossierPolices { get; set; }
+
+    /// <summary>
+    /// Emplacements des polices du contrat (modele de la RSGE), dans l'ordre de repli.
+    /// Contract font slots (RSGE's template), in fallback order.
+    /// </summary>
+    public static readonly (string Cle, string Libelle, string Exemple)[] Emplacements =
+    [
+        ("texte", "Texte (Comic Sans MS)", "comic.ttf"),
+        ("texte-gras", "Texte gras (Comic Sans MS gras)", "comicbd.ttf"),
+        ("titre", "Titre (Elephant Pro ou Elephant)", "ELEPHNT.TTF"),
+        ("clauses-gras", "Clauses (Times New Roman gras)", "timesbd.ttf"),
+        ("sous-titre-gras", "Sous-titres (Calibri gras)", "calibrib.ttf"),
+    ];
+
+    /// <summary>
+    /// Nom de famille « versionne » : change quand une police est televersee, car PDFsharp memorise la police
+    /// choisie pour chaque famille. / Versioned family name: changes when a font is uploaded (PDFsharp caches families).
+    /// </summary>
+    public static string Famille(string nom)
+    {
+        var version = Emplacements.Sum(e => Fichier(e.Cle) is { } f ? File.GetLastWriteTimeUtc(f).Ticks % 1_000_000_007 : 0);
+        return $"{nom}~{DossierPolices?.GetHashCode() ?? 0}~{version}";
+    }
+
+    public static string? Fichier(string cle) =>
+        DossierPolices is { } d && File.Exists(Path.Combine(d, cle + ".ttf")) ? Path.Combine(d, cle + ".ttf") : null;
+
+    /// <summary>Famille du contrat -> emplacement, sinon null / Contract family -> slot, else null.</summary>
+    private static string? Emplacement(string famille, bool gras) => famille switch
+    {
+        "ContratTexte" => gras ? "texte-gras" : "texte",
+        "ContratTitre" => Fichier("titre") is not null ? "titre" : "texte-gras",
+        "ContratClauses" => "clauses-gras",
+        "ContratSousTitre" => "sous-titre-gras",
+        _ => null,
+    };
+
+    public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
+    {
+        familyName = familyName.Split('~')[0];
+        // Police televersee : le nom inclut la date du fichier (une nouvelle police remplace l'ancienne sans redemarrage)
+        // Uploaded font: the face name includes the file date (a new upload replaces the old one without restart)
+        if (Emplacement(familyName, isBold) is { } cle && Fichier(cle) is { } f)
+            return new FontResolverInfo($"Contrat-{cle}-{File.GetLastWriteTimeUtc(f).Ticks}");
+        var gras = isBold || familyName is "ContratTitre" or "ContratClauses" or "ContratSousTitre";
+        return new FontResolverInfo(gras ? "Garderie-Gras" : "Garderie-Normal");
+    }
 
     public byte[] GetFont(string faceName)
     {
+        if (faceName.StartsWith("Contrat-", StringComparison.Ordinal))
+        {
+            var cle = faceName[8..faceName.LastIndexOf('-')];
+            if (Fichier(cle) is { } f) return File.ReadAllBytes(f);
+            faceName = "Garderie-Gras";
+        }
         var liste = faceName == "Garderie-Gras" ? Grasse : Normale;
         var chemin = liste.FirstOrDefault(File.Exists)
             ?? throw new InvalidOperationException("Aucune police trouvée pour le PDF (installer fonts-dejavu-core).");

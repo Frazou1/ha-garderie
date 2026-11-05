@@ -18,6 +18,7 @@ public class IndexModel(GarderieDb db, ContratsService contrats, Journal journal
     public List<Ligne> Lignes { get; private set; } = new();
     public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
     public int AContresigner => Lignes.Count(l => l.Contrat?.Etat == EtatContrat.SigneParent);
+    public bool RegieDisponible => contrats.RegieDisponible;
 
     public async Task OnGetAsync()
     {

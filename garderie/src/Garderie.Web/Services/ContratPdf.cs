@@ -27,6 +27,8 @@ public sealed record InfosContrat
     public string? ParentTelephone2 { get; init; }
     public string? ParentLien { get; init; }
     public List<string> Fermetures { get; init; } = new();
+    /// <summary>Fermetures detaillees (feries d'un jour, vacances sur plusieurs jours) / Detailed closures.</summary>
+    public List<FermetureContrat> FermeturesDetail { get; init; } = new();
     public string? NoteVacances { get; init; }
     public string? VacancesParent { get; init; }
     public string ObligationsRsge { get; init; } = "";
@@ -39,6 +41,9 @@ public sealed record InfosContrat
     public DateOnly Fin { get; init; }
 }
 
+/// <summary>Une fermeture du contrat : un jour (ferie) ou une periode (vacances) / A closure: one day or a period.</summary>
+public sealed record FermetureContrat(string Motif, DateOnly Debut, DateOnly Fin, string? Demi);
+
 /// <summary>Signatures et NAS (jamais dans le JSON fige) / Signatures and SIN (never in the frozen JSON).</summary>
 public sealed record SignaturesContrat(
     string? Nas,
@@ -47,80 +52,138 @@ public sealed record SignaturesContrat(
     DateOnly? ResilieLe, byte[]? SignatureResiliation, DateOnly? DateResiliation, string? NomResiliation);
 
 /// <summary>
-/// PDF de l'entente de service (mise en page du modele de la RSGE) et de la formule de resiliation, avec MigraDoc.
-/// Service agreement PDF (RSGE's template layout) and termination form, with MigraDoc.
+/// PDF de l'entente de service, fidele au modele Word de la RSGE (« Entente service (Contrat) 2018 ») :
+/// Elephant Pro 16 gras pour le titre, Comic Sans MS 12 pour le texte, Times New Roman 9 gras justifie pour les
+/// clauses, Calibri 11,5 gras souligne pour leurs titres, valeurs soulignees, dates jj/mm/aaaa.
+/// Les polices viennent de Reglages (televersees) ; sinon une police de remplacement est utilisee.
+/// Service agreement PDF faithful to the RSGE's Word template (fonts uploaded in Settings, else fallbacks).
 /// </summary>
 public static class ContratPdf
 {
     static ContratPdf() => PolicesPdf.Installer();
 
-    private const string Police = "Garderie";
+    // Familles versionnees (voir PolicesPdf.Famille) / Versioned families
+    private static string Texte => PolicesPdf.Famille("ContratTexte");
+    private static string Titre => PolicesPdf.Famille("ContratTitre");
+    private static string Clauses => PolicesPdf.Famille("ContratClauses");
+    private static string SousTitre => PolicesPdf.Famille("ContratSousTitre");
+    private static readonly Unit Retrait = Unit.FromPoint(106.2);   // retrait des titres du modele / template heading indent
+
+    private static string D(DateOnly? d) => d?.ToString("dd'/'MM'/'yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "";
 
     public static byte[] Contrat(InfosContrat i, SignaturesContrat s)
     {
         var doc = Nouveau("Entente de service");
         var sec = doc.LastSection;
 
-        var titre = sec.AddParagraph("Entente de service — Contrat");
-        titre.Format.Font.Size = 16; titre.Format.Font.Bold = true; titre.Format.Alignment = ParagraphAlignment.Center;
-        titre.Format.SpaceAfter = Unit.FromPoint(4);
-        var sous = sec.AddParagraph(i.Garderie);
-        sous.Format.Alignment = ParagraphAlignment.Center; sous.Format.SpaceAfter = Unit.FromPoint(8);
+        var t1 = sec.AddParagraph();
+        t1.Format.Alignment = ParagraphAlignment.Center;
+        t1.AddFormattedText("Entente de service-", new Font(Titre, 16) { Bold = true });
+        var t2 = sec.AddParagraph();
+        t2.Format.LeftIndent = Retrait;
+        t2.AddFormattedText("Contrat-", new Font(Titre, 16) { Bold = true });
+        Vide(sec);
 
-        Titre(sec, "Identification de l'enfant");
-        Ligne(sec, "Nom et prénom", i.EnfantNom);
-        Ligne(sec, "Adresse", i.EnfantAdresse);
-        Ligne(sec, "Téléphone", i.EnfantTelephone);
-        Ligne(sec, "Date de naissance", i.EnfantNaissance?.ToString("yyyy-MM-dd"));
-        Ligne(sec, "Sexe", Affichage.Sexe(i.EnfantSexe));
+        TitreSection(sec, "Identification de l'enfant", retrait: true);
+        Champ(sec, "Nom et prénom: ", i.EnfantNom, 44);
+        Champ(sec, "Adresse: ", i.EnfantAdresse, 49);
+        Champ(sec, "Téléphone: ", i.EnfantTelephone, 19);
+        var n = Champ(sec, "Date de naissance: ", D(i.EnfantNaissance), 15);
+        // Espaces insecables : MigraDoc fusionne les espaces ordinaires / Non-breaking spaces (MigraDoc collapses spaces)
+        n.AddText(Ins("      Sexe : M "));
+        n.AddText(Ins(i.EnfantSexe == Sexe.M ? "( X )" : "(    )"));
+        n.AddText(Ins("     F "));
+        n.AddText(Ins(i.EnfantSexe == Sexe.F ? "( X )" : "(    )"));
+        Vide(sec);
+        Vide(sec);
 
-        Titre(sec, "Identification du parent ou de la personne responsable de l'enfant");
-        Ligne(sec, "Nom et prénom", i.ParentNom);
-        Ligne(sec, "Adresse", i.ParentAdresse);
-        Ligne(sec, "Téléphone 1", i.ParentTelephone1);
-        Ligne(sec, "Téléphone 2", i.ParentTelephone2);
-        Ligne(sec, "Lien avec l'enfant", i.ParentLien);
-        Ligne(sec, "NAS du parent pour le relevé 24 (impôt)", s.Nas is { Length: 9 } n ? $"{n[..3]} {n[3..6]} {n[6..]}" : s.Nas);
+        TitreSection(sec, "Identification du parent ou de la personne responsable de l'enfant", retrait: false);
+        Champ(sec, "Nom et prénom: ", i.ParentNom, 44);
+        Champ(sec, "Adresse: ", i.ParentAdresse, 49);
+        var tel = Champ(sec, "Téléphone1: ", i.ParentTelephone1, 19);
+        tel.AddText(" Téléphone 2: ");
+        Valeur(tel, i.ParentTelephone2, 18);
+        Champ(sec, "Lien avec l'enfant: ", i.ParentLien, 17);
+        Champ(sec, "NAS du parent pour le relevé 24 (impôt) : ", s.Nas is { Length: 9 } nas ? $"{nas[..3]} {nas[3..6]} {nas[6..]}" : s.Nas, 26);
+        Vide(sec);
 
-        Titre(sec, "Identification du milieu familial");
-        Ligne(sec, "Éducatrice-propriétaire", i.Rsge);
-        Ligne(sec, "Adresse", i.AdresseGarderie);
-        Ligne(sec, "Téléphone", i.TelephoneGarderie);
-        Ligne(sec, "Heures d'ouverture", i.Heures);
+        TitreSection(sec, "Identification du milieu familial", retrait: true);
+        Champ(sec, "Éducatrice-propriétaire: ", i.Rsge, 30);
+        Champ(sec, "Adresse: ", i.AdresseGarderie, 40);
+        Champ(sec, "Téléphone: ", i.TelephoneGarderie, 19);
+        Champ(sec, "Heure d'ouverture : ", i.Heures, 20);
+        Vide(sec);
 
-        Titre(sec, "Fermetures prévues du service de garde");
-        if (i.Fermetures.Count == 0) Texte(sec, "Aucune fermeture inscrite pour la période du contrat.");
-        foreach (var f in i.Fermetures) Puce(sec, f);
-        if (!string.IsNullOrWhiteSpace(i.NoteVacances)) Texte(sec, i.NoteVacances);
-        Ligne(sec, "Vacances du parent, si dates connues", string.IsNullOrWhiteSpace(i.VacancesParent) ? "—" : i.VacancesParent);
+        TitreSection(sec, "Fermeture prévue du service de garde", retrait: false);
+        var feries = i.FermeturesDetail.Where(f => f.Debut == f.Fin).ToList();
+        var periodes = i.FermeturesDetail.Where(f => f.Debut != f.Fin).ToList();
+        if (feries.Count > 0)
+        {
+            // Deux colonnes, comme le modele : « Jour de l'an ( X ) 01/01/2026 » / Two columns, like the template
+            var table = sec.AddTable();
+            table.Format.Font = new Font(Texte, 12);
+            table.AddColumn(Unit.FromCentimeter(8.2));
+            table.AddColumn(Unit.FromCentimeter(8.2));
+            var moitie = (feries.Count + 1) / 2;
+            for (var r = 0; r < moitie; r++)
+            {
+                var ligne = table.AddRow();
+                for (var col = 0; col < 2; col++)
+                {
+                    var k = r + col * moitie;
+                    if (k >= feries.Count) continue;
+                    var f = feries[k];
+                    ligne.Cells[col].AddParagraph($"{f.Motif} ( X ) {D(f.Debut)}{(f.Demi is null ? "" : $" ({f.Demi})")}");
+                }
+            }
+            Vide(sec);
+        }
+        sec.AddParagraph("Vacance(s) de l'éducatrice, si dates connues : ").Format.Alignment = ParagraphAlignment.Justify;
+        foreach (var p in periodes)
+            Souligne(sec, $"*** {p.Motif} du {D(p.Debut)} au {D(p.Fin)} inclusivement");
+        if (!string.IsNullOrWhiteSpace(i.NoteVacances)) Souligne(sec, "*** " + i.NoteVacances);
+        // Anciens contrats figes sans detail : lignes texte / Older frozen contracts without detail
+        if (i.FermeturesDetail.Count == 0) foreach (var f in i.Fermetures) Souligne(sec, "*** " + f);
+        Vide(sec);
+        var vp = sec.AddParagraph("Vacance(s) du parent, si dates connues : ");
+        vp.Format.Alignment = ParagraphAlignment.Justify;
+        if (!string.IsNullOrWhiteSpace(i.VacancesParent)) vp.AddFormattedText(i.VacancesParent, TextFormat.Underline);
+        else vp.AddText("____________________");
+        Vide(sec);
 
-        Titre(sec, "Les obligations de l'éducatrice");
-        Liste(sec, i.ObligationsRsge);
-        Titre(sec, "Les obligations du parent ou de la personne responsable de l'enfant");
-        Liste(sec, i.ObligationsParent);
-        Titre(sec, "Mention exigée par la Loi sur la protection du consommateur");
-        Liste(sec, i.MentionLpc);
+        TitreClauses(sec, "Les obligations de l'éducatrice ", SousTitre);
+        BlocClauses(sec, i.ObligationsRsge);
+        TitreClauses(sec, "Les obligations du parent ou de la personne responsable de l'enfant", Clauses);
+        BlocClauses(sec, i.ObligationsParent);
+        TitreClauses(sec, "Mention exigée par la loi sur la protection du consommateur ", SousTitre);
+        BlocClauses(sec, i.MentionLpc);
 
-        Titre(sec, "Durée de l'entente contractuelle");
-        Ligne(sec, "Le présent contrat prend effet le", i.Debut.ToString("yyyy-MM-dd"));
-        Ligne(sec, "Le présent contrat prendra fin le", i.Fin.ToString("yyyy-MM-dd"));
+        var duree = sec.AddParagraph();
+        duree.Format.Alignment = ParagraphAlignment.Center;
+        duree.Format.KeepWithNext = true;
+        duree.AddFormattedText("Durée de l'entente contractuelle ", new Font(Texte, 12) { Bold = true, Underline = Underline.Single });
+        DateGras(sec, "Le présent contrat prend effet le : ", i.Debut);
+        DateGras(sec, "Le présent contrat prendra fin le : ", i.Fin);
+        Vide(sec);
 
-        var bloc = Texte(sec, i.Attestation);
-        bloc.Format.SpaceBefore = Unit.FromPoint(10);
-        bloc.Format.KeepWithNext = true;
-        Texte(sec, i.NonRespect).Format.KeepWithNext = true;
+        var att = Gras(sec, i.Attestation);
+        att.Format.KeepWithNext = true;
+        Gras(sec, i.NonRespect).Format.KeepWithNext = true;
+        Vide(sec).Format.KeepWithNext = true;
 
-        var signe = Texte(sec, $"Signé à {i.Ville ?? "            "}, le {s.DateParent?.ToString("yyyy-MM-dd") ?? "            "}");
-        signe.Format.SpaceBefore = Unit.FromPoint(8); signe.Format.KeepWithNext = true;
-        Ligne(sec, "Nom du parent (lettres moulées)", s.NomParent?.ToUpperInvariant()).Format.KeepWithNext = true;
-        Signature(sec, "Signature du parent", s.SignatureParent, s.DateParent).Format.KeepWithNext = true;
-        Signature(sec, "Signature de l'éducatrice", s.SignatureRsge, s.DateRsge);
+        var signe = sec.AddParagraph(Ins("Signé à   "));
+        signe.Format.KeepWithNext = true;
+        Valeur(signe, i.Ville, 12);
+        signe.AddText(Ins("      le  "));
+        Valeur(signe, D(s.DateParent), 12);
+        var nom = sec.AddParagraph("Nom du parent (lettres moulées) : ");
+        nom.Format.KeepWithNext = true;
+        Valeur(nom, s.NomParent?.ToUpperInvariant(), 24);
+        Signature(sec, "Signature du parent : ", s.SignatureParent).Format.KeepWithNext = true;
+        Signature(sec, "Signature de l'éducatrice : ", s.SignatureRsge);
+        Vide(sec);
 
-        // Formule de resiliation (vide, comme sur le modele papier) / Termination form (blank, as on paper)
-        var trait = sec.AddParagraph();
-        trait.Format.SpaceBefore = Unit.FromPoint(16);
-        trait.Format.Borders.Top.Width = Unit.FromPoint(0.75);
-        trait.Format.Borders.Top.Style = MigraDoc.DocumentObjectModel.BorderStyle.DashLargeGap;
+        sec.AddParagraph(new string('-', 78));
         Formule(sec, i, null);
         return Rendre(doc);
     }
@@ -130,116 +193,152 @@ public static class ContratPdf
     {
         var doc = Nouveau("Résiliation du contrat");
         var sec = doc.LastSection;
-        var titre = sec.AddParagraph("Résiliation de l'entente de service");
-        titre.Format.Font.Size = 16; titre.Format.Font.Bold = true; titre.Format.Alignment = ParagraphAlignment.Center;
-        titre.Format.SpaceAfter = Unit.FromPoint(10);
-        Ligne(sec, "Enfant", i.EnfantNom);
-        Ligne(sec, "Contrat", $"du {i.Debut:yyyy-MM-dd} au {i.Fin:yyyy-MM-dd}");
-        Ligne(sec, "Date de résiliation", s.ResilieLe?.ToString("yyyy-MM-dd"));
+        var t1 = sec.AddParagraph();
+        t1.Format.Alignment = ParagraphAlignment.Center;
+        t1.AddFormattedText("Entente de service-", new Font(Titre, 16) { Bold = true });
+        Vide(sec);
+        Champ(sec, "Enfant: ", i.EnfantNom, 30);
+        Champ(sec, "Parent: ", i.ParentNom, 30);
+        var c = Champ(sec, "Contrat du ", D(i.Debut), 10);
+        c.AddText(" au ");
+        Valeur(c, D(i.Fin), 10);
+        Vide(sec);
         Formule(sec, i, s);
         return Rendre(doc);
     }
 
     private static void Formule(Section sec, InfosContrat i, SignaturesContrat? s)
     {
-        Titre(sec, "Formule de résiliation");
-        const string blanc = "______________";
-        Texte(sec, $"À {i.Rsge ?? blanc}, éducatrice-propriétaire du service de garde, ci-nommée au contrat, " +
-                   $"je résilie le contrat conclu le {s?.DateParent?.ToString("yyyy-MM-dd") ?? blanc}" +
-                   (s?.ResilieLe is { } r ? $", à compter du {r:yyyy-MM-dd}." : "."));
-        Texte(sec, $"Signé à {(s is null ? blanc : i.Ville ?? blanc)}, le {s?.DateResiliation?.ToString("yyyy-MM-dd") ?? blanc}");
-        Ligne(sec, "Nom du parent (lettres moulées)", s?.NomResiliation?.ToUpperInvariant());
-        Signature(sec, "Signature du parent", s?.SignatureResiliation, s?.DateResiliation);
+        var t = sec.AddParagraph();
+        t.Format.Alignment = ParagraphAlignment.Center;
+        t.Format.KeepWithNext = true;
+        t.AddFormattedText("Formule de résiliation ", new Font(Texte, 12) { Bold = true, Underline = Underline.Single });
+        Vide(sec).Format.KeepWithNext = true;
+        var p = sec.AddParagraph();
+        p.Format.Font.Bold = true;
+        p.Format.Alignment = ParagraphAlignment.Justify;
+        p.Format.KeepWithNext = true;
+        p.AddText("À ");
+        Valeur(p, i.Rsge, 16);
+        p.AddText(", éducatrice-propriétaire du service de garde, ci-nommé au contrat, je résilie le contrat conclu le ");
+        Valeur(p, s is null ? null : D(s.DateParent), 12);
+        if (s?.ResilieLe is { } r) { p.AddText(", à compter du "); Valeur(p, D(r), 10); }
+        Vide(sec).Format.KeepWithNext = true;
+        var signe = sec.AddParagraph(Ins("Signé à   "));
+        signe.Format.KeepWithNext = true;
+        Valeur(signe, s is null ? null : i.Ville, 12);
+        signe.AddText(Ins("      le  "));
+        Valeur(signe, s is null ? null : D(s.DateResiliation), 12);
+        var nom = sec.AddParagraph("Nom du parent (lettres moulées) : ");
+        nom.Format.KeepWithNext = true;
+        Valeur(nom, s?.NomResiliation?.ToUpperInvariant(), 24);
+        Signature(sec, "Signature du parent : ", s?.SignatureResiliation);
     }
 
-    // --- Mise en page / Layout ---
+    // --- Mise en page du modele / Template layout ---
 
     private static Document Nouveau(string titre)
     {
         var doc = new Document();
         doc.Info.Title = titre;
         var normal = doc.Styles[StyleNames.Normal]!;
-        normal.Font.Name = Police;
-        normal.Font.Size = 9.5;
-        normal.ParagraphFormat.SpaceAfter = Unit.FromPoint(3);
+        normal.Font.Name = Texte;
+        normal.Font.Size = 12;
+        normal.ParagraphFormat.SpaceAfter = Unit.FromPoint(0);
+        normal.ParagraphFormat.LineSpacingRule = LineSpacingRule.Multiple;
+        normal.ParagraphFormat.LineSpacing = 1.15;
         var sec = doc.AddSection();
         sec.PageSetup = doc.DefaultPageSetup.Clone();
         sec.PageSetup.PageFormat = PageFormat.Letter;
-        sec.PageSetup.LeftMargin = sec.PageSetup.RightMargin = Unit.FromCentimeter(2.2);
-        sec.PageSetup.TopMargin = Unit.FromCentimeter(1.8);
-        sec.PageSetup.BottomMargin = Unit.FromCentimeter(1.8);
-        var pied = sec.Footers.Primary.AddParagraph();
-        pied.Format.Alignment = ParagraphAlignment.Right;
-        pied.Format.Font.Size = 8;
-        pied.AddText("Page "); pied.AddPageField(); pied.AddText(" de "); pied.AddNumPagesField();
+        sec.PageSetup.LeftMargin = sec.PageSetup.RightMargin = Unit.FromInch(1.25);
+        sec.PageSetup.TopMargin = sec.PageSetup.BottomMargin = Unit.FromInch(1);
         return doc;
     }
 
-    private static void Titre(Section sec, string texte)
+    private static Paragraph Vide(Section sec) => sec.AddParagraph();
+
+    /// <summary>Espaces -> espaces insecables (conserves a l'affichage) / Spaces -> non-breaking spaces.</summary>
+    private static string Ins(string s) => s.Replace(' ', '\u00A0');
+
+    private static void TitreSection(Section sec, string texte, bool retrait)
     {
-        var p = sec.AddParagraph(texte);
-        p.Format.Font.Bold = true;
-        p.Format.Font.Size = 11;
-        p.Format.SpaceBefore = Unit.FromPoint(10);
-        p.Format.SpaceAfter = Unit.FromPoint(4);
+        var p = sec.AddParagraph();
+        if (retrait) p.Format.LeftIndent = Retrait;
         p.Format.KeepWithNext = true;
-        p.Format.Borders.Bottom.Width = Unit.FromPoint(0.75);
-        p.Format.Borders.Bottom.Color = Colors.Gray;
+        p.AddFormattedText(texte, TextFormat.Bold);
     }
 
-    private static Paragraph Ligne(Section sec, string libelle, string? valeur)
+    /// <summary>« Libelle: » puis valeur soulignee, ou une ligne a remplir / Label then underlined value or a blank line.</summary>
+    private static Paragraph Champ(Section sec, string libelle, string? valeur, int blancs)
     {
-        var p = sec.AddParagraph();
-        p.AddFormattedText(libelle + " : ", TextFormat.Bold);
-        p.AddText(string.IsNullOrWhiteSpace(valeur) ? "____________________" : valeur);
+        var p = sec.AddParagraph(libelle);
+        Valeur(p, valeur, blancs);
         return p;
     }
 
-    private static Paragraph Texte(Section sec, string texte)
+    private static void Valeur(Paragraph p, string? valeur, int blancs)
     {
-        var p = sec.AddParagraph(texte);
+        if (string.IsNullOrWhiteSpace(valeur)) p.AddText(new string('_', blancs));
+        else p.AddFormattedText(valeur, TextFormat.Underline);
+    }
+
+    private static void Souligne(Section sec, string texte)
+    {
+        var p = sec.AddParagraph();
         p.Format.Alignment = ParagraphAlignment.Justify;
+        p.AddFormattedText(texte, TextFormat.Underline);
+    }
+
+    private static void TitreClauses(Section sec, string texte, string police)
+    {
+        var p = sec.AddParagraph();
+        p.Format.Alignment = ParagraphAlignment.Center;
+        p.Format.KeepWithNext = true;
+        p.AddFormattedText(texte, new Font(police, 11.5) { Bold = true, Underline = Underline.Single });
+    }
+
+    /// <summary>
+    /// Clauses en un seul paragraphe justifie, Times 9 gras, chaque point precede d'un « - » (comme le modele).
+    /// Clauses as one justified paragraph, Times 9 bold, each point preceded by "-" (as in the template).
+    /// </summary>
+    private static void BlocClauses(Section sec, string texte)
+    {
+        var morceaux = texte.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0)
+            .Select(l => l.StartsWith('-') ? "-" + l.TrimStart('-', ' ', '–') : l);
+        var p = sec.AddParagraph();
+        p.Format.Alignment = ParagraphAlignment.Justify;
+        p.Format.SpaceAfter = Unit.FromPoint(10);
+        p.AddFormattedText(string.Join(" ", morceaux), new Font(Clauses, 9) { Bold = true });
+    }
+
+    private static void DateGras(Section sec, string libelle, DateOnly date)
+    {
+        var p = sec.AddParagraph();
+        p.AddFormattedText(libelle, TextFormat.Bold);
+        p.AddFormattedText(D(date), TextFormat.Underline);
+    }
+
+    private static Paragraph Gras(Section sec, string texte)
+    {
+        var p = sec.AddParagraph();
+        p.Format.Alignment = ParagraphAlignment.Justify;
+        p.Format.SpaceAfter = Unit.FromPoint(10);
+        p.AddFormattedText(texte, TextFormat.Bold);
         return p;
     }
 
-    private static void Puce(Section sec, string texte)
+    private static Paragraph Signature(Section sec, string libelle, byte[]? png)
     {
-        var p = sec.AddParagraph("•\t" + texte);
-        p.Format.LeftIndent = Unit.FromCentimeter(0.6);
-        p.Format.FirstLineIndent = Unit.FromCentimeter(-0.4);
-        p.Format.TabStops.AddTabStop(Unit.FromCentimeter(0.6));
-        p.Format.Alignment = ParagraphAlignment.Justify;
-    }
-
-    /// <summary>Lignes « - » en puces, les autres en paragraphes / "-" lines as bullets, others as paragraphs.</summary>
-    private static void Liste(Section sec, string texte)
-    {
-        foreach (var brut in texte.Split('\n'))
-        {
-            var l = brut.Trim();
-            if (l.Length == 0) continue;
-            if (l.StartsWith('-')) Puce(sec, l.TrimStart('-', ' ', '–'));
-            else Texte(sec, l);
-        }
-    }
-
-    private static Paragraph Signature(Section sec, string libelle, byte[]? png, DateOnly? date)
-    {
-        var p = sec.AddParagraph();
-        p.Format.SpaceBefore = Unit.FromPoint(6);
+        var p = sec.AddParagraph(libelle);
+        p.Format.SpaceBefore = Unit.FromPoint(4);
         p.Format.KeepTogether = true;
-        p.AddFormattedText(libelle + " : ", TextFormat.Bold);
         if (png is not null)
         {
             var img = p.AddImage("base64:" + Convert.ToBase64String(png));
             img.Height = Unit.FromCentimeter(1.3);
             img.LockAspectRatio = true;
-            p.AddText($"    Date : {date:yyyy-MM-dd}");
         }
-        else
-        {
-            p.AddText("__________________________________    Date : ____________");
-        }
+        else p.AddText(new string('_', 28));
         return p;
     }
 

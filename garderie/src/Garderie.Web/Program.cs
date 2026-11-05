@@ -38,6 +38,7 @@ builder.Services.AddScoped<PresencesService>();
 builder.Services.AddScoped<DocumentsService>();
 builder.Services.AddScoped<FichesService>();
 builder.Services.AddScoped<ContratsService>();
+PolicesPdf.DossierPolices = options.DossierPolices;
 builder.Services.AddSingleton<Courriels>();
 builder.Services.AddHttpContextAccessor();
 

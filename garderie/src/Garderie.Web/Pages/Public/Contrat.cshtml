@@ -90,9 +90,20 @@ else
                         <h3 class="h6 mt-2">Mention exigée par la Loi sur la protection du consommateur</h3>
                         <div class="small texte-libre">@i.MentionLpc</div>
                     </details>
+                </section>
+
+                <section class="carte regie">
+                    <h2 class="h5">Régie interne</h2>
                     @if (Model.RegieDisponible)
                     {
-                        <p class="mt-2 mb-0"><a class="btn btn-sm btn-doux" asp-page-handler="Regie" asp-route-j="@Model.Jeton">Lire la régie interne (PDF)</a></p>
+                        <p class="small mb-2">Lisez la régie interne du service de garde avant de signer : vous attestez l'avoir lue.
+                            Elle est aussi jointe au courriel.</p>
+                        <a class="btn btn-primary" asp-page-handler="Regie" asp-route-j="@Model.Jeton" target="_blank" rel="noopener">Lire la régie interne (PDF)</a>
+                        <a class="btn btn-doux" asp-page-handler="Regie" asp-route-j="@Model.Jeton" asp-route-telecharger="true">Télécharger</a>
+                    }
+                    else
+                    {
+                        <p class="small mb-0">La régie interne n'est pas disponible en ligne : demandez-la à l'éducatrice avant de signer.</p>
                     }
                 </section>
             }

@@ -146,6 +146,44 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         return RedirectToPage();
     }
 
+    /// <summary>
+    /// Police du contrat (TrueType / OpenType) copiee depuis l'ordinateur de la RSGE ; gardee dans /data seulement.
+    /// Contract font copied from the RSGE's computer; kept in /data only.
+    /// </summary>
+    public async Task<IActionResult> OnPostPoliceAsync(string? cle, IFormFile? police)
+    {
+        if (cle is null || PolicesPdf.Emplacements.All(e => e.Cle != cle)) return BadRequest();
+        if (police is null || police.Length == 0 || police.Length > 30 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez un fichier de police (.ttf ou .otf, 30 Mo maximum).";
+            return RedirectToPage();
+        }
+        using var ms = new MemoryStream();
+        await police.CopyToAsync(ms);
+        var o = ms.ToArray();
+        var signature = o.Length >= 4 ? Convert.ToHexString(o, 0, 4) : "";
+        if (signature is not ("00010000" or "4F54544F" or "74727565"))   // TrueType, « OTTO », « true »
+        {
+            TempData["Erreur"] = "Ce fichier n'est pas une police TrueType ou OpenType (.ttf / .otf).";
+            return RedirectToPage();
+        }
+        Directory.CreateDirectory(options.DossierPolices);
+        await System.IO.File.WriteAllBytesAsync(Path.Combine(options.DossierPolices, cle + ".ttf"), o);
+        await journal.NoterMaintenantAsync("parametres.police", details: $"{cle} ({o.Length} octets)");
+        TempData["Message"] = "Police enregistrée : elle sera utilisée pour les prochains contrats.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRetirerPoliceAsync(string? cle)
+    {
+        if (cle is null || PolicesPdf.Emplacements.All(e => e.Cle != cle)) return BadRequest();
+        var f = Path.Combine(options.DossierPolices, cle + ".ttf");
+        if (System.IO.File.Exists(f)) System.IO.File.Delete(f);
+        await journal.NoterMaintenantAsync("parametres.police_retiree", details: cle);
+        TempData["Message"] = "Police retirée (police de remplacement utilisée).";
+        return RedirectToPage();
+    }
+
     /// <summary>Courriel de test a la RSGE / Test email to the RSGE.</summary>
     public async Task<IActionResult> OnPostTestCourrielAsync()
     {

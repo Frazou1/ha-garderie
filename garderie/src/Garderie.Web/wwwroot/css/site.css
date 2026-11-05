@@ -240,3 +240,4 @@ span.code.verrou { min-height: 2.5rem; opacity: .85; }
 .attestation .form-check { display: flex; align-items: center; gap: .7rem; padding-left: 0; margin: 0; }
 .attestation .form-check-input { float: none; flex: none; width: 1.9em; height: 1.9em; margin: 0; border: 2px solid var(--corail); cursor: pointer; }
 .attestation .form-check-label { font-weight: 700; cursor: pointer; }
+.carte.regie { border: 2px solid var(--sauge); background: var(--sauge-pale); }

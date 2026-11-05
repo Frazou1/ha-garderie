@@ -35,10 +35,16 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
     // --- Renseignements / Info ---
 
     /// <summary>Fermetures de la periode, regroupees (jours consecutifs, meme motif) / Grouped closures.</summary>
-    public async Task<List<string>> FermeturesAsync(DateOnly debut, DateOnly fin)
+    public async Task<List<string>> FermeturesAsync(DateOnly debut, DateOnly fin) =>
+        (await FermeturesDetailAsync(debut, fin)).Select(f =>
+            (f.Debut == f.Fin ? $"{f.Motif} : {Affichage.Date(f.Debut)}" : $"{f.Motif} : du {Affichage.Date(f.Debut)} au {Affichage.Date(f.Fin)}")
+            + (f.Demi is null ? "" : $" ({f.Demi})")).ToList();
+
+    /// <summary>Fermetures regroupees, en donnees / Grouped closures, as data.</summary>
+    public async Task<List<FermetureContrat>> FermeturesDetailAsync(DateOnly debut, DateOnly fin)
     {
         var jours = await db.Fermetures.AsNoTracking().Where(f => f.Date >= debut && f.Date <= fin).OrderBy(f => f.Date).ToListAsync();
-        var lignes = new List<string>();
+        var lignes = new List<FermetureContrat>();
         for (var i = 0; i < jours.Count;)
         {
             var j = i;
@@ -48,8 +54,8 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
                        .All(k => jours[j].Date.AddDays(k).DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday))
                 j++;
             var motif = string.IsNullOrWhiteSpace(jours[i].Motif) ? "Fermeture" : jours[i].Motif;
-            var demi = jours[i].Demi switch { DemiJournee.Matin => " (matin)", DemiJournee.Pm => " (après-midi)", _ => "" };
-            lignes.Add(i == j ? $"{motif} : {Affichage.Date(jours[i].Date)}{demi}" : $"{motif} : du {Affichage.Date(jours[i].Date)} au {Affichage.Date(jours[j].Date)}");
+            var demi = jours[i].Demi switch { DemiJournee.Matin => "matin", DemiJournee.Pm => "après-midi", _ => null };
+            lignes.Add(new FermetureContrat(motif!, jours[i].Date, jours[j].Date, i == j ? demi : null));
             i = j + 1;
         }
         return lignes;
@@ -75,7 +81,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             EnfantNom = e.NomComplet, EnfantAdresse = e.Adresse, EnfantTelephone = e.Telephone, EnfantNaissance = e.DateNaissance, EnfantSexe = e.Sexe,
             ParentNom = lien?.Parent.NomComplet ?? "", ParentAdresse = lien?.Parent.Adresse, ParentTelephone1 = lien?.Parent.Telephone1,
             ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien,
-            Fermetures = await FermeturesAsync(c.Debut, c.Fin), NoteVacances = p.ContratNoteVacances, VacancesParent = c.VacancesParent,
+            Fermetures = await FermeturesAsync(c.Debut, c.Fin), FermeturesDetail = await FermeturesDetailAsync(c.Debut, c.Fin), NoteVacances = p.ContratNoteVacances, VacancesParent = c.VacancesParent,
             ObligationsRsge = p.ContratObligationsRsge ?? TextesContrat.ObligationsRsge,
             ObligationsParent = p.ContratObligationsParent ?? TextesContrat.ObligationsParent,
             MentionLpc = p.ContratMentionLpc ?? TextesContrat.MentionLpc,
@@ -166,11 +172,17 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             : ($"Résiliation de l'entente de service de {e.Prenom}",
                $"Voici la formule de résiliation de l'entente de service de {e.Prenom}, à compter du {Affichage.Date(c.ResilieLe)}.\n" +
                "Vérifiez-la et signez-la ici");
+        // La regie interne est jointe : le parent atteste l'avoir lue / Internal rules attached: the parent attests reading them
+        var pieces = but == ButLien.Signature && RegieDisponible
+            ? new List<(string, byte[])> { ("Régie interne.pdf", await File.ReadAllBytesAsync(options.FichierRegieInterne)) }
+            : null;
         try
         {
             await courriels.EnvoyerAsync(courriel, sujet,
                 $"Bonjour {lien.Parent.Prenom},\n\n{intro} (lien personnel, valide 14 jours, une seule utilisation) :\n\n" +
-                $"{UrlLien(jeton)}\n\nMerci,\n{p?.NomRsge ?? garderie}\n{garderie}");
+                $"{UrlLien(jeton)}\n\n" +
+                (pieces is null ? "" : "La régie interne du service de garde est jointe à ce courriel ; elle est aussi accessible sur la page de signature.\n\n") +
+                $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}", pieces);
         }
         catch
         {

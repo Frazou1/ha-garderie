@@ -54,10 +54,11 @@ public class ContratModel(ContratsService contrats, Chiffreur chiffreur, Garderi
     }
 
     /// <summary>Regie interne (PDF) accessible avec le lien / Internal rules PDF, available with the link.</summary>
-    public async Task<IActionResult> OnGetRegieAsync()
+    public async Task<IActionResult> OnGetRegieAsync(bool telecharger = false)
     {
         if (!await ChargerAsync() || !RegieDisponible) return NotFound();
-        return File(await System.IO.File.ReadAllBytesAsync(options.FichierRegieInterne), "application/pdf", "Régie interne.pdf");
+        await journal.NoterMaintenantAsync("contrat.regie_ouverte", "Enfant", Lien!.Contrat.EnfantId);
+        return this.Fichier(await System.IO.File.ReadAllBytesAsync(options.FichierRegieInterne), "application/pdf", "Régie interne.pdf", !telecharger);
     }
 
     public async Task<IActionResult> OnPostSignerAsync(string? signature, string? nom, bool atteste)

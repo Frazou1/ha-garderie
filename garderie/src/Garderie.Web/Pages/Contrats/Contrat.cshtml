@@ -43,6 +43,11 @@
 
     <section class="carte">
         <h2 class="h5">2. Signature du parent</h2>
+        @if (!Model.RegieDisponible)
+        {
+            <p class="bulle bulle-erreur">La régie interne n'est pas téléversée. Le parent atteste l'avoir lue : téléversez-la dans
+                <a asp-page="/Parametres">Réglages</a> avant d'envoyer le contrat.</p>
+        }
         @if (Model.Parent is null)
         {
             <p class="aide mb-0">Ajoutez d'abord un parent au <a asp-page="/Enfants/Dossier" asp-route-id="@e.Id">dossier</a>.</p>

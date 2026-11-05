@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+- Contrat PDF fidèle au modèle Word de la RSGE : titres, sections, valeurs soulignées, fériés « ( X ) jj/mm/aaaa »
+  sur deux colonnes, vacances « *** », clauses en un paragraphe Times 9 gras, mêmes polices.
+- Réglages → « Polices du contrat » : téléverser Comic Sans MS, Times New Roman, Calibri, Elephant (polices
+  Microsoft, jamais incluses dans le module) ; sinon police de remplacement.
+- Régie interne : carte bien visible sur la page du parent (lire / télécharger), jointe au courriel du contrat,
+  et l'envoi d'un contrat est bloqué tant qu'elle n'est pas téléversée.
+- Fériés nommés comme le modèle (« Le 2 janvier », « Fête des patriotes »…).
+
 ## 0.5.2
 - Correctif : « Envoyer une copie au parent » / « M'envoyer une copie » étaient refusés (jeton antiforgery manquant).
   Test ajouté : chaque formulaire POST des pages principales porte son jeton.

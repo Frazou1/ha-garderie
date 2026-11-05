@@ -14,7 +14,7 @@ namespace Garderie.Web.Pages;
 /// etat du courriel (configure dans les options du module).
 /// Daycare settings, blank FO-0310 form, email status (configured in the add-on options).
 /// </summary>
-public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions options, Courriels courriels) : PageModel
+public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions options, Courriels courriels, ContratsService contrats) : PageModel
 {
     [BindProperty] public Parametres Donnees { get; set; } = new();
     public bool ModeleDisponible => System.IO.File.Exists(options.FichierModeleFo0310);
@@ -163,6 +163,10 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         TempData["Message"] = "Régie interne enregistrée : le PDF remis aux parents est à jour.";
         return RedirectToPage(null, null, "regie");
     }
+
+    /// <summary>Apercu du modele de contrat (champs de l'enfant et du parent a remplir) / Contract template preview.</summary>
+    public async Task<IActionResult> OnGetContratModeleAsync(bool telecharger = false) =>
+        this.Fichier(await contrats.ModelePdfAsync(), "application/pdf", "Modèle de contrat.pdf", !telecharger);
 
     /// <summary>PDF de la regie (tel que remis aux parents) / Rules PDF (as given to parents).</summary>
     public async Task<IActionResult> OnGetRegiePdfAsync(bool telecharger = false)

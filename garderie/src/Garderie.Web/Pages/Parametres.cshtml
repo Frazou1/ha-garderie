@@ -73,7 +73,10 @@
 </section>
 
 <section class="carte">
-    <h2 class="h5">Contrat (entente de service)</h2>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <h2 class="h5 mb-0 me-auto">Contrat (entente de service)</h2>
+        <a class="btn btn-doux btn-sm" asp-page-handler="ContratModele" target="_blank" rel="noopener">Aperçu du modèle de contrat</a>
+    </div>
     <p class="small text-muted">Le nom, l'adresse, le téléphone et les heures viennent de « La garderie » ci-dessus ; les fermetures et
         vacances viennent de la page Fermetures. Les textes s'appliquent aux contrats pas encore signés par le parent.
         Dans « Attestation », {garderie} et {rsge} sont remplacés par les noms. Une ligne qui commence par « - » devient un point.</p>
@@ -106,7 +109,8 @@
             <label asp-for="Contrat.NonRespect" class="form-label">Non-respect de l'entente</label>
             <textarea asp-for="Contrat.NonRespect" class="form-control" rows="3"></textarea>
         </div>
-        <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer les textes</button></div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer les textes</button>
+            <span class="small text-muted ms-2">Enregistrez avant l'aperçu pour voir vos changements.</span></div>
     </form>
 </section>
 

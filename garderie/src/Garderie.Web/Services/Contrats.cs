@@ -69,28 +69,47 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             .Where(x => x.EnfantId == c.EnfantId && (c.ParentId == null || x.ParentId == c.ParentId))
             .OrderByDescending(x => x.EstPayeur).ThenBy(x => x.Ordre).FirstOrDefaultAsync();
 
-    /// <summary>Renseignements actuels (avant la signature du parent) / Current info (before the parent signs).</summary>
-    public async Task<InfosContrat> InfosActuellesAsync(Contrat c)
+    /// <summary>Renseignements de la garderie et textes, sans enfant ni parent / Daycare info and texts, no child or parent.</summary>
+    private async Task<InfosContrat> InfosGarderieAsync(DateOnly debut, DateOnly fin)
     {
         var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new Parametres();
-        var e = await db.Enfants.AsNoTracking().FirstAsync(x => x.Id == c.EnfantId);
-        var lien = await LienParentAsync(c);
         var garderie = p.NomGarderie ?? "Garderie";
         var heures = p.HeureOuverture is { } o && p.HeureFermeture is { } f ? $"de {o:H\\ \\h\\ mm} à {f:H\\ \\h\\ mm}".Replace(" h 00", " h") : null;
         return new InfosContrat
         {
             Garderie = garderie, Rsge = p.NomRsge, AdresseGarderie = p.Adresse, TelephoneGarderie = p.Telephone, Heures = heures,
-            EnfantNom = e.NomComplet, EnfantAdresse = e.Adresse, EnfantTelephone = e.Telephone, EnfantNaissance = e.DateNaissance, EnfantSexe = e.Sexe,
-            ParentNom = lien?.Parent.NomComplet ?? "", ParentAdresse = lien?.Parent.Adresse, ParentTelephone1 = lien?.Parent.Telephone1,
-            ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien,
-            Fermetures = await FermeturesAsync(c.Debut, c.Fin), FermeturesDetail = await FermeturesDetailAsync(c.Debut, c.Fin), NoteVacances = p.ContratNoteVacances, VacancesParent = c.VacancesParent,
+            Fermetures = await FermeturesAsync(debut, fin), FermeturesDetail = await FermeturesDetailAsync(debut, fin), NoteVacances = p.ContratNoteVacances,
             ObligationsRsge = p.ContratObligationsRsge ?? TextesContrat.ObligationsRsge,
             ObligationsParent = p.ContratObligationsParent ?? TextesContrat.ObligationsParent,
             MentionLpc = p.ContratMentionLpc ?? TextesContrat.MentionLpc,
             Attestation = TextesContrat.Remplir(p.ContratAttestation ?? TextesContrat.Attestation, garderie, p.NomRsge),
             NonRespect = TextesContrat.Remplir(p.ContratNonRespect ?? TextesContrat.NonRespect, garderie, p.NomRsge),
-            Regie = RegieInterne.Composer(p), Ville = p.VilleSignature, Debut = c.Debut, Fin = c.Fin,
+            Regie = RegieInterne.Composer(p), Ville = p.VilleSignature, Debut = debut, Fin = fin,
         };
+    }
+
+    /// <summary>Renseignements actuels (avant la signature du parent) / Current info (before the parent signs).</summary>
+    public async Task<InfosContrat> InfosActuellesAsync(Contrat c)
+    {
+        var e = await db.Enfants.AsNoTracking().FirstAsync(x => x.Id == c.EnfantId);
+        var lien = await LienParentAsync(c);
+        return await InfosGarderieAsync(c.Debut, c.Fin) with
+        {
+            EnfantNom = e.NomComplet, EnfantAdresse = e.Adresse, EnfantTelephone = e.Telephone, EnfantNaissance = e.DateNaissance, EnfantSexe = e.Sexe,
+            ParentNom = lien?.Parent.NomComplet ?? "", ParentAdresse = lien?.Parent.Adresse, ParentTelephone1 = lien?.Parent.Telephone1,
+            ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien, VacancesParent = c.VacancesParent,
+        };
+    }
+
+    /// <summary>
+    /// Modele du contrat (Reglages) : textes et fermetures actuels sur un an a partir d'aujourd'hui, champs de l'enfant
+    /// et du parent a remplir, sans signature. / Contract template preview: current texts, blank child/parent fields.
+    /// </summary>
+    public async Task<byte[]> ModelePdfAsync()
+    {
+        var debut = Temps.Aujourdhui();
+        var infos = await InfosGarderieAsync(debut, debut.AddYears(1).AddDays(-1));
+        return ContratPdf.Contrat(infos, new SignaturesContrat(null, null, null, null, null, null, null, null, null, null));
     }
 
     /// <summary>Renseignements figes si le parent a signe, sinon actuels / Frozen info if signed, else current.</summary>

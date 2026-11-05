@@ -43,7 +43,11 @@ public static class RegiePdf
         for (var n = 0; n < lignes.Length; n++)
         {
             var l = lignes[n].TrimEnd();
+            if (l.Trim() == RegieInterne.SautDePage) { sec.AddPageBreak(); continue; }
             var p = sec.AddParagraph();
+            // Une liste reste avec la ligne qui l'annonce / A list stays with the line introducing it
+            if (n + 1 < lignes.Length && lignes[n + 1].TrimStart() is var suivante && (suivante.StartsWith("- ") || suivante.StartsWith("• ")))
+                p.Format.KeepWithNext = true;
             if (l.Trim().Length == 0) continue;   // ligne vide = espace / blank line = space
             l = l.TrimStart();
             if (l.StartsWith("> ") || l == ">")

@@ -188,8 +188,45 @@ public static class RegieInterne
         new("stationnement-et-les-aires-de-", "Stationnement et les aires de jeux", null,
             """
         Pour des raisons d’assurances et de sécurité, il est **interdit de stationner dans l’entrée**.
-        """)
+        """),
+        new("annexe-covid-19", Annexe, "Covid-19",
+            """
+        En raison de la pandémie actuelle, il est important de prendre en considération toutes les mesures possibles afin de limiter la transmission dans le milieu de garde. Pour ce faire, vous devez être attentif à tout symptômes que votre enfant peut développer. (Voir liste de symptômes ci-dessous). En cas d’apparition de symptômes, vous devez **obligatoirement** garder en observation votre enfant a la maison 24hr afin de voir si le ou les symptômes s’intensifie ou non. Si oui, vous devrez donc suivre l’outil d’autoévaluation afin de valider si votre enfant devra se faire dépister avec les recommandations de la santé publique. Si les symptômes restent stables, nous prendrons une décision en commun accord entre vous et moi pour le retour au service de garde. Si un autre membre de la famille est en isolement préventif svp bien m’en informer. Si un cas positif est déclaré dans la famille, l’enfant ne pourra pas fréquenter le service de garde tant que son confinement à lui ne sera pas terminer.
+
+        Tout frais de service seront payable venant le cas que l’enfant est exclu pour observation de symptômes, du a un retrait préventif par la santé publique ou dans l’attente d’un résultat.
+
+        *Règle gouvernementale ; si le gouvernement ferme les services de garde, les frais ne seront pas facturés si le ministère de la famille le mentionne.
+
+        Puisque nous vivons une pandémie et que c’est quelque chose qui évolue rapidement, certaines directives pourraient primer sur cette annexe si cela est décréter par le gouvernement.
+
+        ### Symptômes reliés à la Covid-19 (liste gouvernementale) :
+        **Fièvre :** à partir de 38.1 l’enfant est mieux dans son milieu de vie afin de bien se reposer. Observer que la température n’augmente pas sans donner de médicaments. 38.5 fièvre confirmer. Entre 38 et 38.5 zone floue pour la température.
+
+        **Symptômes généraux :**
+        - Grande fatigue
+        - Perte soudaine d’odorat sans congestion nasale, avec ou sans perte de goût
+        - Perte d’appétit importante
+        - Douleurs musculaires généralisées (non liées à un effort physique)
+
+        **Symptômes respiratoires :**
+        - Toux (nouvelle ou aggravée)
+        - Essoufflement, difficulté à respirer
+        - Mal de gorge
+        - Nez qui coule ou nez bouché (avec un autre symptôme pour un retrait préventif)
+
+        **Symptômes gastro-intestinaux :**
+        - Nausées
+        - Vomissements
+        - Diarrhée
+        - Maux de ventre
+        """),
     ];
+
+    /// <summary>Partie des annexes : commence sur une nouvelle page / Annex part: starts on a new page.</summary>
+    public const string Annexe = "Annexe concernant la Régie interne";
+
+    /// <summary>Ligne de balisage qui force un saut de page / Markup line forcing a page break.</summary>
+    public const string SautDePage = "[saut de page]";
 
     /// <summary>Textes saisis (cle -> texte), sans les textes par defaut / Entered texts, without defaults.</summary>
     public static Dictionary<string, string> Lire(string? json)
@@ -233,6 +270,7 @@ public static class RegieInterne
             if (texte.Trim() == Retiree) continue;
             if (s.Partie != partie)
             {
+                if (s.Partie == Annexe) b.Append(SautDePage).Append('\n');
                 b.Append("## ").Append(s.Partie).Append('\n');
                 if (s.Titre is not null) b.Append('\n');
                 partie = s.Partie;

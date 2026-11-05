@@ -83,6 +83,7 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains("covid-19", Db(db => db.Parametres.Find(1)!.RegieSections)!);
         Assert.Equal("45 $", Db(db => db.Parametres.Find(1)!.RegieTarif));
         Assert.Equal("application/pdf", (await admin.GetAsync("/Parametres?handler=RegiePdf")).Content.Headers.ContentType?.MediaType);
+        Assert.Equal("application/pdf", (await admin.GetAsync("/Parametres?handler=ContratModele")).Content.Headers.ContentType?.MediaType);
 
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
         var jeton = DernierJeton("julie@exemple.test");

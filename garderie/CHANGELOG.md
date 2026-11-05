@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0
+- Réglages : bouton « Aperçu du modèle de contrat » (textes, fermetures de la prochaine année, champs de l'enfant
+  et du parent à remplir).
+- Régie interne : « Annexe concernant la Régie interne » (Covid-19) ajoutée à la fin, sur sa propre page, et
+  modifiable dans Réglages comme les autres sections. Elle est donc jointe au courriel du contrat.
+- PDF de la régie : une liste reste sur la même page que la ligne qui l'annonce.
+
 ## 0.9.0
 - Polices incluses dans le module, rien à configurer : Comic Neue (comme Comic Sans), Tinos (mesures de Times New
   Roman) et Carlito (mesures de Calibri), sous licence libre SIL OFL. La section « Polices du contrat » de

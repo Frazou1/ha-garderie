@@ -29,6 +29,8 @@ public class RegieTests
         Assert.Contains("**douze (12) journées fériées**", t);
         Assert.Contains("- Veille de Noël (24 décembre)", t);
         Assert.Contains("Office de la protection du consommateur", t);   // mention LPC du contrat
+        Assert.Contains("[saut de page]\n## Annexe concernant la Régie interne\n\n### Covid-19\n", t);   // annexe sur sa page
+        Assert.EndsWith("- Maux de ventre\n", t);
         Assert.Equal(RegieInterne.Sections.Length, RegieInterne.Sections.Select(s => s.Cle).Distinct().Count());
     }
 

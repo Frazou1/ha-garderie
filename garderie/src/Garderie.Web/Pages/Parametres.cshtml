@@ -71,6 +71,10 @@
             <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                 <span class="me-auto"><strong>@libelle</strong>
                     @if (present) { <span class="badge text-bg-success">Enregistré</span> } else { <span class="badge text-bg-light border">À téléverser</span> }</span>
+                @if (present)
+                {
+                    <a class="btn btn-sm btn-doux" asp-page-handler="ApercuRl24" asp-route-quel="@quel" target="_blank" rel="noopener">Aperçu</a>
+                }
                 <form method="post" asp-page-handler="FormulaireRl24" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
                     <input type="hidden" name="quel" value="@quel" />
                     <input type="file" name="fichier" accept="application/pdf,.pdf" class="form-control form-control-sm w-auto" required aria-label="@libelle" />
@@ -81,7 +85,8 @@
     </ul>
     @if (Model.Rl24ProchainNumero is { } prochain)
     {
-        <p class="small">Prochain numéro de relevé : <strong>@prochain</strong> (calculé comme le fait le formulaire de Revenu Québec).</p>
+        <p class="small">Prochain numéro de relevé : <strong>@prochain</strong> (calculé comme le fait le formulaire de Revenu Québec).
+            L'aperçu utilise vos Réglages avec un parent et un enfant fictifs ; il ne réserve pas de numéro.</p>
     }
     <form method="post" asp-page-handler="Rl24" class="row g-3">
         <div class="col-md-6">

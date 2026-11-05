@@ -239,6 +239,35 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     }
 
     /// <summary>Formulaire officiel RL-24 ou RL-24.S de Revenu Quebec / Official RL-24 or RL-24.S form.</summary>
+    /// <summary>
+    /// Apercu du RL-24 ou du sommaire : vos Reglages, un parent et un enfant fictifs (NAS de test), prochain numero
+    /// sans le reserver. / Preview: your settings, a fictitious parent and child (test SIN), next number not reserved.
+    /// </summary>
+    public async Task<IActionResult> OnGetApercuRl24Async(string? quel)
+    {
+        var chemin = quel == "sommaire" ? options.FichierRl24S : options.FichierRl24;
+        if (!System.IO.File.Exists(chemin)) return NotFound();
+        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new Parametres();
+        var modele = await System.IO.File.ReadAllBytesAsync(chemin);
+        var fournisseur = new Releve24.Fournisseur(p.NomGarderie ?? "", p.NomRsge,
+            new Releve24.Adresse(p.Rl24Appartement, p.Rl24Numero, p.Rl24Rue, p.Rl24Ville, p.Rl24Province, p.Rl24CodePostal),
+            chiffreur.DechiffrerTexte(p.Rl24IdentifiantChiffre, Contextes.IdentifiantRl24));
+        var tarif = decimal.TryParse(new string((p.RegieTarif ?? "").Where(c => char.IsAsciiDigit(c) || c is '.' or ',').ToArray()).Replace(',', '.'),
+            System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var t) ? t : 45m;
+        var annee = Temps.Aujourdhui().Year;
+        var enfant = new Releve24.EnfantReleve("EXEMPLE", "Enfant", new DateOnly(annee - 3, 3, 14), 200, 200 * tarif, 0m);
+        byte[] pdf;
+        if (quel == "sommaire")
+            pdf = FormulaireProtege.Remplir(modele, Releve24.ChampsSommaire(new Releve24.ContenuSommaire(
+                annee, fournisseur, 1, 1, enfant.Jours, enfant.Admissible, p.Rl24Signataire, p.Telephone, Temps.Aujourdhui())));
+        else
+            pdf = FormulaireProtege.Remplir(modele, Releve24.ChampsReleve(new Releve24.ContenuReleve(
+                annee, Releve24.Prochain(FormulaireProtege.LireValeurs(modele)["numSeq"], p.Rl24DernierNumero), 'R', null,
+                "EXEMPLE", "Parent", new Releve24.Adresse(null, "1", "rue de l'Exemple", "Québec", "QC", "G1A1A1"), "130692544",
+                fournisseur, [enfant])));
+        return this.Fichier(pdf, "application/pdf", quel == "sommaire" ? "Aperçu sommaire 24.pdf" : "Aperçu relevé 24.pdf", afficher: true);
+    }
+
     public async Task<IActionResult> OnPostFormulaireRl24Async(string? quel, IFormFile? fichier)
     {
         if (quel is not ("releve" or "sommaire")) return BadRequest();

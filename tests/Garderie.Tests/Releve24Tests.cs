@@ -99,5 +99,20 @@ public class Releve24Tests(Appli appli) : IClassFixture<Appli>
         await admin.PostAsync("/Parametres?handler=FormulaireRl24", form);
         Assert.True(File.Exists(options.FichierRl24));
         Assert.Contains("024000034", await admin.GetStringAsync("/Parametres"));
+        form = new MultipartFormDataContent { { new StringContent(Jeton(await admin.GetStringAsync("/Parametres"))), "__RequestVerificationToken" }, { new StringContent("sommaire"), "quel" } };
+        f = new ByteArrayContent(File.ReadAllBytes(Path.Combine(dir, "rl24s.pdf")));
+        f.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        form.Add(f, "fichier", "rl24s.pdf");
+        await admin.PostAsync("/Parametres?handler=FormulaireRl24", form);
+
+        // Apercus : PDF remplis, aucun numero reserve / Previews: filled PDFs, no number reserved
+        foreach (var quel in new[] { "releve", "sommaire" })
+        {
+            var r = await admin.GetAsync($"/Parametres?handler=ApercuRl24&quel={quel}");
+            Assert.Equal("application/pdf", r.Content.Headers.ContentType?.MediaType);
+            if (Environment.GetEnvironmentVariable("GARDERIE_PDF_DIR") is { } sortie)
+                File.WriteAllBytes(Path.Combine(sortie, $"apercu_{quel}.pdf"), await r.Content.ReadAsByteArrayAsync());
+        }
+        Assert.Null(Db(db => db.Parametres.Find(1)!.Rl24DernierNumero));
     }
 }

@@ -19,7 +19,9 @@ namespace Garderie.Web.Services;
 public static partial class FormulaireProtege
 {
     /// <summary>Valeur d'un champ et texte affiche (masque du formulaire), sinon la valeur / Field value and shown text.</summary>
-    public sealed record Champ(string Valeur, string? Affichage = null)
+    /// <param name="Cases">Nombre de cases d'un champ en peigne, si le formulaire se trompe (ex. NAS a 9 cases
+    /// declare a 8) / Comb cell count when the form declares it wrong.</param>
+    public sealed record Champ(string Valeur, string? Affichage = null, int? Cases = null)
     {
         public string Texte => Affichage ?? Valeur;
     }
@@ -77,7 +79,7 @@ public static partial class FormulaireProtege
             foreach (var w in widgets)
             {
                 var ap = prochain++;
-                var flux = Apparence(w, champ, valeur.Texte, polices);
+                var flux = Apparence(w, champ, valeur.Texte, polices, valeur.Cases);
                 Ecrire(ap, n => Flux(brut.Cle, n, flux.Dict, flux.Contenu));
                 var remplacements = new Dictionary<string, string> { ["/AP"] = $"<< /N {ap} 0 R >>" };
                 if (ReferenceEquals(w, champ)) remplacements["/V"] = Chaine(brut.Cle, Numero(champ), valeur.Valeur);
@@ -158,7 +160,7 @@ public static partial class FormulaireProtege
     [GeneratedRegex(@"/([^\s/\[\]()<>{}%]+)\s+([\d.]+)\s+Tf")]
     private static partial Regex RegexTf();
 
-    private static FluxApparence Apparence(PdfDictionary widget, PdfDictionary champ, string texte, PdfDictionary? polices)
+    private static FluxApparence Apparence(PdfDictionary widget, PdfDictionary champ, string texte, PdfDictionary? polices, int? cases)
     {
         var rect = (Deref(widget.Elements["/Rect"]) as PdfArray)!.Elements.Select(e => Nombre(Deref(e))).ToArray();
         double l = Math.Abs(rect[2] - rect[0]), h = Math.Abs(rect[3] - rect[1]);
@@ -171,7 +173,7 @@ public static partial class FormulaireProtege
         var largeurs = Largeurs(Deref(polices?.Elements["/" + police]) as PdfDictionary);
         var q = (int)Nombre(Herite(widget, "/Q"));
         var ff = (int)Nombre(Herite(champ, "/Ff"));
-        var maxLen = (int)Nombre(Herite(champ, "/MaxLen"));
+        var maxLen = cases ?? (int)Nombre(Herite(champ, "/MaxLen"));
         var multi = (ff & (1 << 12)) != 0;
         var peigne = (ff & (1 << 24)) != 0 && maxLen > 0;
 

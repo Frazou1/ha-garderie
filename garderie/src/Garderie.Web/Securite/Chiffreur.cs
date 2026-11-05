@@ -82,5 +82,6 @@ public static class Contextes
     public const string NasParent = "nas:parent";
     public const string NamEnfant = "nam:enfant";
     public const string NasContrat = "nas:contrat";
+    public const string IdentifiantRl24 = "id:rl24";
     public static string Document(string fichier) => "doc:" + fichier;
 }

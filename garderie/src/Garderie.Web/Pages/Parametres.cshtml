@@ -60,6 +60,69 @@
     </form>
 </section>
 
+<section class="carte" id="rl24">
+    <h2 class="h5">Relevé 24 (Revenu Québec)</h2>
+    <p class="small text-muted">Pour les relevés 24 remis aux parents et le sommaire 24, au plus tard le dernier jour de février.
+        Téléchargez sur revenuquebec.ca la version « PDF remplissable à l'écran » du RL-24 et du RL-24.S, puis téléversez-les ici
+        (chaque année, si Revenu Québec publie une nouvelle version).</p>
+    <ul class="list-group mb-3">
+        @foreach (var (quel, libelle, present) in new[] { ("releve", "Relevé 24 (RL-24)", Model.Rl24Present), ("sommaire", "Sommaire 24 (RL-24.S)", Model.Rl24SPresent) })
+        {
+            <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
+                <span class="me-auto"><strong>@libelle</strong>
+                    @if (present) { <span class="badge text-bg-success">Enregistré</span> } else { <span class="badge text-bg-light border">À téléverser</span> }</span>
+                <form method="post" asp-page-handler="FormulaireRl24" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+                    <input type="hidden" name="quel" value="@quel" />
+                    <input type="file" name="fichier" accept="application/pdf,.pdf" class="form-control form-control-sm w-auto" required aria-label="@libelle" />
+                    <button type="submit" class="btn btn-sm btn-doux">Téléverser</button>
+                </form>
+            </li>
+        }
+    </ul>
+    @if (Model.Rl24ProchainNumero is { } prochain)
+    {
+        <p class="small">Prochain numéro de relevé : <strong>@prochain</strong> (calculé comme le fait le formulaire de Revenu Québec).</p>
+    }
+    <form method="post" asp-page-handler="Rl24" class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Rl24.Identifiant" class="form-label">Case H : votre NEQ, ou votre NAS si vous n'avez pas de NEQ</label>
+            <input asp-for="Rl24.Identifiant" class="form-control" inputmode="numeric" autocomplete="off" maxlength="14"
+                   placeholder="@(Model.IdentifiantEnregistre ? "" : "NEQ (10 chiffres) ou NAS (9 chiffres)")" />
+            <div class="form-text">Chiffré dans la base. Laissez tel quel pour le garder.</div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Rl24.Signataire" class="form-label">Signataire du sommaire (nom et fonction)</label>
+            <input asp-for="Rl24.Signataire" class="form-control" maxlength="100" placeholder="ex. Sonia Savard, responsable" />
+        </div>
+        <div class="col-12 small fw-bold">Adresse du service de garde, comme sur le formulaire</div>
+        <div class="col-4 col-md-2">
+            <label asp-for="Rl24.Appartement" class="form-label">App.</label>
+            <input asp-for="Rl24.Appartement" class="form-control" maxlength="10" />
+        </div>
+        <div class="col-8 col-md-2">
+            <label asp-for="Rl24.Numero" class="form-label">Numéro</label>
+            <input asp-for="Rl24.Numero" class="form-control" maxlength="20" />
+        </div>
+        <div class="col-md-8">
+            <label asp-for="Rl24.Rue" class="form-label">Rue, case postale</label>
+            <input asp-for="Rl24.Rue" class="form-control" maxlength="100" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Rl24.Ville" class="form-label">Ville</label>
+            <input asp-for="Rl24.Ville" class="form-control" maxlength="60" />
+        </div>
+        <div class="col-4 col-md-2">
+            <label asp-for="Rl24.Province" class="form-label">Province</label>
+            <input asp-for="Rl24.Province" class="form-control" maxlength="2" />
+        </div>
+        <div class="col-8 col-md-4">
+            <label asp-for="Rl24.CodePostal" class="form-label">Code postal</label>
+            <input asp-for="Rl24.CodePostal" class="form-control" maxlength="7" autocomplete="postal-code" />
+        </div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+    </form>
+</section>
+
 <section class="carte" id="logo">
     <h2 class="h5">Logo</h2>
     <p class="small text-muted">Affiché en haut de l'application et des pages des parents, à la place du petit bateau. PNG ou JPG, idéalement carré.</p>

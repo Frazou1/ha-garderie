@@ -34,6 +34,18 @@ public static partial class FormulaireProtege
         return res;
     }
 
+    /// <summary>
+    /// Verifie qu'on sait remplir ce PDF (protection prise en charge) ; retourne les champs requis absents.
+    /// Checks the PDF can be filled (supported protection); returns the missing required fields.
+    /// </summary>
+    public static List<string> Verifier(byte[] pdf, IEnumerable<string> requis)
+    {
+        Lire(pdf);
+        var doc = PdfReader.Open(new MemoryStream(pdf), PdfDocumentOpenMode.Import);
+        var noms = Champs(doc).Select(c => c.Nom).ToHashSet();
+        return requis.Where(r => !noms.Contains(r)).ToList();
+    }
+
     public static byte[] Remplir(byte[] pdf, IReadOnlyDictionary<string, Champ> valeurs)
     {
         var brut = Lire(pdf);

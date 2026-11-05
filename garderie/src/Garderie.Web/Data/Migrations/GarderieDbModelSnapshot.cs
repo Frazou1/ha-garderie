@@ -743,6 +743,41 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Rl24Appartement")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24CodePostal")
+                        .HasMaxLength(6)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24DernierNumero")
+                        .HasMaxLength(9)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Rl24IdentifiantChiffre")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Rl24Numero")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24Province")
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24Rue")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24Signataire")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rl24Ville")
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Telephone")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");

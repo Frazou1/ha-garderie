@@ -14,7 +14,7 @@ namespace Garderie.Web.Pages;
 /// etat du courriel (configure dans les options du module).
 /// Daycare settings, blank FO-0310 form, email status (configured in the add-on options).
 /// </summary>
-public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions options, Courriels courriels, ContratsService contrats) : PageModel
+public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions options, Courriels courriels, ContratsService contrats, Chiffreur chiffreur) : PageModel
 {
     [BindProperty] public Parametres Donnees { get; set; } = new();
     public bool ModeleDisponible => System.IO.File.Exists(options.FichierModeleFo0310);
@@ -56,6 +56,16 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         RegieJourPaiement = Donnees.RegieJourPaiement;
         RegieFraisRetard = Donnees.RegieFraisRetard;
         RegieModifieeLe = Donnees.RegieModifieeLe;
+        Rl24 = new SaisieRl24
+        {
+            Identifiant = chiffreur.DechiffrerTexte(Donnees.Rl24IdentifiantChiffre, Contextes.IdentifiantRl24) is { } id ? Masquer(id) : null,
+            Appartement = Donnees.Rl24Appartement, Numero = Donnees.Rl24Numero, Rue = Donnees.Rl24Rue, Ville = Donnees.Rl24Ville,
+            Province = Donnees.Rl24Province ?? "QC", CodePostal = Donnees.Rl24CodePostal, Signataire = Donnees.Rl24Signataire,
+        };
+        IdentifiantEnregistre = Donnees.Rl24IdentifiantChiffre is not null;
+        if (System.IO.File.Exists(options.FichierRl24)
+            && FormulaireProtege.LireValeurs(await System.IO.File.ReadAllBytesAsync(options.FichierRl24)).GetValueOrDefault("numSeq") is { Length: 9 } n)
+            Rl24ProchainNumero = Releve24.Prochain(n, Donnees.Rl24DernierNumero);
         Contrat = new SaisieContrat
         {
             VilleSignature = Donnees.VilleSignature, NoteVacances = Donnees.ContratNoteVacances,
@@ -168,6 +178,105 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         await db.SaveChangesAsync();
         TempData["Message"] = "Régie interne enregistrée : le PDF remis aux parents est à jour.";
         return RedirectToPage(null, null, "regie");
+    }
+
+    // --- Releve 24 ---
+
+    public sealed class SaisieRl24
+    {
+        public string? Identifiant { get; set; }
+        public string? Appartement { get; set; }
+        public string? Numero { get; set; }
+        public string? Rue { get; set; }
+        public string? Ville { get; set; }
+        public string? Province { get; set; }
+        public string? CodePostal { get; set; }
+        public string? Signataire { get; set; }
+    }
+
+    [BindProperty] public SaisieRl24 Rl24 { get; set; } = new();
+    public bool IdentifiantEnregistre { get; private set; }
+    public string? Rl24ProchainNumero { get; private set; }
+    public bool Rl24Present => System.IO.File.Exists(options.FichierRl24);
+    public bool Rl24SPresent => System.IO.File.Exists(options.FichierRl24S);
+
+    /// <summary>Identifiant masque (5 derniers chiffres caches) / Masked identifier.</summary>
+    private static string Masquer(string id) => new string('•', id.Length - 4) + id[^4..];
+
+    /// <summary>Renseignements du releve 24 (NEQ ou NAS chiffre, adresse) / RL-24 info (encrypted NEQ or SIN, address).</summary>
+    public async Task<IActionResult> OnPostRl24Async()
+    {
+        var p = await db.Parametres.FindAsync(1);
+        if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
+        var id = new string((Rl24.Identifiant ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (!string.IsNullOrWhiteSpace(Rl24.Identifiant) && !Rl24.Identifiant.Contains('•'))
+        {
+            if (id.Length == 9 && Identifiants.NormaliserNas(id) is null || id.Length is not (9 or 10))
+            {
+                TempData["Erreur"] = "Case H : entrez votre NEQ (10 chiffres) ou votre NAS (9 chiffres valides).";
+                return RedirectToPage(null, null, "rl24");
+            }
+            p.Rl24IdentifiantChiffre = chiffreur.ChiffrerTexte(id, Contextes.IdentifiantRl24);
+        }
+        var cp = new string((Rl24.CodePostal ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();
+        if (cp.Length is not (0 or 6))
+        {
+            TempData["Erreur"] = "Code postal : 6 caractères, ex. G1A 1A1.";
+            return RedirectToPage(null, null, "rl24");
+        }
+        static string? V(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim() is var t && t.Length > max ? t[..max] : s.Trim();
+        p.Rl24Appartement = V(Rl24.Appartement, 10);
+        p.Rl24Numero = V(Rl24.Numero, 20);
+        p.Rl24Rue = V(Rl24.Rue, 100);
+        p.Rl24Ville = V(Rl24.Ville, 60);
+        p.Rl24Province = V(Rl24.Province, 2)?.ToUpperInvariant();
+        p.Rl24CodePostal = cp.Length == 0 ? null : cp;
+        p.Rl24Signataire = V(Rl24.Signataire, 100);
+        journal.Noter("parametres.rl24");   // jamais l'identifiant / never the identifier
+        await db.SaveChangesAsync();
+        TempData["Message"] = "Renseignements du relevé 24 enregistrés.";
+        return RedirectToPage(null, null, "rl24");
+    }
+
+    /// <summary>Formulaire officiel RL-24 ou RL-24.S de Revenu Quebec / Official RL-24 or RL-24.S form.</summary>
+    public async Task<IActionResult> OnPostFormulaireRl24Async(string? quel, IFormFile? fichier)
+    {
+        if (quel is not ("releve" or "sommaire")) return BadRequest();
+        if (fichier is null || fichier.Length == 0 || fichier.Length > 5 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez le PDF de Revenu Québec (5 Mo maximum).";
+            return RedirectToPage(null, null, "rl24");
+        }
+        using var ms = new MemoryStream();
+        await fichier.CopyToAsync(ms);
+        var octets = ms.ToArray();
+        var nom = quel == "releve" ? "RL-24" : "RL-24.S";
+        try
+        {
+            if (DocumentsService.DetecterType(octets) != "application/pdf") throw new InvalidDataException("pas un PDF");
+            var manquants = FormulaireProtege.Verifier(octets, quel == "releve" ? Releve24.ChampsRl24 : Releve24.ChampsRl24S);
+            if (manquants.Count > 0)
+            {
+                TempData["Erreur"] = $"Ce PDF n'est pas le {nom} à remplir de Revenu Québec (champs absents : {string.Join(", ", manquants.Take(4))}).";
+                return RedirectToPage(null, null, "rl24");
+            }
+            if (quel == "releve" && !Releve24.Valide(FormulaireProtege.LireValeurs(octets).GetValueOrDefault("numSeq")))
+            {
+                TempData["Erreur"] = "Ce RL-24 n'a pas de numéro séquentiel valide : prenez la version « PDF remplissable à l'écran ».";
+                return RedirectToPage(null, null, "rl24");
+            }
+        }
+        catch (Exception ex) when (ex is InvalidDataException or PdfSharp.Pdf.IO.PdfReaderException)
+        {
+            TempData["Erreur"] = $"Ce fichier n'est pas le {nom} « PDF remplissable à l'écran » de Revenu Québec.";
+            return RedirectToPage(null, null, "rl24");
+        }
+        var chemin = quel == "releve" ? options.FichierRl24 : options.FichierRl24S;
+        Directory.CreateDirectory(Path.GetDirectoryName(chemin)!);
+        await System.IO.File.WriteAllBytesAsync(chemin, octets);
+        await journal.NoterMaintenantAsync("parametres.formulaire_rl24", details: $"{nom} ({octets.Length} octets)");
+        TempData["Message"] = $"Formulaire {nom} enregistré.";
+        return RedirectToPage(null, null, "rl24");
     }
 
     public bool LogoPresent => System.IO.File.Exists(options.FichierLogo);

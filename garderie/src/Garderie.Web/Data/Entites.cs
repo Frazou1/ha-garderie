@@ -223,6 +223,21 @@ public class Parametres
     [MaxLength(30)] public string? RegieJourPaiement { get; set; }
     [MaxLength(200)] public string? RegieFraisRetard { get; set; }
     public DateTime? RegieModifieeLe { get; set; }
+
+    // --- Releve 24 (Revenu Quebec) ---
+    /// <summary>Case H : NEQ (10 chiffres) ou NAS de la RSGE (9), chiffre / Box H: NEQ or SIN, encrypted.</summary>
+    public byte[]? Rl24IdentifiantChiffre { get; set; }
+    // Adresse du fournisseur, par morceaux comme sur le formulaire / Provider address, split like the form
+    [MaxLength(10)] public string? Rl24Appartement { get; set; }
+    [MaxLength(20)] public string? Rl24Numero { get; set; }
+    [MaxLength(100)] public string? Rl24Rue { get; set; }
+    [MaxLength(60)] public string? Rl24Ville { get; set; }
+    [MaxLength(2)] public string? Rl24Province { get; set; }
+    [MaxLength(6)] public string? Rl24CodePostal { get; set; }
+    /// <summary>Nom et fonction du signataire du sommaire / Summary signatory name and title.</summary>
+    [MaxLength(100)] public string? Rl24Signataire { get; set; }
+    /// <summary>Dernier numero sequentiel utilise (9 chiffres) / Last sequential slip number used.</summary>
+    [MaxLength(9)] public string? Rl24DernierNumero { get; set; }
 }
 
 public enum EtatContrat

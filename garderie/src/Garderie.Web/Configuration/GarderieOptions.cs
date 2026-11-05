@@ -66,6 +66,9 @@ public sealed class GarderieOptions
     public string DossierDocuments => Path.Combine(DataDir, "docs");
     public string DossierCles => Path.Combine(DataDir, "keys");
     public string FichierModeleFo0310 => Path.Combine(DataDir, "modeles", "FO-0310.pdf");
+    /// <summary>Formulaires officiels de Revenu Quebec (jamais dans le depot) / Official Revenu Quebec forms (never in the repo).</summary>
+    public string FichierRl24 => Path.Combine(DataDir, "modeles", "RL-24.pdf");
+    public string FichierRl24S => Path.Combine(DataDir, "modeles", "RL-24.S.pdf");
     /// <summary>Logo de la garderie (PNG ou JPG) / Daycare logo.</summary>
     public string FichierLogo => Path.Combine(DataDir, "modeles", "logo");
 

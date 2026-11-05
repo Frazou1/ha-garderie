@@ -75,6 +75,14 @@ public static class Affichage
         _ => "text-bg-light border",
     };
 
+    public static string ClasseEtatContrat(EtatContrat e) => e switch
+    {
+        EtatContrat.Signe => "text-bg-success",
+        EtatContrat.SigneParent => "text-bg-info",
+        EtatContrat.Resilie => "text-bg-secondary",
+        _ => "text-bg-light border",
+    };
+
     /// <summary>Initiales pour l'avatar sans photo / Initials for the avatar without photo.</summary>
     public static string Initiales(string prenom, string nom) =>
         $"{(prenom.Length > 0 ? char.ToUpper(prenom[0]) : ' ')}{(nom.Length > 0 ? char.ToUpper(nom[0]) : ' ')}".Trim();

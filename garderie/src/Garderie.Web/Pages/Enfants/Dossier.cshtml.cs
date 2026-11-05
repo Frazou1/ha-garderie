@@ -47,6 +47,8 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
     public DateOnly? HoraireDepuis { get; private set; }
     public List<HoraireType> HoraireActuel { get; private set; } = new();
     public DateOnly Aujourdhui { get; } = Temps.Aujourdhui();
+    /// <summary>Dernier contrat de l'enfant / Child's latest contract.</summary>
+    public Contrat? Contrat { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -67,6 +69,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             .FirstOrDefaultAsync(x => x.Id == Id);
         if (e is null) return false;
         Enfant = e;
+        Contrat = await db.Contrats.AsNoTracking().Where(c => c.EnfantId == Id).OrderByDescending(c => c.Debut).ThenByDescending(c => c.Id).FirstOrDefaultAsync();
         var nam = chiffreur.DechiffrerTexte(e.NamChiffre, Contextes.NamEnfant);
         NamMasque = nam is null ? null : Identifiants.MasquerNam(nam);
         var versions = e.Horaires.Where(h => h.DateEffective <= Aujourdhui).Select(h => h.DateEffective).ToList();
@@ -294,6 +297,8 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         // Signatures des fiches (les fiches et liens partent en cascade) / Sheet signatures (sheets cascade)
         foreach (var f in await db.Fiches.Where(f => f.EnfantId == Id).Select(f => new { f.SignatureRsgeFichier, f.SignatureParentFichier }).ToListAsync())
             photos.AddRange([f.SignatureRsgeFichier, f.SignatureParentFichier]);
+        foreach (var c in await db.Contrats.Where(c => c.EnfantId == Id).Select(c => new { c.SignatureParentFichier, c.SignatureRsgeFichier, c.SignatureResiliationFichier }).ToListAsync())
+            photos.AddRange([c.SignatureParentFichier, c.SignatureRsgeFichier, c.SignatureResiliationFichier]);
         await using var tx = await db.Database.BeginTransactionAsync();
         await db.Presences.Where(p => p.EnfantId == Id).ExecuteDeleteAsync();
         db.Enfants.Remove(e); // cascade : liens parents, contacts, allergies, medicaments, horaires, documents

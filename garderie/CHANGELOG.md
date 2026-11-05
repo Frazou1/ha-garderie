@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0
+- Contrats (entente de service) : création par enfant, lien unique au parent (courriel, lien à copier ou
+  signature sur place) ; le parent vérifie et complète ses renseignements (adresse, téléphones, lien, NAS,
+  vacances), lit l'entente et la régie interne, puis signe ; la RSGE contresigne (une à une ou groupée).
+  PDF mis en page comme le modèle, rangé chiffré dans le dossier, copie par courriel à la RSGE et au parent.
+- Résiliation : formule signée par le parent ; contrat résilié et date de fin de l'enfant mise à jour.
+- Réglages : textes du contrat modifiables (préremplis), ville de signature, note sur les vacances, régie interne.
+- Fermetures : bouton « Ajouter les jours fériés du Québec » ; les fermetures de la période vont au contrat.
+
 ## 0.4.0
 - Signature groupée : sur la page Fiches, la RSGE coche les enfants prêts et signe une seule fois ;
   « Envoyer aux parents » envoie un seul courriel et un seul lien par parent, pour tous ses enfants.

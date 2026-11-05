@@ -1,0 +1,119 @@
+@page
+@model Garderie.Web.Pages.Public.ContratModel
+@{
+    Layout = "_LayoutPublic";
+    ViewData["Title"] = "Entente de service";
+}
+@if (Model.Termine || Model.DejaUtilise)
+{
+    <div class="carte carte-publique mx-auto text-center">
+        <h1 class="h4">Merci !</h1>
+        <p class="mb-0">@(Model.EstResiliation ? "La résiliation est signée." : "Votre signature est enregistrée. Vous recevrez une copie du contrat dès que l'éducatrice l'aura signé.")
+            Vous pouvez fermer cette page.</p>
+        @if (Model.Lien?.SurPlace == true && User.Identity?.IsAuthenticated == true)
+        {
+            <a class="btn btn-doux mt-3" asp-page="/Contrats/Contrat" asp-route-id="@Model.Lien.ContratId">Retour au contrat</a>
+        }
+    </div>
+}
+else if (Model.Lien is null)
+{
+    <div class="carte carte-publique mx-auto">
+        <h1 class="h4">Lien invalide ou expiré</h1>
+        <p class="mb-0">Ce lien a déjà été utilisé ou n'est plus valide. Demandez-en un nouveau à votre éducatrice.</p>
+    </div>
+}
+else
+{
+    var i = Model.Infos;
+    var c = Model.Lien.Contrat;
+    <div class="carte-publique mx-auto">
+        <p class="sous-titre mb-1">@i.Garderie</p>
+        <h1 class="titre-page mb-1">@(Model.EstResiliation ? "Résiliation de l'entente de service" : "Entente de service")</h1>
+        <p class="sous-titre">@c.Enfant.Prenom @c.Enfant.Nom · du @Affichage.Date(c.Debut) au @Affichage.Date(c.Fin)</p>
+
+        <div asp-validation-summary="All" class="bulle bulle-erreur"></div>
+
+        <form method="post" asp-page-handler="Signer" asp-route-j="@Model.Jeton" class="form-signature">
+            @if (Model.EstResiliation)
+            {
+                <section class="carte">
+                    <h2 class="h5">Formule de résiliation</h2>
+                    <p>À @i.Rsge, éducatrice-propriétaire du service de garde, ci-nommée au contrat, je résilie le contrat conclu le
+                        @Affichage.Date(DateOnly.FromDateTime(Temps.VersLocal(c.SigneParentLe!.Value))), à compter du <strong>@Affichage.Date(c.ResilieLe)</strong>.</p>
+                </section>
+            }
+            else
+            {
+                <section class="carte">
+                    <h2 class="h5">Vos renseignements</h2>
+                    <p class="small text-muted">Vérifiez et complétez. Ils sont mis à jour dans le dossier et inscrits au contrat.</p>
+                    <div class="row g-2">
+                        <div class="col-12 fw-bold small">@c.Enfant.Prenom @c.Enfant.Nom</div>
+                        <div class="col-md-8"><label class="form-label small mb-0" asp-for="Saisie.EnfantAdresse">Adresse de l'enfant</label>
+                            <input class="form-control" asp-for="Saisie.EnfantAdresse" maxlength="300" autocomplete="street-address" /></div>
+                        <div class="col-md-4"><label class="form-label small mb-0" asp-for="Saisie.EnfantTelephone">Téléphone</label>
+                            <input class="form-control" asp-for="Saisie.EnfantTelephone" type="tel" maxlength="30" /></div>
+                        <div class="col-12 fw-bold small mt-3">@i.ParentNom</div>
+                        <div class="col-md-8"><label class="form-label small mb-0" asp-for="Saisie.ParentAdresse">Votre adresse</label>
+                            <input class="form-control" asp-for="Saisie.ParentAdresse" maxlength="300" autocomplete="street-address" /></div>
+                        <div class="col-md-4"><label class="form-label small mb-0" asp-for="Saisie.Lien">Lien avec l'enfant</label>
+                            <input class="form-control" asp-for="Saisie.Lien" maxlength="50" /></div>
+                        <div class="col-6"><label class="form-label small mb-0" asp-for="Saisie.ParentTelephone1">Téléphone 1</label>
+                            <input class="form-control" asp-for="Saisie.ParentTelephone1" type="tel" maxlength="30" autocomplete="tel" /></div>
+                        <div class="col-6"><label class="form-label small mb-0" asp-for="Saisie.ParentTelephone2">Téléphone 2</label>
+                            <input class="form-control" asp-for="Saisie.ParentTelephone2" type="tel" maxlength="30" /></div>
+                        <div class="col-md-6"><label class="form-label small mb-0" asp-for="Saisie.Nas">NAS (relevé 24, impôt)</label>
+                            <input class="form-control" asp-for="Saisie.Nas" inputmode="numeric" autocomplete="off" maxlength="15"
+                                   placeholder="@(Model.NasEnregistre ? "déjà au dossier — laisser vide pour le garder" : "123 456 789")" required="@(!Model.NasEnregistre)" /></div>
+                        <div class="col-12"><label class="form-label small mb-0" asp-for="Saisie.VacancesParent">Vos vacances, si les dates sont connues (facultatif)</label>
+                            <input class="form-control" asp-for="Saisie.VacancesParent" maxlength="1000" /></div>
+                    </div>
+                </section>
+
+                <section class="carte texte-contrat">
+                    <h2 class="h5">L'entente</h2>
+                    <h3 class="h6">Milieu familial</h3>
+                    <p class="small mb-1">@i.Rsge · @i.AdresseGarderie · @i.TelephoneGarderie@(i.Heures is null ? "" : $" · ouvert {i.Heures}")</p>
+                    <h3 class="h6">Fermetures prévues</h3>
+                    <ul class="small">
+                        @foreach (var f in i.Fermetures) { <li>@f</li> }
+                        @if (i.Fermetures.Count == 0) { <li>Aucune inscrite.</li> }
+                    </ul>
+                    @if (i.NoteVacances is not null) { <p class="small">@i.NoteVacances</p> }
+                    <details>
+                        <summary class="fw-bold">Obligations, mention de la Loi sur la protection du consommateur</summary>
+                        <h3 class="h6 mt-2">Les obligations de l'éducatrice</h3>
+                        <div class="small texte-libre">@i.ObligationsRsge</div>
+                        <h3 class="h6 mt-2">Les obligations du parent</h3>
+                        <div class="small texte-libre">@i.ObligationsParent</div>
+                        <h3 class="h6 mt-2">Mention exigée par la Loi sur la protection du consommateur</h3>
+                        <div class="small texte-libre">@i.MentionLpc</div>
+                    </details>
+                    @if (Model.RegieDisponible)
+                    {
+                        <p class="mt-2 mb-0"><a class="btn btn-sm btn-doux" asp-page-handler="Regie" asp-route-j="@Model.Jeton">Lire la régie interne (PDF)</a></p>
+                    }
+                </section>
+            }
+
+            <section class="carte">
+                <h2 class="h6">Votre signature</h2>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="atteste" value="true" id="atteste" required />
+                    <label class="form-check-label small" for="atteste">
+                        @(Model.EstResiliation ? "Je résilie l'entente de service aux conditions ci-dessus." : i.Attestation + " " + i.NonRespect)
+                    </label>
+                </div>
+                <label class="form-label small mb-0" for="nom">Votre nom</label>
+                <input class="form-control mb-2" id="nom" name="nom" value="@i.ParentNom" maxlength="200" required autocomplete="name" />
+                <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+                <input type="hidden" name="signature" class="valeur-signature" />
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                    <button type="submit" class="btn btn-primary btn-lg ms-auto">Signer</button>
+                </div>
+            </section>
+        </form>
+    </div>
+}

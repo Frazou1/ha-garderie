@@ -1,0 +1,99 @@
+@page
+@model Garderie.Web.Pages.Contrats.IndexModel
+@{
+    ViewData["Title"] = "Contrats";
+}
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Contrats</h1>
+        <p class="sous-titre">Ententes de service des enfants inscrits</p>
+    </div>
+    <a class="btn btn-doux btn-sm" asp-page="/Parametres">Textes du contrat</a>
+</div>
+
+@if (Model.Lignes.Count == 0)
+{
+    <div class="carte vide"><p class="mb-0">Aucun enfant inscrit.</p></div>
+}
+else
+{
+    <form method="post" asp-page-handler="Contresigner" class="form-signature">
+        <div class="liste-enfants">
+            @foreach (var l in Model.Lignes)
+            {
+                var e = l.Enfant;
+                var c = l.Contrat;
+                var photo = e.PhotoDocumentId is { } pid ? Url.Page("/Enfants/Dossier", "Document", new { id = e.Id, documentId = pid, apercu = true }) : null;
+                <div class="tuile-ligne">
+                    @if (c?.Etat == EtatContrat.SigneParent)
+                    {
+                        <input class="form-check-input coche-fiche" type="checkbox" name="contratIds" value="@c.Id" checked aria-label="Signer le contrat de @e.Prenom" />
+                    }
+                    @if (c is not null)
+                    {
+                        <a class="tuile-enfant" asp-page="Contrat" asp-route-id="@c.Id">
+                            <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                            <span class="details">
+                                <span class="nom d-block">@e.NomComplet</span>
+                                <span class="info d-block">
+                                    <span class="badge @Affichage.ClasseEtatContrat(c.Etat)">@Affichage.Nom(c.Etat)</span>
+                                    du @Affichage.Date(c.Debut) au @Affichage.Date(c.Fin)
+                                    @if (c.Etat == EtatContrat.Signe && c.Fin < Model.Aujourdhui.AddDays(45))
+                                    {
+                                        <span class="badge text-bg-warning">à renouveler</span>
+                                    }
+                                    @if (c.Etat == EtatContrat.Signe && c.ResilieLe is not null)
+                                    {
+                                        <span class="badge text-bg-warning">résiliation en cours</span>
+                                    }
+                                </span>
+                            </span>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="tuile-enfant">
+                            <partial name="_Avatar" model="new Garderie.Web.Pages.Shared.AvatarVue(e.NomComplet, Affichage.Initiales(e.Prenom, e.Nom), e.Id, photo)" />
+                            <span class="details">
+                                <span class="nom d-block">@e.NomComplet</span>
+                                <span class="info d-block">Aucun contrat
+                                    @if (!l.AParent) { <span class="badge text-bg-warning">aucun parent</span> }
+                                </span>
+                            </span>
+                        </div>
+                    }
+                    @if (c is null || c.Etat is EtatContrat.Signe or EtatContrat.Resilie)
+                    {
+                        <button class="btn btn-sm btn-doux" type="submit" form="creer-@e.Id" title="Nouveau contrat pour @e.Prenom">+ Nouveau</button>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (Model.AContresigner > 0)
+        {
+            <section class="carte mt-3">
+                <h2 class="h5">Signer les contrats cochés (signature de l'éducatrice)</h2>
+                <p class="small mb-2">Les parents ont déjà signé. Une copie du contrat signé leur sera envoyée.</p>
+                <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+                <input type="hidden" name="signature" class="valeur-signature" />
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Signer les contrats cochés</button>
+                </div>
+            </section>
+        }
+    </form>
+
+    @* Formulaires de creation, hors du formulaire de signature / Creation forms, outside the signature form *@
+    @foreach (var l in Model.Lignes.Where(x => x.Contrat is null || x.Contrat.Etat is EtatContrat.Signe or EtatContrat.Resilie))
+    {
+        <form method="post" asp-page-handler="Creer" id="creer-@l.Enfant.Id" class="d-none">
+            <input type="hidden" name="enfantId" value="@l.Enfant.Id" />
+            @if (l.Contrat is { } precedent)
+            {
+                <input type="hidden" name="debut" value="@precedent.Fin.AddDays(1).ToString("yyyy-MM-dd")" />
+            }
+        </form>
+    }
+}

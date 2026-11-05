@@ -87,6 +87,103 @@ namespace Garderie.Web.Data.Migrations
                     b.ToTable("Contacts");
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.Contrat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Debut")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DocumentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DocumentResiliationId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EnfantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Etat")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Fige")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Fin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpParent")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpResiliation")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ModifieLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("NasChiffre")
+                        .HasColumnType("BLOB");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ResiliationSigneeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("ResilieLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignataireParent")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignataireResiliation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignatureParentFichier")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignatureResiliationFichier")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignatureRsgeFichier")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SigneParentLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SigneRsgeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SigneRsgePar")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SigneSurPlace")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("VacancesParent")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnfantId", "Debut");
+
+                    b.ToTable("Contrats");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.Document", b =>
                 {
                     b.Property<int>("Id")
@@ -422,6 +519,52 @@ namespace Garderie.Web.Data.Migrations
                     b.ToTable("Journal");
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.LienContrat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("AnnuleLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("But")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ContratId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreeLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnvoyeA")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpireLe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JetonHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SurPlace")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UtiliseLe")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContratId");
+
+                    b.HasIndex("JetonHash")
+                        .IsUnique();
+
+                    b.ToTable("LiensContrats");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.LienFiche", b =>
                 {
                     b.Property<int>("LienId")
@@ -528,6 +671,30 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ContratAttestation")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratMentionLpc")
+                        .HasMaxLength(6000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratNonRespect")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratNoteVacances")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratObligationsParent")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratObligationsRsge")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CourrielRsge")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
@@ -555,6 +722,10 @@ namespace Garderie.Web.Data.Migrations
 
                     b.Property<string>("Telephone")
                         .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VilleSignature")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -667,6 +838,17 @@ namespace Garderie.Web.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Garderie.Web.Data.Contrat", b =>
+                {
+                    b.HasOne("Garderie.Web.Data.Enfant", "Enfant")
+                        .WithMany()
+                        .HasForeignKey("EnfantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enfant");
+                });
+
             modelBuilder.Entity("Garderie.Web.Data.Document", b =>
                 {
                     b.HasOne("Garderie.Web.Data.Enfant", null)
@@ -713,6 +895,17 @@ namespace Garderie.Web.Data.Migrations
                         .HasForeignKey("EnfantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Garderie.Web.Data.LienContrat", b =>
+                {
+                    b.HasOne("Garderie.Web.Data.Contrat", "Contrat")
+                        .WithMany()
+                        .HasForeignKey("ContratId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Contrat");
                 });
 
             modelBuilder.Entity("Garderie.Web.Data.LienFiche", b =>

@@ -82,6 +82,32 @@
         </div>
     </section>
 
+    <!-- Contrat / Contract -->
+    <section class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex align-items-center">
+                <span class="me-auto">Contrat (entente de service)</span>
+                <a class="btn btn-sm btn-doux" asp-page="/Contrats/Index">Contrats</a>
+            </div>
+            <div class="card-body">
+                @if (Model.Contrat is { } contrat)
+                {
+                    <p class="mb-2"><span class="badge @Affichage.ClasseEtatContrat(contrat.Etat)">@Affichage.Nom(contrat.Etat)</span>
+                        du @Affichage.Date(contrat.Debut) au @Affichage.Date(contrat.Fin)</p>
+                    <a class="btn btn-sm btn-primary" asp-page="/Contrats/Contrat" asp-route-id="@contrat.Id">Ouvrir le contrat</a>
+                }
+                else
+                {
+                    <p class="text-muted mb-2">Aucun contrat.</p>
+                    <form method="post" asp-page="/Contrats/Index" asp-page-handler="Creer" class="modif">
+                        <input type="hidden" name="enfantId" value="@e.Id" />
+                        <button class="btn btn-sm btn-primary" type="submit">+ Préparer le contrat</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </section>
+
     <!-- Parents -->
     <section class="col-lg-6">
         <div class="card h-100">

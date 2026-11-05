@@ -32,7 +32,7 @@ Migration EF : `dotnet ef migrations add <Nom> --project garderie/src/Garderie.W
 
 ## Licence
 
-MIT. Bibliothèques : ASP.NET Core / EF Core / SQLite (MIT), Bootstrap (MIT), PDFsharp 6.2 (MIT — les versions
+MIT. Bibliothèques : ASP.NET Core / EF Core / SQLite (MIT), Bootstrap (MIT), PDFsharp et MigraDoc 6.2 (MIT — les versions
 6.5 et plus sont AGPL : ne pas mettre à jour sans vérifier), MailKit / MimeKit (MIT), xUnit (Apache 2.0).
 
 Le formulaire FO-0310 du ministère n'est pas inclus : il est téléversé dans l'appli (Réglages).

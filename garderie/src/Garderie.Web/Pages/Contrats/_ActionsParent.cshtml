@@ -1,0 +1,17 @@
+@model (int Id, ButLien But, bool EnvoiPossible, bool UrlPubliqueConfiguree, string? Courriel)
+@* Trois facons de faire signer le parent / Three ways to have the parent sign *@
+<div class="d-flex flex-wrap gap-2">
+    <form method="post" asp-page="/Contrats/Contrat" asp-page-handler="Envoyer" asp-route-id="@Model.Id" asp-route-but="@Model.But">
+        <button class="btn btn-primary" type="submit" disabled="@(!Model.EnvoiPossible || Model.Courriel is null)">Envoyer par courriel</button>
+    </form>
+    <form method="post" asp-page="/Contrats/Contrat" asp-page-handler="SurPlace" asp-route-id="@Model.Id" asp-route-but="@Model.But">
+        <button class="btn btn-outline-primary" type="submit">Faire signer ici (tablette)</button>
+    </form>
+    <form method="post" asp-page="/Contrats/Contrat" asp-page-handler="Lien" asp-route-id="@Model.Id" asp-route-but="@Model.But">
+        <button class="btn btn-doux" type="submit" disabled="@(!Model.UrlPubliqueConfiguree)">Copier un lien</button>
+    </form>
+</div>
+@if (Model.Courriel is null)
+{
+    <p class="small text-muted mt-2 mb-0">Le parent n'a pas de courriel au dossier.</p>
+}

@@ -38,10 +38,7 @@ public static class Fo0310Pdf
 
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-CA");
 
-    static Fo0310Pdf()
-    {
-        GlobalFontSettings.FontResolver ??= new PolicesPdf();
-    }
+    static Fo0310Pdf() => PolicesPdf.Installer();
 
     /// <summary>Champs manquants (vide = c'est bien le FO-0310) / Missing fields (empty = valid FO-0310).</summary>
     public static IReadOnlyList<string> Valider(byte[] pdf)
@@ -183,6 +180,14 @@ public static class Fo0310Pdf
 /// </summary>
 public sealed class PolicesPdf : IFontResolver
 {
+    private static readonly object Verrou = new();
+
+    /// <summary>Installe le resolveur une seule fois (PDFsharp et MigraDoc) / Installs the resolver once.</summary>
+    public static void Installer()
+    {
+        lock (Verrou) GlobalFontSettings.FontResolver ??= new PolicesPdf();
+    }
+
     private static readonly string[] Normale =
     [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",

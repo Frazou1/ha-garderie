@@ -73,6 +73,54 @@
 </section>
 
 <section class="carte">
+    <h2 class="h5">Contrat (entente de service)</h2>
+    <p class="small text-muted">Le nom, l'adresse, le téléphone et les heures viennent de « La garderie » ci-dessus ; les fermetures et
+        vacances viennent de la page Fermetures. Les textes s'appliquent aux contrats pas encore signés par le parent.
+        Dans « Attestation », {garderie} et {rsge} sont remplacés par les noms. Une ligne qui commence par « - » devient un point.</p>
+    <form method="post" asp-page-handler="Contrat" class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="Contrat.VilleSignature" class="form-label">Ville de signature</label>
+            <input asp-for="Contrat.VilleSignature" class="form-control" placeholder="ex. Québec" />
+        </div>
+        <div class="col-md-8">
+            <label asp-for="Contrat.NoteVacances" class="form-label">Note sur les vacances (facultatif)</label>
+            <input asp-for="Contrat.NoteVacances" class="form-control" placeholder="ex. Semaine des fêtes : à confirmer avec le calendrier scolaire" />
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.ObligationsRsge" class="form-label">Obligations de l'éducatrice</label>
+            <textarea asp-for="Contrat.ObligationsRsge" class="form-control" rows="6"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.ObligationsParent" class="form-label">Obligations du parent</label>
+            <textarea asp-for="Contrat.ObligationsParent" class="form-control" rows="6"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.MentionLpc" class="form-label">Mention exigée par la Loi sur la protection du consommateur</label>
+            <textarea asp-for="Contrat.MentionLpc" class="form-control" rows="6"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.Attestation" class="form-label">Attestation</label>
+            <textarea asp-for="Contrat.Attestation" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.NonRespect" class="form-label">Non-respect de l'entente</label>
+            <textarea asp-for="Contrat.NonRespect" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer les textes</button></div>
+    </form>
+    <hr />
+    <h3 class="h6">Régie interne (PDF remis aux parents)</h3>
+    @if (Model.RegieDisponible)
+    {
+        <p class="mb-2"><span class="badge text-bg-success">Enregistrée</span> Les parents peuvent l'ouvrir avant de signer leur contrat.</p>
+    }
+    <form method="post" asp-page-handler="Regie" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+        <input type="file" name="regie" accept="application/pdf,.pdf" class="form-control w-auto" required aria-label="Régie interne" />
+        <button type="submit" class="btn btn-doux">Téléverser</button>
+    </form>
+</section>
+
+<section class="carte">
     <h2 class="h5">Courriel</h2>
     <dl class="row small-dl mb-2">
         <dt class="col-sm-4">Envoi</dt>

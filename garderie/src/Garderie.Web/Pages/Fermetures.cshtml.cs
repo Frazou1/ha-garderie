@@ -50,6 +50,25 @@ public class FermeturesModel(GarderieDb db, Journal journal) : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Ajoute les jours feries du Quebec d'une annee (sans doublon) / Adds a year's Quebec holidays.</summary>
+    public async Task<IActionResult> OnPostFeriesAsync(int annee)
+    {
+        if (annee is < 2020 or > 2100) { TempData["Erreur"] = "Année invalide."; return RedirectToPage(); }
+        var feries = Feries.Calculer(annee);
+        var dates = feries.Select(f => f.Date).ToList();
+        var existants = await db.Fermetures.Where(f => dates.Contains(f.Date)).Select(f => f.Date).ToListAsync();
+        var n = 0;
+        foreach (var (date, nom) in feries.Where(f => !existants.Contains(f.Date)))
+        {
+            db.Fermetures.Add(new JourFermeture { Date = date, Motif = nom });
+            n++;
+        }
+        journal.Noter("fermeture.feries", details: $"{annee} : {n} jour(s)");
+        await db.SaveChangesAsync();
+        TempData["Message"] = n == 0 ? $"Les jours fériés de {annee} sont déjà inscrits." : $"{n} jour(s) férié(s) de {annee} ajouté(s).";
+        return RedirectToPage();
+    }
+
     public async Task<IActionResult> OnPostSupprimerAsync(int id)
     {
         var f = await db.Fermetures.FindAsync(id);

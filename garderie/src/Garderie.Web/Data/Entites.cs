@@ -14,6 +14,8 @@ public enum TypeDocument
     [Display(Name = "Autorisation")] Autorisation = 4,
     [Display(Name = "Photo")] Photo = 5,
     [Display(Name = "Fiche d'assiduité signée")] FicheAssiduite = 6,
+    [Display(Name = "Contrat signé")] Contrat = 7,
+    [Display(Name = "Résiliation de contrat")] Resiliation = 8,
     [Display(Name = "Autre")] Autre = 99,
 }
 
@@ -202,6 +204,86 @@ public class Parametres
     public TimeOnly? HeureFermeture { get; set; }
     /// <summary>Un lundi ou commence une periode de 2 semaines du BC / A Monday starting a 2-week BC period.</summary>
     public DateOnly? DebutPeriodes { get; set; }
+
+    // --- Contrat (entente de service), textes modifiables / Service agreement, editable texts ---
+    [MaxLength(100)] public string? VilleSignature { get; set; }
+    [MaxLength(4000)] public string? ContratObligationsRsge { get; set; }
+    [MaxLength(4000)] public string? ContratObligationsParent { get; set; }
+    [MaxLength(6000)] public string? ContratMentionLpc { get; set; }
+    [MaxLength(2000)] public string? ContratAttestation { get; set; }
+    [MaxLength(2000)] public string? ContratNonRespect { get; set; }
+    /// <summary>Note sur les vacances (ex. conge des fetes a confirmer) / Holiday note.</summary>
+    [MaxLength(1000)] public string? ContratNoteVacances { get; set; }
+}
+
+public enum EtatContrat
+{
+    [Display(Name = "Brouillon")] Brouillon = 0,
+    [Display(Name = "Signé par le parent")] SigneParent = 1,
+    [Display(Name = "Signé")] Signe = 2,
+    [Display(Name = "Résilié")] Resilie = 3,
+}
+
+/// <summary>
+/// Entente de service (contrat) d'un enfant : le parent complete ses renseignements et signe, puis la RSGE
+/// contresigne. Les renseignements et les textes sont figes a la signature du parent (Fige). Resiliation possible.
+/// Child service agreement: parent completes their info and signs, then the RSGE countersigns.
+/// </summary>
+public class Contrat
+{
+    public int Id { get; set; }
+    public int EnfantId { get; set; }
+    public Enfant Enfant { get; set; } = null!;
+    public int? ParentId { get; set; }
+    public DateOnly Debut { get; set; }
+    public DateOnly Fin { get; set; }
+    public EtatContrat Etat { get; set; }
+
+    [MaxLength(1000)] public string? VacancesParent { get; set; }
+    /// <summary>Renseignements et textes figes (JSON) a la signature du parent / Frozen info and texts (JSON).</summary>
+    public string? Fige { get; set; }
+    /// <summary>NAS du parent fige a la signature, chiffre (contexte nas:contrat) / Frozen SIN, encrypted.</summary>
+    public byte[]? NasChiffre { get; set; }
+
+    [MaxLength(64)] public string? SignatureParentFichier { get; set; }
+    public DateTime? SigneParentLe { get; set; }
+    [MaxLength(200)] public string? SignataireParent { get; set; }
+    [MaxLength(64)] public string? IpParent { get; set; }
+    public bool SigneSurPlace { get; set; }
+
+    [MaxLength(64)] public string? SignatureRsgeFichier { get; set; }
+    public DateTime? SigneRsgeLe { get; set; }
+    [MaxLength(100)] public string? SigneRsgePar { get; set; }
+    public int? DocumentId { get; set; }
+
+    // Resiliation (formule signee par le parent) / Termination (form signed by the parent)
+    public DateOnly? ResilieLe { get; set; }
+    [MaxLength(64)] public string? SignatureResiliationFichier { get; set; }
+    public DateTime? ResiliationSigneeLe { get; set; }
+    [MaxLength(200)] public string? SignataireResiliation { get; set; }
+    [MaxLength(64)] public string? IpResiliation { get; set; }
+    public int? DocumentResiliationId { get; set; }
+
+    public DateTime CreeLe { get; set; }
+    public DateTime ModifieLe { get; set; }
+}
+
+public enum ButLien { Signature = 0, Resiliation = 1 }
+
+/// <summary>Lien unique pour un contrat (signature ou resiliation) ; seul le SHA-256 est garde / One-time contract link.</summary>
+public class LienContrat
+{
+    public int Id { get; set; }
+    public int ContratId { get; set; }
+    public Contrat Contrat { get; set; } = null!;
+    public ButLien But { get; set; }
+    [MaxLength(64)] public string JetonHash { get; set; } = "";
+    public DateTime CreeLe { get; set; }
+    public DateTime ExpireLe { get; set; }
+    public DateTime? UtiliseLe { get; set; }
+    public DateTime? AnnuleLe { get; set; }
+    [MaxLength(200)] public string? EnvoyeA { get; set; }
+    public bool SurPlace { get; set; }
 }
 
 public enum EtatFiche

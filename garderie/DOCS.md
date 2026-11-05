@@ -48,6 +48,21 @@ Le port public ne sert **que** les pages des parents : toute page d'administrati
 
 Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du PDF).
 
+## Contrats (entente de service)
+
+1. **Réglages** : vérifier les textes du contrat (préremplis), la ville de signature, la note sur les vacances,
+   et téléverser la **régie interne** (PDF).
+2. **Fermetures** : « Ajouter les jours fériés » de l'année, plus les vacances de la RSGE (motif ex. « Relâche »).
+3. **Contrats** (ou le dossier de l'enfant) : « + Nouveau », choisir les dates, puis envoyer au parent (courriel,
+   lien à copier ou signature sur place).
+4. Le parent vérifie et complète ses renseignements (adresse, téléphones, NAS pour le relevé 24), lit l'entente et la
+   régie interne, et signe. Ses renseignements sont mis à jour dans le dossier.
+5. **Contrats** : la RSGE coche les contrats signés par les parents et **contresigne une seule fois**. Le PDF est rangé
+   dans le dossier et envoyé par courriel à la RSGE et au parent (copie exigée par la Loi sur la protection du
+   consommateur). Le NAS figure en clair sur ce PDF.
+6. **Résilier** (contrat signé) : choisir la date, puis faire signer la formule au parent ; la date de fin de l'enfant
+   est mise à jour (dossier archivé).
+
 ## Nginx Proxy Manager (pages des parents)
 
 Dans l'hôte proxy existant (votre domaine), onglet **Custom locations** :

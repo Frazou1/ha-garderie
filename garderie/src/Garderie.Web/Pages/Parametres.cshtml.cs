@@ -20,11 +20,35 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     public bool CourrielConfigure => courriels.EstConfigure;
     public string UrlPublique => options.UrlPublique;
     public string CompteCourriel => options.SmtpUtilisateur;
+    public bool RegieDisponible => System.IO.File.Exists(options.FichierRegieInterne);
+
+    /// <summary>Textes du contrat a afficher (Reglages, sinon textes par defaut) / Contract texts to show.</summary>
+    public sealed class SaisieContrat
+    {
+        public string? VilleSignature { get; set; }
+        public string? NoteVacances { get; set; }
+        public string ObligationsRsge { get; set; } = "";
+        public string ObligationsParent { get; set; } = "";
+        public string MentionLpc { get; set; } = "";
+        public string Attestation { get; set; } = "";
+        public string NonRespect { get; set; } = "";
+    }
+
+    [BindProperty] public SaisieContrat Contrat { get; set; } = new();
 
     public async Task OnGetAsync()
     {
         Donnees = await db.Parametres.FindAsync(1) ?? new Parametres();
         Donnees.DebutPeriodes ??= FichesService.AncreParDefaut;
+        Contrat = new SaisieContrat
+        {
+            VilleSignature = Donnees.VilleSignature, NoteVacances = Donnees.ContratNoteVacances,
+            ObligationsRsge = Donnees.ContratObligationsRsge ?? TextesContrat.ObligationsRsge,
+            ObligationsParent = Donnees.ContratObligationsParent ?? TextesContrat.ObligationsParent,
+            MentionLpc = Donnees.ContratMentionLpc ?? TextesContrat.MentionLpc,
+            Attestation = Donnees.ContratAttestation ?? TextesContrat.Attestation,
+            NonRespect = Donnees.ContratNonRespect ?? TextesContrat.NonRespect,
+        };
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -73,6 +97,52 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         await System.IO.File.WriteAllBytesAsync(options.FichierModeleFo0310, octets);
         await journal.NoterMaintenantAsync("parametres.modele_fo0310", details: $"{octets.Length} octets");
         TempData["Message"] = "Formulaire FO-0310 enregistré.";
+        return RedirectToPage();
+    }
+
+    /// <summary>Textes du contrat (vide = texte par defaut) / Contract texts (empty = default text).</summary>
+    public async Task<IActionResult> OnPostContratAsync()
+    {
+        var p = await db.Parametres.FindAsync(1);
+        if (p is null) { p = new Parametres { Id = 1 }; db.Parametres.Add(p); }
+        static string? T(string? s, string defaut, int max)
+        {
+            var t = (s ?? "").Replace("\r\n", "\n").Trim();
+            if (t.Length == 0 || t == defaut.Replace("\r\n", "\n").Trim()) return null;   // null = texte par defaut
+            return t.Length > max ? t[..max] : t;
+        }
+        p.VilleSignature = Vide(Contrat.VilleSignature);
+        p.ContratNoteVacances = Vide(Contrat.NoteVacances);
+        p.ContratObligationsRsge = T(Contrat.ObligationsRsge, TextesContrat.ObligationsRsge, 4000);
+        p.ContratObligationsParent = T(Contrat.ObligationsParent, TextesContrat.ObligationsParent, 4000);
+        p.ContratMentionLpc = T(Contrat.MentionLpc, TextesContrat.MentionLpc, 6000);
+        p.ContratAttestation = T(Contrat.Attestation, TextesContrat.Attestation, 2000);
+        p.ContratNonRespect = T(Contrat.NonRespect, TextesContrat.NonRespect, 2000);
+        journal.Noter("parametres.contrat");
+        await db.SaveChangesAsync();
+        TempData["Message"] = "Textes du contrat enregistrés (ils s'appliquent aux contrats pas encore signés).";
+        return RedirectToPage();
+    }
+
+    /// <summary>Televerse la regie interne (PDF) / Uploads the internal rules (PDF).</summary>
+    public async Task<IActionResult> OnPostRegieAsync(IFormFile? regie)
+    {
+        if (regie is null || regie.Length == 0 || regie.Length > 15 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez la régie interne en PDF (15 Mo maximum).";
+            return RedirectToPage();
+        }
+        using var ms = new MemoryStream();
+        await regie.CopyToAsync(ms);
+        if (DocumentsService.DetecterType(ms.ToArray()) != "application/pdf")
+        {
+            TempData["Erreur"] = "La régie interne doit être un PDF.";
+            return RedirectToPage();
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierRegieInterne)!);
+        await System.IO.File.WriteAllBytesAsync(options.FichierRegieInterne, ms.ToArray());
+        await journal.NoterMaintenantAsync("parametres.regie_interne", details: $"{ms.Length} octets");
+        TempData["Message"] = "Régie interne enregistrée.";
         return RedirectToPage();
     }
 

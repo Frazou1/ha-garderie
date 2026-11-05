@@ -3,6 +3,8 @@
 ## 0.12.3
 - Dossier de l'enfant : le PDF d'un relevé 24 n'a plus de bouton « Supprimer » (bouton « Relevés 24 » à la place) ;
   un relevé se supprime dans l'onglet Relevés 24, qui ajuste aussi le sommaire et la numérotation.
+- Dossier de l'enfant : les archives signées (contrat, résiliation, fiche d'assiduité) ne se suppriment plus seules
+  (badge « archive signée ») ; sans elles, « Envoyer une copie » partait sans pièce jointe.
 
 ## 0.12.2
 - Relevés 24 : bouton « Supprimer » pour un relevé produit par erreur (jamais remis ni posté) ; le relevé précédent

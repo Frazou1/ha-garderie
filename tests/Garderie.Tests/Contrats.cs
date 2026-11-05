@@ -135,6 +135,11 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // copie au parent (LPC)
         Assert.Contains(Courriels(), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
 
+        // L'archive signee ne se supprime pas seule depuis le dossier / The signed archive cannot be deleted alone
+        Assert.Contains("archive signée", await admin.GetStringAsync($"/Enfants/Dossier/{id}"));
+        await Poster(admin, $"/Enfants/Dossier/{id}", $"/Enfants/Dossier/{id}?handler=SupprimerDocument", [new("documentId", $"{contrat.DocumentId}")]);
+        Assert.True(Db(db => db.Documents.Any(d => d.Id == contrat.DocumentId)));
+
         // Chaque formulaire POST de la page porte son jeton antiforgery / Every POST form carries its token
         JetonsPartout(await admin.GetStringAsync($"/Contrats/Contrat/{contratId}"));
         JetonsPartout(await admin.GetStringAsync("/Contrats"));

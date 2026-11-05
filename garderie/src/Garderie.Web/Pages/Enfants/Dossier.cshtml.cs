@@ -68,6 +68,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             .Include(x => x.Documents)
             .FirstOrDefaultAsync(x => x.Id == Id);
         if (e is null) return false;
+        await ChargerArchivesAsync();
         Enfant = e;
         Contrat = await db.Contrats.AsNoTracking().Where(c => c.EnfantId == Id).OrderByDescending(c => c.Debut).ThenByDescending(c => c.Id).FirstOrDefaultAsync();
         var nam = chiffreur.DechiffrerTexte(e.NamChiffre, Contextes.NamEnfant);
@@ -343,6 +344,22 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         return RedirectToPage(new { id = Id });
     }
 
+    /// <summary>Documents qui sont des archives signees (contrat, resiliation, fiche, releve) / Signed archives.</summary>
+    public HashSet<int> Archives { get; private set; } = new();
+
+    private async Task<bool> EstArchiveSigneeAsync(int documentId) =>
+        await db.Contrats.AnyAsync(c => c.DocumentId == documentId || c.DocumentResiliationId == documentId)
+        || await db.Fiches.AnyAsync(f => f.DocumentId == documentId);
+
+    /// <summary>Charge les documents proteges du dossier / Loads the record's protected documents.</summary>
+    private async Task ChargerArchivesAsync()
+    {
+        var c = await db.Contrats.Where(x => x.EnfantId == Id).Select(x => new { x.DocumentId, x.DocumentResiliationId }).ToListAsync();
+        var f = await db.Fiches.Where(x => x.EnfantId == Id && x.DocumentId != null).Select(x => x.DocumentId).ToListAsync();
+        var r = await db.Releves.Where(x => x.EnfantId == Id && x.DocumentId != null).Select(x => x.DocumentId).ToListAsync();
+        Archives = c.SelectMany(x => new[] { x.DocumentId, x.DocumentResiliationId }).Concat(f).Concat(r).OfType<int>().ToHashSet();
+    }
+
     public async Task<IActionResult> OnPostSupprimerDocumentAsync(int documentId)
     {
         var d = await db.Documents.FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
@@ -351,6 +368,12 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         if (await db.Releves.Where(r => r.DocumentId == d.Id).Select(r => (int?)r.Annee).FirstOrDefaultAsync() is { } annee)
         {
             TempData["Erreur"] = $"Ce PDF est un relevé 24 : supprimez-le dans l'onglet Relevés 24 ({annee}), qui ajuste aussi le sommaire et la numérotation.";
+            return RedirectToPage(new { id = Id });
+        }
+        // Contrat, resiliation ou fiche signes : l'archive signee reste / Signed contract, termination or sheet: kept
+        if (await EstArchiveSigneeAsync(d.Id))
+        {
+            TempData["Erreur"] = "Ce PDF est l'archive signée d'un contrat, d'une résiliation ou d'une fiche d'assiduité : il ne peut pas être supprimé seul.";
             return RedirectToPage(new { id = Id });
         }
         var e = await db.Enfants.FindAsync(Id);

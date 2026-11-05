@@ -327,9 +327,13 @@
                         <a class="btn btn-sm btn-doux" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">Télécharger</a>
                         <span class="small text-muted">@Affichage.Taille(d.Taille) · @Affichage.Horodatage(d.TeleverseLe)</span>
                         @if (d.Note is not null) { <span class="small w-100">@d.Note</span> }
-                        @if (d.Type == TypeDocument.Releve24)
+                        @if (d.Type == TypeDocument.Releve24 && Model.Archives.Contains(d.Id))
                         {
                             <a class="btn btn-sm btn-outline-secondary" asp-page="/Releves/Index" title="Les relevés se gèrent dans l'onglet Relevés 24">Relevés 24</a>
+                        }
+                        else if (Model.Archives.Contains(d.Id))
+                        {
+                            <span class="badge text-bg-light border" title="Archive signée : elle ne se supprime pas seule">archive signée</span>
                         }
                         else
                         {

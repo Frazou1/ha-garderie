@@ -200,6 +200,8 @@ public class Parametres
     [MaxLength(30)] public string? Telephone { get; set; }
     [MaxLength(200)] public string? CourrielRsge { get; set; }
     [MaxLength(200)] public string? NomBureauCoordonnateur { get; set; }
+    /// <summary>Groupe Facebook des parents (lien https) / Parents' Facebook group (https link).</summary>
+    [MaxLength(300)] public string? LienFacebook { get; set; }
     public TimeOnly? HeureOuverture { get; set; }
     public TimeOnly? HeureFermeture { get; set; }
     /// <summary>Un lundi ou commence une periode de 2 semaines du BC / A Monday starting a 2-week BC period.</summary>

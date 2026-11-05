@@ -201,6 +201,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
                 $"Bonjour {lien.Parent.Prenom},\n\n{intro} (lien personnel, valide 14 jours, une seule utilisation) :\n\n" +
                 $"{UrlLien(jeton)}\n\n" +
                 (pieces is null ? "" : "La régie interne du service de garde est jointe à ce courriel ; elle est aussi accessible sur la page de signature.\n\n") +
+                Affichage.PiedFacebook(p) +
                 $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}", pieces);
         }
         catch
@@ -332,7 +333,8 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
         var parent = (await LienParentAsync(c))?.Parent.Courriel;
         foreach (var a in new[] { p?.CourrielRsge, parent }.Where(x => x is not null).Distinct())
         {
-            try { await courriels.EnvoyerAsync(a!, sujet, texte, [(nom, pdf)]); }
+            var corps = a == parent && Affichage.PiedFacebook(p) is { Length: > 0 } fb ? texte + "\n\n" + fb.TrimEnd() : texte;
+            try { await courriels.EnvoyerAsync(a!, sujet, corps, [(nom, pdf)]); }
             catch (Exception) { /* courriel facultatif : le PDF est dans le dossier / optional email */ }
         }
     }

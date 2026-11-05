@@ -1,3 +1,4 @@
+@inject Garderie.Web.Configuration.GarderieOptions Options
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -11,6 +12,10 @@
 </head>
 <body class="public">
     <main class="contenu">
+        @if (Garderie.Web.Pages.Public.LogoModel.Version(Options) is > 0 and var v)
+        {
+            <img class="logo-public" src="@Url.Page("/Public/Logo", new { v })" alt="" />
+        }
         @RenderBody()
     </main>
     <script src="~/js/site.js" asp-append-version="true"></script>

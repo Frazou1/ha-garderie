@@ -278,6 +278,7 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
                 $"{(plusieurs ? ", une seule signature pour toutes les fiches" : "")}) :\n\n" +
                 $"{UrlLien(jeton)}\n\n" +
                 "Si un code vous semble inexact, utilisez « Signaler une erreur » sur la même page.\n\n" +
+                Affichage.PiedFacebook(p) +
                 $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}");
         }
         catch

@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+@inject Garderie.Web.Configuration.GarderieOptions Options
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
@@ -26,7 +27,14 @@
 <body>
     <header class="barre-haut">
         <a class="marque" asp-page="/Index">
-            <svg class="marque-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M12 4l6 8h-6M5 17h14l-2 3H7z M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" /></svg>
+            @if (Garderie.Web.Pages.Public.LogoModel.Version(Options) is > 0 and var v)
+            {
+                <img class="marque-logo" src="@Url.Page("/Public/Logo", new { v })" alt="" />
+            }
+            else
+            {
+                <svg class="marque-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M12 4l6 8h-6M5 17h14l-2 3H7z M3 17c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" /></svg>
+            }
             <span>Les petits moussaillons</span>
         </a>
         <nav class="nav-haut" aria-label="Menu">

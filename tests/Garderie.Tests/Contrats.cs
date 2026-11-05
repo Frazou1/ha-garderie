@@ -58,7 +58,8 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
     {
         var id = Db(db =>
         {
-            db.Parametres.Add(new Parametres { Id = 1, NomGarderie = "Les petits moussaillons", NomRsge = "Sonia", CourrielRsge = "rsge@exemple.test", VilleSignature = "Québec" });
+            db.Parametres.Add(new Parametres { Id = 1, NomGarderie = "Les petits moussaillons", NomRsge = "Sonia", CourrielRsge = "rsge@exemple.test", VilleSignature = "Québec",
+                LienFacebook = "https://www.facebook.com/groups/123456" });
             var m = DateTime.UtcNow;
             var e = new Enfant { Prenom = "Léa", Nom = "C", DateDebut = new DateOnly(2026, 9, 1), CreeLe = m, ModifieLe = m };
             e.Parents = [new() { Parent = new Parent { Prenom = "Julie", Nom = "C", Courriel = "julie@exemple.test", CreeLe = m, ModifieLe = m }, Lien = "Mère", EstPayeur = true }];
@@ -88,6 +89,7 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         await Poster(admin, $"/Contrats/Contrat/{contratId}", $"/Contrats/Contrat/{contratId}?handler=Envoyer", []);
         var jeton = DernierJeton("julie@exemple.test");
         Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // regie jointe
+        Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Replace("=\r\n", "").Replace("=\n", "").Contains("facebook.com/groups/123456"));
 
         // Le parent voit l'entente et les feries ; NAS invalide refuse / Parent sees the agreement; invalid SIN refused
         var parent = Parent();

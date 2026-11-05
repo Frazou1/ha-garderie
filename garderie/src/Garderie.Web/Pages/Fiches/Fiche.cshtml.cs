@@ -208,12 +208,14 @@ public class FicheModel(GarderieDb db, FichesService fiches, DocumentsService do
         if (Fiche?.DocumentId is not { } did || await db.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == did) is not { } doc)
             return Retour(erreur: "La fiche n'est pas encore signée par le parent.");
         if (!CourrielConfigure) return Retour(erreur: "Le courriel n'est pas configuré dans le module.");
-        var a = pour == "parent" ? CourrielParent : (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.CourrielRsge;
+        var reglages = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
+        var a = pour == "parent" ? CourrielParent : reglages?.CourrielRsge;
         if (a is null) return Retour(erreur: pour == "parent" ? "Le parent n'a pas de courriel." : "Le courriel de la RSGE n'est pas dans Réglages.");
         try
         {
             await courriels.EnvoyerAsync(a, $"Copie : fiche d'assiduité de {Enfant.Prenom} ({Affichage.Periode(Debut, Fiche.Fin)})",
-                $"Voici une copie de la fiche d'assiduité signée de {Enfant.NomComplet} pour la période du {Affichage.Periode(Debut, Fiche.Fin)}.",
+                $"Voici une copie de la fiche d'assiduité signée de {Enfant.NomComplet} pour la période du {Affichage.Periode(Debut, Fiche.Fin)}." +
+                (pour == "parent" && Affichage.PiedFacebook(reglages) is { Length: > 0 } fb ? "\n\n" + fb.TrimEnd() : ""),
                 [(doc.NomOriginal, await documents.LireAsync(doc))]);
         }
         catch (Exception ex) { return Retour(erreur: $"L'envoi a échoué ({ex.GetType().Name})."); }

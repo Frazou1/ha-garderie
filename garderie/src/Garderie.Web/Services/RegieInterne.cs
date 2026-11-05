@@ -263,6 +263,7 @@ public static class RegieInterne
     {
         var saisies = Lire(p.RegieSections);
         var b = new StringBuilder("# Régie Interne\n\n> ## {rsge}\n> ## Mise à jour {mise_a_jour}\n");
+        if (Affichage.Facebook(p.LienFacebook) is { } fb) b.Append("> Groupe Facebook des parents : ").Append(fb).Append('\n');
         string? partie = null;
         foreach (var s in Sections)
         {

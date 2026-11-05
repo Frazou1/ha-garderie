@@ -161,7 +161,8 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         if (!courriels.EstConfigure) return Retour(erreur: "Le courriel n'est pas configuré dans le module.");
         var ids = new[] { Contrat.DocumentId, Contrat.DocumentResiliationId }.OfType<int>().ToList();
         if (ids.Count == 0) return Retour(erreur: "Le contrat n'est pas encore signé par les deux parties.");
-        var a = pour == "parent" ? Parent?.Parent.Courriel : (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.CourrielRsge;
+        var reglages = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
+        var a = pour == "parent" ? Parent?.Parent.Courriel : reglages?.CourrielRsge;
         if (a is null) return Retour(erreur: pour == "parent" ? "Le parent n'a pas de courriel." : "Le courriel de la RSGE n'est pas dans Réglages.");
         var docs = HttpContext.RequestServices.GetRequiredService<DocumentsService>();
         var pieces = new List<(string, byte[])>();
@@ -171,7 +172,8 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         {
             await courriels.EnvoyerAsync(a, $"Copie : entente de service de {Contrat.Enfant.NomComplet}",
                 $"Voici une copie de l'entente de service de {Contrat.Enfant.NomComplet} (du {Affichage.Date(Contrat.Debut)} au {Affichage.Date(Contrat.Fin)})" +
-                (Contrat.DocumentResiliationId is null ? "." : ", avec la formule de résiliation."), pieces);
+                (Contrat.DocumentResiliationId is null ? "." : ", avec la formule de résiliation.") +
+                (pour == "parent" && Affichage.PiedFacebook(reglages) is { Length: > 0 } fb ? "\n\n" + fb.TrimEnd() : ""), pieces);
         }
         catch (Exception ex) { return Retour(erreur: $"L'envoi a échoué ({ex.GetType().Name})."); }
         await journal.NoterMaintenantAsync("contrat.copie_envoyee", "Enfant", Contrat.EnfantId, a);

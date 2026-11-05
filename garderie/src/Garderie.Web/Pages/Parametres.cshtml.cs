@@ -78,6 +78,12 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         p.Telephone = Vide(Donnees.Telephone);
         p.CourrielRsge = Vide(Donnees.CourrielRsge);
         p.NomBureauCoordonnateur = Vide(Donnees.NomBureauCoordonnateur);
+        if (!string.IsNullOrWhiteSpace(Donnees.LienFacebook) && Affichage.Facebook(Donnees.LienFacebook) is null)
+        {
+            TempData["Erreur"] = "Le lien du groupe Facebook doit commencer par https://www.facebook.com/";
+            return RedirectToPage();
+        }
+        p.LienFacebook = Affichage.Facebook(Donnees.LienFacebook);
         p.HeureOuverture = Donnees.HeureOuverture;
         p.HeureFermeture = Donnees.HeureFermeture;
         p.DebutPeriodes = Donnees.DebutPeriodes is { } d ? PresencesService.Lundi(d) : null;
@@ -162,6 +168,39 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         await db.SaveChangesAsync();
         TempData["Message"] = "Régie interne enregistrée : le PDF remis aux parents est à jour.";
         return RedirectToPage(null, null, "regie");
+    }
+
+    public bool LogoPresent => System.IO.File.Exists(options.FichierLogo);
+    public string CheminLogo => options.FichierLogo;
+
+    /// <summary>Logo (PNG ou JPG) affiche en haut de l'appli et des pages des parents / Logo shown at the top.</summary>
+    public async Task<IActionResult> OnPostLogoAsync(IFormFile? logo)
+    {
+        if (logo is null || logo.Length == 0 || logo.Length > 2 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez une image PNG ou JPG (2 Mo maximum).";
+            return RedirectToPage(null, null, "logo");
+        }
+        using var ms = new MemoryStream();
+        await logo.CopyToAsync(ms);
+        if (DocumentsService.DetecterType(ms.ToArray()) is not ("image/png" or "image/jpeg"))
+        {
+            TempData["Erreur"] = "Le logo doit être une image PNG ou JPG.";
+            return RedirectToPage(null, null, "logo");
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierLogo)!);
+        await System.IO.File.WriteAllBytesAsync(options.FichierLogo, ms.ToArray());
+        await journal.NoterMaintenantAsync("parametres.logo", details: $"{ms.Length} octets");
+        TempData["Message"] = "Logo enregistré.";
+        return RedirectToPage(null, null, "logo");
+    }
+
+    public async Task<IActionResult> OnPostRetirerLogoAsync()
+    {
+        if (System.IO.File.Exists(options.FichierLogo)) System.IO.File.Delete(options.FichierLogo);
+        await journal.NoterMaintenantAsync("parametres.logo_retire");
+        TempData["Message"] = "Logo retiré : le petit bateau revient.";
+        return RedirectToPage(null, null, "logo");
     }
 
     /// <summary>Apercu du modele de contrat (champs de l'enfant et du parent a remplir) / Contract template preview.</summary>

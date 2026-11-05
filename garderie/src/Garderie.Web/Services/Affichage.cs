@@ -95,4 +95,14 @@ public static class Affichage
     /// <summary>Resume d'un horaire (ex. « Lun–Ven journée ») / Schedule summary.</summary>
     public static string ResumeJour(HoraireType h) =>
         h.Matin && h.Pm ? "journée" : h.Matin ? "matin" : h.Pm ? "après-midi" : "—";
+
+    /// <summary>Lien Facebook valide (https, facebook.com) sinon null / Valid Facebook link, else null.</summary>
+    public static string? Facebook(string? lien) =>
+        Uri.TryCreate(lien?.Trim(), UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps
+        && (u.Host.Equals("facebook.com", StringComparison.OrdinalIgnoreCase) || u.Host.EndsWith(".facebook.com", StringComparison.OrdinalIgnoreCase))
+            ? u.ToString() : null;
+
+    /// <summary>Ligne du groupe Facebook pour les courriels aux parents / Facebook line for parent emails.</summary>
+    public static string PiedFacebook(Data.Parametres? p) =>
+        Facebook(p?.LienFacebook) is { } f ? $"Suivez-nous dans notre groupe Facebook : {f}\n\n" : "";
 }

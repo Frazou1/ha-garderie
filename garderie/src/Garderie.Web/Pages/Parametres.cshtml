@@ -51,8 +51,34 @@
             <label asp-for="Donnees.HeureFermeture" class="form-label">Fermeture</label>
             <input asp-for="Donnees.HeureFermeture" type="time" class="form-control" />
         </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.LienFacebook" class="form-label">Groupe Facebook des parents</label>
+            <input asp-for="Donnees.LienFacebook" type="url" class="form-control" placeholder="https://www.facebook.com/groups/…" maxlength="300" />
+            <div class="form-text">Ajouté aux courriels envoyés aux parents et en haut de la régie interne.</div>
+        </div>
         <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
     </form>
+</section>
+
+<section class="carte" id="logo">
+    <h2 class="h5">Logo</h2>
+    <p class="small text-muted">Affiché en haut de l'application et des pages des parents, à la place du petit bateau. PNG ou JPG, idéalement carré.</p>
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+        @if (Model.LogoPresent)
+        {
+            <img class="apercu-logo" src="@Url.Page("/Public/Logo", new { v = System.IO.File.GetLastWriteTimeUtc(Model.CheminLogo).Ticks })" alt="Logo actuel" />
+        }
+        <form method="post" asp-page-handler="Logo" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+            <input type="file" name="logo" accept="image/png,image/jpeg" class="form-control w-auto" required aria-label="Logo" />
+            <button type="submit" class="btn btn-doux">Téléverser</button>
+        </form>
+        @if (Model.LogoPresent)
+        {
+            <form method="post" asp-page-handler="RetirerLogo" class="confirmer" data-confirmer="Retirer le logo ?">
+                <button type="submit" class="btn btn-outline-secondary">Retirer</button>
+            </form>
+        }
+    </div>
 </section>
 
 <section class="carte">

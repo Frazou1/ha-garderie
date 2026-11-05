@@ -708,6 +708,10 @@ namespace Garderie.Web.Data.Migrations
                     b.Property<TimeOnly?>("HeureOuverture")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LienFacebook")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NomBureauCoordonnateur")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");

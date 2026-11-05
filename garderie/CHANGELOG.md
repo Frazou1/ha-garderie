@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0
+- Réglages → « La garderie » : lien du groupe Facebook des parents, ajouté aux courriels envoyés aux parents
+  (contrat et régie, fiches, résiliation, copies) et en haut de la régie interne.
+- Réglages → « Logo » : image PNG ou JPG affichée en haut de l'application (à la place du petit bateau) et des
+  pages des parents. Bouton « Retirer » pour revenir au bateau.
+
 ## 0.10.0
 - Réglages : bouton « Aperçu du modèle de contrat » (textes, fermetures de la prochaine année, champs de l'enfant
   et du parent à remplir).

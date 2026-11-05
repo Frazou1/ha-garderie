@@ -68,6 +68,22 @@ else
                                    placeholder="@(Model.NasEnregistre ? "déjà au dossier — laisser vide pour le garder" : "123 456 789")" required="@(!Model.NasEnregistre)" /></div>
                         <div class="col-12"><label class="form-label small mb-0" asp-for="Saisie.VacancesParent">Vos vacances, si les dates sont connues (facultatif)</label>
                             <input class="form-control" asp-for="Saisie.VacancesParent" maxlength="1000" /></div>
+                        <div class="col-12 mt-3">
+                            @if (Model.DejaConsenti)
+                            {
+                                <p class="small mb-0">Vous recevez déjà votre relevé 24 par courriel. Pour le recevoir plutôt sur papier, avisez l'éducatrice.</p>
+                            }
+                            else
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="Saisie.ConsentementRl24" />
+                                    <label class="form-check-label small" asp-for="Saisie.ConsentementRl24">
+                                        J'accepte de recevoir mon relevé 24 (frais de garde, pour l'impôt) par courriel, en PDF, à l'adresse de ce courriel.
+                                        Ce consentement reste valide tant que je n'avise pas l'éducatrice, par écrit ou par courriel, que je le retire ;
+                                        je recevrai alors mes relevés sur papier. (Facultatif)</label>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </section>
 

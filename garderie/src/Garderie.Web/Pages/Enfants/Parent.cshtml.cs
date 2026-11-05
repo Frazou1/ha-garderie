@@ -28,6 +28,8 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         /// <summary>Nouveau NAS (vide = inchange) / New SIN (empty = unchanged).</summary>
         [MaxLength(15)] public string? Nas { get; set; }
         public bool EffacerNas { get; set; }
+        /// <summary>Consent au releve 24 par courriel / Consents to the RL-24 by email.</summary>
+        public bool ConsentementRl24 { get; set; }
     }
 
     [BindProperty(SupportsGet = true)] public int EnfantId { get; set; }
@@ -38,6 +40,8 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
     public bool Archive { get; private set; }
     public bool NasEnregistre { get; private set; }
     public string? NasAffiche { get; private set; }
+    public DateTime? ConsentLe { get; private set; }
+    public string? ConsentSource { get; private set; }
     public List<Parent> ParentsExistants { get; private set; } = new();
 
     private async Task<bool> ChargerAsync()
@@ -63,9 +67,10 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         Donnees = new Saisie
         {
             Prenom = p.Prenom, Nom = p.Nom, Lien = lien.Lien, EstPayeur = lien.EstPayeur, Courriel = p.Courriel,
-            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, Adresse = p.Adresse,
+            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, Adresse = p.Adresse, ConsentementRl24 = p.ConsentRl24Le is not null,
         };
         NasEnregistre = p.NasChiffre is not null;
+        (ConsentLe, ConsentSource) = (p.ConsentRl24Le, p.ConsentRl24Source);
         return Page();
     }
 
@@ -142,6 +147,13 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         p.ModifieLe = DateTime.UtcNow;
         if (nas is not null) p.NasChiffre = chiffreur.ChiffrerTexte(nas, Contextes.NasParent);
         else if (Donnees.EffacerNas) p.NasChiffre = null;
+        var consentAvant = p.ConsentRl24Le is not null;
+        if (Donnees.ConsentementRl24 && !consentAvant)
+        {
+            p.ConsentRl24Le = DateTime.UtcNow;
+            p.ConsentRl24Source = "Inscrit par l'éducatrice (consentement écrit reçu)";
+        }
+        else if (!Donnees.ConsentementRl24 && consentAvant) (p.ConsentRl24Le, p.ConsentRl24Source) = (null, null);
 
         if (lien is null)
         {
@@ -154,7 +166,8 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         await db.SaveChangesAsync();
 
         journal.Noter(nouveau ? "parent.creer" : "parent.modifier", "Parent", p.Id,
-            $"{p.NomComplet}{(nas is not null ? " ; NAS modifié" : Donnees.EffacerNas ? " ; NAS effacé" : "")}");
+            $"{p.NomComplet}{(nas is not null ? " ; NAS modifié" : Donnees.EffacerNas ? " ; NAS effacé" : "")}" +
+            (Donnees.ConsentementRl24 != consentAvant ? (Donnees.ConsentementRl24 ? " ; consentement RL-24 inscrit" : " ; consentement RL-24 retiré") : ""));
         await db.SaveChangesAsync();
         TempData["Message"] = "Parent enregistré.";
         return RedirectToPage("Dossier", new { id = EnfantId });

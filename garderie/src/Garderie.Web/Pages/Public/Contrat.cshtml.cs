@@ -21,6 +21,7 @@ public class ContratModel(ContratsService contrats, Journal journal) : PageModel
     public InfosContrat Infos { get; private set; } = null!;
     public EnfantParent? Parent { get; private set; }
     public bool NasEnregistre { get; private set; }
+    public bool DejaConsenti { get; private set; }
     public bool Termine { get; private set; }
     public bool DejaUtilise { get; private set; }
     public bool EstResiliation => Lien?.But == ButLien.Resiliation;
@@ -36,6 +37,7 @@ public class ContratModel(ContratsService contrats, Journal journal) : PageModel
         Infos = await contrats.InfosAsync(Lien.Contrat);
         Parent = await contrats.LienParentAsync(Lien.Contrat);
         NasEnregistre = Parent?.Parent.NasChiffre is not null;
+        DejaConsenti = Parent?.Parent.ConsentRl24Le is not null;
         return true;
     }
 

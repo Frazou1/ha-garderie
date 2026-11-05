@@ -65,6 +65,24 @@ Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du P
 6. **Résilier** (contrat signé) : choisir la date, puis faire signer la formule au parent ; la date de fin de l'enfant
    est mise à jour (dossier archivé).
 
+## Relevés 24 (Revenu Québec)
+
+1. **Réglages → Relevé 24** : téléverser le RL-24 et le RL-24.S en « PDF remplissable à l'écran » (revenuquebec.ca),
+   entrer la case H (NEQ, ou NAS si pas de NEQ ; chiffré), l'adresse découpée et le signataire. Boutons « Aperçu ».
+   Les formulaires de Revenu Québec ne sont jamais inclus dans le module.
+2. **Relevés 24** (onglet du haut) : une ligne par parent payeur, avec les jours payés (présences, absences et
+   fermetures, selon les présences et l'horaire) et le montant proposé (jours × tarif de la régie).
+3. **Préparer** : corriger les sommes réellement payées (C) et les frais non admissibles (D), vérifier l'adresse,
+   « Aperçu », puis « Produire le relevé ». Le numéro suit celui du formulaire (même calcul) ; le PDF va dans le
+   dossier de l'enfant. Produire de nouveau crée un relevé modifié (code A).
+4. **Remise** : par courriel seulement si le parent a consenti par écrit (case à la signature du contrat, ou inscrite
+   dans la fiche du parent) ; sinon, remettre la copie 2 (page 2) sur papier.
+5. **Sommaire 24** : l'imprimer, le signer et le poster avec la copie 1 (page 1) de chaque relevé, au plus tard le
+   dernier jour de février.
+
+Le formulaire protégé de Revenu Québec est rempli sans être modifié : seules les valeurs des champs sont ajoutées
+(comme Acrobat Reader). Ouvrir les PDF dans Acrobat Reader pour imprimer.
+
 ## Nginx Proxy Manager (pages des parents)
 
 Dans l'hôte proxy existant (votre domaine), onglet **Custom locations** :

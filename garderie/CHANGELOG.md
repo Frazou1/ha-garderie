@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0
+- Relevés 24 : nouvel onglet « Relevés 24 ». Un relevé par parent payeur, jours payés et montants proposés à partir des
+  présences, de l'horaire et du tarif, corrigés avant de produire. Remplissage du RL-24 officiel de Revenu Québec
+  (protégé, non modifié), numéro calculé comme le formulaire, PDF classé dans le dossier, relevé modifié (code A),
+  sommaire 24 rempli à signer et poster.
+- Réglages → Relevé 24 : formulaires RL-24 et RL-24.S, case H chiffrée (NEQ ou NAS), adresse, signataire, aperçus.
+- Consentement au relevé 24 par courriel (exigé par Revenu Québec) : case à la signature du contrat, et dans la fiche
+  du parent (inscrire ou retirer). Envoi par courriel un à un ou groupé ; les autres sont à remettre sur papier.
+
 ## 0.11.0
 - Réglages → « La garderie » : lien du groupe Facebook des parents, ajouté aux courriels envoyés aux parents
   (contrat et régie, fiches, résiliation, copies) et en haut de la régie interne.

@@ -107,7 +107,7 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         [
             new("Saisie.EnfantAdresse", "1 rue Test"), new("Saisie.ParentAdresse", "1 rue Test"), new("Saisie.ParentTelephone1", "418-555-0101"),
             new("Saisie.Lien", "Mère"), new("Saisie.Nas", nas), new("Saisie.VacancesParent", "Semaine du 19 juillet"),
-            new("signature", ModeleTest.Png), new("nom", "Julie C"), new("atteste", "true"),
+            new("signature", ModeleTest.Png), new("nom", "Julie C"), new("atteste", "true"), new("Saisie.ConsentementRl24", "true"),
         ];
         var refus = WebUtility.HtmlDecode(await (await Poster(parent, url, url + "&handler=Signer", Saisie("123 456 789"))).Content.ReadAsStringAsync());
         Assert.Contains("Le NAS n'est pas valide", refus);
@@ -121,6 +121,8 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal("203.0.113.20", contrat.IpParent);
         var dossierParent = Db(db => db.Parents.Single(p => p.Courriel == "julie@exemple.test"));
         Assert.Equal("1 rue Test", dossierParent.Adresse);
+        Assert.NotNull(dossierParent.ConsentRl24Le);   // case cochee a la signature / box checked when signing
+        Assert.Equal("Signature du contrat en ligne", dossierParent.ConsentRl24Source);
         var chiffreur = appli.Services.GetRequiredService<Chiffreur>();
         Assert.Equal("130692544", chiffreur.DechiffrerTexte(dossierParent.NasChiffre, Contextes.NasParent));
         Assert.Equal("130692544", chiffreur.DechiffrerTexte(contrat.NasChiffre, Contextes.NasContrat));

@@ -66,6 +66,12 @@ public class Parent
     [MaxLength(300)] public string? Adresse { get; set; }
     /// <summary>NAS chiffre (contexte nas:parent), pour le releve 24 / Encrypted SIN.</summary>
     public byte[]? NasChiffre { get; set; }
+    /// <summary>
+    /// Consentement ecrit a recevoir le releve 24 par courriel (exige par Revenu Quebec) ; null = papier.
+    /// Written consent to receive the RL-24 by email (required by Revenu Quebec); null = paper.
+    /// </summary>
+    public DateTime? ConsentRl24Le { get; set; }
+    [MaxLength(100)] public string? ConsentRl24Source { get; set; }
     /// <summary>Photo chiffree dans /data/docs (guid.bin) / Encrypted photo file.</summary>
     [MaxLength(64)] public string? PhotoFichier { get; set; }
     public DateTime CreeLe { get; set; }

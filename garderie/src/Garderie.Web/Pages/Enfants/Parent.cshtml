@@ -99,6 +99,22 @@
             </div>
         }
     </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="Donnees.ConsentementRl24" class="form-check-input" />
+            <label asp-for="Donnees.ConsentementRl24" class="form-check-label">Relevé 24 par courriel (consentement écrit du parent)</label>
+        </div>
+        <div class="form-text">
+            @if (Model.ConsentLe is { } le)
+            {
+                <text>Consenti le @Affichage.Horodatage(le) (@Model.ConsentSource). Décochez si le parent retire son consentement : il recevra ses relevés sur papier.</text>
+            }
+            else
+            {
+                <text>Revenu Québec exige le consentement écrit du parent (case cochée à la signature du contrat, ou demande écrite) avant d'envoyer le relevé par courriel.</text>
+            }
+        </div>
+    </div>
     <div class="col-md-6 d-flex align-items-center">
         <div class="form-check">
             <input asp-for="Donnees.EstPayeur" class="form-check-input" />

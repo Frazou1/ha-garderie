@@ -88,6 +88,7 @@ public class RelevesTests(Appli appli) : IClassFixture<Appli>
         Assert.Contains("Julie Tremblay", page);
         Assert.Contains("Léa : 22 j · 967,50 $", page);   // 21 jours × 45 $ + ½ × 45 $
         Assert.Contains("à produire", page);
+        Assert.DoesNotContain("aEnvoyer", page);   // code Razor bien interprete
 
         var prep = WebUtility.HtmlDecode(await admin.GetStringAsync($"/Releves/Preparer?annee=2025&parentId={parentId}"));
         Assert.Contains("value=\"rue de l'Exemple\"", prep);
@@ -132,6 +133,27 @@ public class RelevesTests(Appli appli) : IClassFixture<Appli>
         var modifie = Db((db, _) => db.Releves.OrderBy(x => x.Id).Last());
         Assert.Equal(("024000045", "A", "024000034"), (modifie.Numero, modifie.Code, modifie.NumeroOriginal));
         Assert.Equal(modifie.Id, Db((db, _) => db.Releves.Find(premier.Id)!.RemplaceParId));
+
+        // Envoi : refuse sans consentement, puis consentement inscrit dans la fiche du parent
+        // Sending: refused without consent, then consent recorded in the parent's record
+        var liste = WebUtility.HtmlDecode(await admin.GetStringAsync("/Releves?annee=2025"));
+        Assert.Contains("à remettre sur papier", liste);
+        await admin.PostAsync($"/Releves?handler=Envoyer&id={modifie.Id}", new FormUrlEncodedContent([new("__RequestVerificationToken", Jeton(liste))]));
+        Assert.Null(Db((db, _) => db.Releves.Find(modifie.Id)!.EnvoyeLe));
+        var fiche = $"/Enfants/Parent?enfantId={enfantId}&parentId={parentId}";
+        await admin.PostAsync(fiche, new FormUrlEncodedContent(
+        [
+            new("Donnees.Prenom", "Julie"), new("Donnees.Nom", "Tremblay"), new("Donnees.Lien", "Mère"), new("Donnees.EstPayeur", "true"),
+            new("Donnees.Courriel", "julie@exemple.test"), new("Donnees.Adresse", "123 rue de l'Exemple, app. 4, Québec (Québec) G1A 1A1"),
+            new("Donnees.ConsentementRl24", "true"), new("__RequestVerificationToken", Jeton(await admin.GetStringAsync(fiche))),
+        ]));
+        Assert.Equal("Inscrit par l'éducatrice (consentement écrit reçu)", Db((db, _) => db.Parents.Find(parentId)!.ConsentRl24Source));
+        liste = await admin.GetStringAsync("/Releves?annee=2025");
+        await admin.PostAsync("/Releves?handler=EnvoyerTout&annee=2025", new FormUrlEncodedContent([new("__RequestVerificationToken", Jeton(liste))]));
+        Assert.Equal("julie@exemple.test", Db((db, _) => db.Releves.Find(modifie.Id)!.EnvoyeA));
+        var courriel = Directory.GetFiles(Path.Combine(appli.Dossier, "courriels"), "*.eml").Select(File.ReadAllText).Last(t => t.Contains("julie@exemple.test"));
+        Assert.Contains("application/pdf", courriel);
+        Assert.Contains("envoyé le", WebUtility.HtmlDecode(await admin.GetStringAsync("/Releves?annee=2025")));
         var totaux = Db((db, _) => (db.Releves.Count(x => x.RemplaceParId == null)));
         Assert.Equal(1, totaux);
 

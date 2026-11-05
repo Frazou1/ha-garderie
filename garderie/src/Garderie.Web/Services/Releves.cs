@@ -13,14 +13,18 @@ namespace Garderie.Web.Services;
 /// selon le tarif), generation sur le formulaire officiel (numero, PDF dans le dossier), sommaire 24.
 /// Yearly RL-24 slips: proposals per paying parent, generation on the official form, RL-24.S summary.
 /// </summary>
-public sealed partial class RelevesService(GarderieDb db, GarderieOptions options, DocumentsService documents, Chiffreur chiffreur)
+public sealed partial class RelevesService(GarderieDb db, GarderieOptions options, DocumentsService documents, Chiffreur chiffreur, Courriels courriels)
 {
     /// <summary>Codes payes par le parent (presence, absence, fermeture) / Codes the parent pays for.</summary>
     private static readonly HashSet<string> CodesPayes = ["P", "P 1/2", "A", "A 1/2", "F", "F 1/2", "R", "R 1/2"];
 
     public sealed record EnfantPropose(int EnfantId, string Nom, string Prenom, DateOnly? Naissance, int Jours, decimal Montant);
 
-    public sealed record Proposition(int ParentId, string Nom, string Prenom, List<EnfantPropose> Enfants, Releve? Dernier);
+    public sealed record Proposition(int ParentId, string Nom, string Prenom, List<EnfantPropose> Enfants, Releve? Dernier, string? Courriel, bool Consent)
+    {
+        /// <summary>Peut recevoir le releve par courriel / Can receive the slip by email.</summary>
+        public bool ParCourriel => Consent && !string.IsNullOrWhiteSpace(Courriel);
+    }
 
     /// <summary>Annee proposee : l'annee passee jusqu'en avril, sinon l'annee en cours / Suggested year.</summary>
     public static int AnneeProposee(DateOnly aujourdhui) => aujourdhui.Month <= 4 ? aujourdhui.Year - 1 : aujourdhui.Year;
@@ -61,7 +65,8 @@ public sealed partial class RelevesService(GarderieDb db, GarderieOptions option
         }
         return parPayeur.Values.OrderBy(g => g.Parent.Nom).ThenBy(g => g.Parent.Prenom)
             .Select(g => new Proposition(g.Parent.Id, g.Parent.Nom, g.Parent.Prenom, g.Enfants,
-                releves.Where(r => r.ParentId == g.Parent.Id).OrderByDescending(r => r.Id).FirstOrDefault()))
+                releves.Where(r => r.ParentId == g.Parent.Id).OrderByDescending(r => r.Id).FirstOrDefault(),
+                g.Parent.Courriel, g.Parent.ConsentRl24Le is not null))
             .ToList();
     }
 
@@ -287,5 +292,42 @@ public sealed partial class RelevesService(GarderieDb db, GarderieOptions option
         var (releves, enfants, jours, admissible) = await TotauxAsync(annee);
         return FormulaireProtege.Remplir(await File.ReadAllBytesAsync(options.FichierRl24S), Releve24.ChampsSommaire(new Releve24.ContenuSommaire(
             annee, await FournisseurAsync(p), releves, enfants, jours, admissible, p.Rl24Signataire, p.Telephone, Temps.Aujourdhui())));
+    }
+
+    // --- Envoi / Sending ---
+
+    public bool CourrielConfigure => courriels.EstConfigure;
+
+    /// <summary>
+    /// Envoie le releve au parent par courriel, seulement s'il y a consenti par ecrit (Revenu Quebec). Retourne
+    /// l'adresse, ou une erreur. / Emails the slip, only with the parent's written consent; returns the address or an error.
+    /// </summary>
+    public async Task<(string? Courriel, string? Erreur)> EnvoyerAsync(int releveId)
+    {
+        var r = await db.Releves.Include(x => x.Parent).FirstOrDefaultAsync(x => x.Id == releveId);
+        if (r is null || r.RemplaceParId is not null) return (null, "Ce relevé a été remplacé par un relevé modifié.");
+        if (r.Parent is not { } parent) return (null, "Le parent n'est plus au dossier.");
+        if (parent.ConsentRl24Le is null) return (null, $"{parent.NomComplet} n'a pas consenti au courriel : remettez-lui le relevé sur papier.");
+        if (string.IsNullOrWhiteSpace(parent.Courriel)) return (null, $"{parent.NomComplet} n'a pas de courriel.");
+        if (!courriels.EstConfigure) return (null, "Le courriel n'est pas configuré dans le module.");
+        if (await PdfAsync(r) is not { } pdf) return (null, "PDF du relevé introuvable.");
+        var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
+        var garderie = p?.NomGarderie ?? "la garderie";
+        var c = LireContenu(r);
+        await courriels.EnvoyerAsync(parent.Courriel, $"Relevé 24 {r.Annee} – frais de garde",
+            $"Bonjour {parent.Prenom},\n\n" +
+            $"Voici votre relevé 24 pour les frais de garde payés en {r.Annee}" +
+            (r.Code == "A" ? $" : c'est un relevé modifié, il remplace le relevé no {r.NumeroOriginal}" : "") + ".\n" +
+            "Votre copie est la page 2 (« Copie de la personne qui a payé les frais de garde ») : utilisez-la pour votre déclaration " +
+            "de revenus et conservez-la.\n\n" +
+            "Vous recevez ce relevé par courriel parce que vous y avez consenti. Pour le recevoir plutôt sur papier, avisez-moi " +
+            "par écrit ou répondez à ce courriel.\n\n" +
+            Affichage.PiedFacebook(p) +
+            $"Merci,\n{p?.NomRsge ?? garderie}\n{garderie}",
+            [($"Relevé 24 {r.Annee} {c.PayeurPrenom} {c.PayeurNom}.pdf", pdf)]);
+        r.EnvoyeLe = DateTime.UtcNow;
+        r.EnvoyeA = parent.Courriel;
+        await db.SaveChangesAsync();
+        return (parent.Courriel, null);
     }
 }

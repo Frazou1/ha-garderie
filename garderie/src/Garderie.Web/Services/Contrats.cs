@@ -19,6 +19,8 @@ public sealed class SaisieParent
     /// <summary>Nouveau NAS (vide = garder celui deja au dossier) / New SIN (empty = keep the one on file).</summary>
     public string? Nas { get; set; }
     public string? VacancesParent { get; set; }
+    /// <summary>Consent a recevoir le releve 24 par courriel / Consents to receive the RL-24 by email.</summary>
+    public bool ConsentementRl24 { get; set; }
 }
 
 /// <summary>
@@ -237,6 +239,13 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
         var p = lp.Parent;
         p.Adresse = V(s.ParentAdresse, 300); p.Telephone1 = V(s.ParentTelephone1, 30); p.Telephone2 = V(s.ParentTelephone2, 30);
         if (nas is not null) p.NasChiffre = chiffreur.ChiffrerTexte(nas, Contextes.NasParent);
+        // Consentement donne en signant (identite : lien personnel et signature) ; decocher ne le retire pas
+        // Consent given when signing; unchecking does not revoke it (revocation is by notice to the RSGE)
+        if (s.ConsentementRl24 && p.ConsentRl24Le is null)
+        {
+            p.ConsentRl24Le = DateTime.UtcNow;
+            p.ConsentRl24Source = lien.SurPlace ? "Signature du contrat sur place" : "Signature du contrat en ligne";
+        }
         p.ModifieLe = DateTime.UtcNow;
         if (V(s.Lien, 50) is { } l) lp.Lien = l;
         c.VacancesParent = V(s.VacancesParent, 1000);

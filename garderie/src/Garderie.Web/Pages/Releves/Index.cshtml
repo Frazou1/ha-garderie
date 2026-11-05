@@ -47,7 +47,14 @@ else
                             else
                             {
                                 <span class="badge text-bg-success">no @r.Numero@(r.Code == "A" ? " (modifié)" : "")</span>
-                                <span class="small text-muted">le @Affichage.Horodatage(r.CreeLe)</span>
+                                @if (r.EnvoyeLe is { } env)
+                                {
+                                    <span class="badge text-bg-info">envoyé le @Affichage.Horodatage(env)</span>
+                                }
+                                else if (!p.ParCourriel)
+                                {
+                                    <span class="badge text-bg-light border" title="Pas de consentement au courriel">à remettre sur papier</span>
+                                }
                             }
                         </span>
                     </span>
@@ -57,6 +64,13 @@ else
                     {
                         <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@r.Id" target="_blank" rel="noopener">Afficher</a>
                         <a class="btn btn-sm btn-doux" asp-page-handler="Pdf" asp-route-id="@r.Id" asp-route-telecharger="true">Télécharger</a>
+                        @if (p.ParCourriel)
+                        {
+                            <form method="post" asp-page-handler="Envoyer" asp-route-id="@r.Id" class="confirmer"
+                                  data-confirmer="Envoyer le relevé no @r.Numero à @p.Courriel ?">
+                                <button type="submit" class="btn btn-sm btn-doux" disabled="@(!Model.CourrielConfigure)">@(r.EnvoyeLe is null ? "Envoyer" : "Renvoyer")</button>
+                            </form>
+                        }
                     }
                     <a class="btn btn-sm @(r is null ? "btn-primary" : "btn-outline-secondary")" asp-page="Preparer" asp-route-annee="@a" asp-route-parentId="@p.ParentId">
                         @(r is null ? "Préparer" : "Modifier")</a>
@@ -64,6 +78,22 @@ else
             </div>
         }
     </div>
+
+    var aEnvoyer = Model.Propositions.Count(p => p.ParCourriel && p.Dernier is { EnvoyeLe: null });
+    var papier = Model.Propositions.Count(p => !p.ParCourriel && p.Dernier is not null);
+    @if (aEnvoyer > 0)
+    {
+        <form method="post" asp-page-handler="EnvoyerTout" asp-route-annee="@a" class="carte d-flex flex-wrap align-items-center gap-2 mt-3 confirmer"
+              data-confirmer="Envoyer @aEnvoyer relevé(s) par courriel ?">
+            <span class="me-auto">@aEnvoyer relevé(s) produit(s) à envoyer aux parents qui ont consenti au courriel.</span>
+            <button type="submit" class="btn btn-primary" disabled="@(!Model.CourrielConfigure)">Envoyer par courriel</button>
+        </form>
+    }
+    @if (papier > 0)
+    {
+        <p class="aide mt-2">@papier relevé(s) à remettre sur papier (copie 2, page 2) : ces parents n'ont pas consenti au courriel.
+            Le consentement se donne à la signature du contrat ou s'inscrit dans la fiche du parent.</p>
+    }
 
     <section class="carte mt-3">
         <h2 class="h5">Sommaire 24</h2>

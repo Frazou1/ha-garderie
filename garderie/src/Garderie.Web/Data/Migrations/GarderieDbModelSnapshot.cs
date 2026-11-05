@@ -801,6 +801,13 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ConsentRl24Le")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConsentRl24Source")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Courriel")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");

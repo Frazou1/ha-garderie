@@ -22,6 +22,9 @@ public class IndexModel(GarderieDb db, FichesService fiches, Courriels courriels
     public List<SituationFiche> Situations { get; private set; } = new();
     public bool ModeleDisponible => fiches.ModeleDisponible;
     public bool EnvoiPossible => courriels.EstConfigure && !string.IsNullOrWhiteSpace(options.UrlPublique);
+    /// <summary>Periode signee sur papier (Reglages) / Period signed on paper.</summary>
+    public bool Papier { get; private set; }
+    public DateOnly? PapierJusquau { get; private set; }
     public int PretesASigner => Situations.Count(s => s.PreteASigner);
     /// <summary>Fiches signees par la RSGE sans lien en cours / RSGE-signed sheets with no active link.</summary>
     public int AEnvoyer => Situations.Count(s => s.Etat == EtatFiche.SigneeRsge && !s.LienActif);
@@ -32,7 +35,9 @@ public class IndexModel(GarderieDb db, FichesService fiches, Courriels courriels
         Courante = FichesService.DebutPeriode(Temps.Aujourdhui(), ancre);
         // Par defaut : la periode precedente (celle qu'on fait signer) / Default: previous period (the one to sign)
         Debut = FichesService.DebutPeriode(Periode ?? Courante.AddDays(-14), ancre);
-        Situations = await fiches.PeriodeAsync(Debut);
+        PapierJusquau = await fiches.PapierJusquauAsync();
+        Papier = PapierJusquau is { } p && Fin <= p;
+        Situations = Papier ? new() : await fiches.PeriodeAsync(Debut);
     }
 
     private IActionResult Retour(string? message, string? erreur = null)

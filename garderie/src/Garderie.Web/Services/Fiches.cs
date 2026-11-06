@@ -37,6 +37,10 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
         return lundiAncre.AddDays(n * 14);
     }
 
+    /// <summary>Derniere date des fiches signees sur papier (Reglages) / Last date of paper-signed sheets.</summary>
+    public async Task<DateOnly?> PapierJusquauAsync() =>
+        (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.FichesPapierJusquau;
+
     public async Task<DateOnly> AncreAsync() =>
         (await db.Parametres.AsNoTracking().FirstOrDefaultAsync())?.DebutPeriodes ?? AncreParDefaut;
 
@@ -152,6 +156,8 @@ public sealed class FichesService(GarderieDb db, GarderieOptions options, Docume
     {
         var e = await db.Enfants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == enfantId);
         if (e is null) return "Enfant introuvable.";
+        if (await PapierJusquauAsync() is { } papier && debut.AddDays(13) <= papier)
+            return "Cette période a été signée sur papier (Réglages) : aucune fiche électronique.";
         if (!ModeleDisponible) return "Téléversez d'abord le formulaire FO-0310 dans Réglages.";
         var existante = await db.Fiches.AsNoTracking().FirstOrDefaultAsync(f => f.EnfantId == enfantId && f.Debut == debut);
         if (existante is not null && existante.Etat != EtatFiche.Brouillon) return $"{e.Prenom} : fiche déjà signée.";

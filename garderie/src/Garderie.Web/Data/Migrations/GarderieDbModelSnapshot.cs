@@ -740,6 +740,9 @@ namespace Garderie.Web.Data.Migrations
                     b.Property<DateOnly?>("DebutPeriodes")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("FichesPapierJusquau")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("HeureCollationMatin")
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");

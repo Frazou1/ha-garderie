@@ -30,7 +30,9 @@
 
 @if (Model.Situations.Count == 0)
 {
-    <div class="carte vide"><p class="mb-0">Aucun enfant inscrit pendant cette période.</p></div>
+    <div class="carte vide"><p class="mb-0">@(Model.Papier
+        ? $"Période signée sur papier : les fiches électroniques commencent le {Affichage.Date(Model.PapierJusquau!.Value.AddDays(1))}."
+        : "Aucun enfant inscrit pendant cette période.")</p></div>
 }
 else
 {

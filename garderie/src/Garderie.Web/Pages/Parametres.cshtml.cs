@@ -143,6 +143,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         p.HeureOuverture = Donnees.HeureOuverture;
         p.HeureFermeture = Donnees.HeureFermeture;
         p.DebutPeriodes = Donnees.DebutPeriodes is { } d ? PresencesService.Lundi(d) : null;
+        p.FichesPapierJusquau = Donnees.FichesPapierJusquau;
         journal.Noter("parametres.modifier");
         await db.SaveChangesAsync();
         TempData["Message"] = "Paramètres enregistrés.";

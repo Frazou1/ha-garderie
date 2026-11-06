@@ -220,6 +220,8 @@ public class Parametres
     public TimeOnly? HeureFermeture { get; set; }
     /// <summary>Un lundi ou commence une periode de 2 semaines du BC / A Monday starting a 2-week BC period.</summary>
     public DateOnly? DebutPeriodes { get; set; }
+    /// <summary>Fiches signees sur papier jusqu'a cette date (aucune fiche electronique avant) / Paper sheets up to this date.</summary>
+    public DateOnly? FichesPapierJusquau { get; set; }
 
     // --- Contrat (entente de service), textes modifiables / Service agreement, editable texts ---
     [MaxLength(100)] public string? VilleSignature { get; set; }

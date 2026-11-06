@@ -64,6 +64,11 @@
             <input asp-for="Donnees.DebutPeriodes" type="date" class="form-control" />
             <div class="form-text">Ex. 19 octobre 2026 : périodes du 19 oct. au 1er nov., du 2 au 15 nov., etc.</div>
         </div>
+        <div class="col-md-6">
+            <label asp-for="Donnees.FichesPapierJusquau" class="form-label">Fiches signées sur papier jusqu'au</label>
+            <input asp-for="Donnees.FichesPapierJusquau" type="date" class="form-control" />
+            <div class="form-text">Les périodes qui finissent au plus tard ce jour-là sont indiquées « signées sur papier » : aucune fiche électronique.</div>
+        </div>
         <div class="col-md-3">
             <label asp-for="Donnees.HeureOuverture" class="form-label">Ouverture</label>
             <input asp-for="Donnees.HeureOuverture" type="time" class="form-control" />

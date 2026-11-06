@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0
+- Réglages : « Fiches signées sur papier jusqu'au ». Les périodes qui finissent au plus tard à cette date sont
+  indiquées « signées sur papier » dans Fiches : aucun enfant à signer, et la signature électronique est refusée.
+
 ## 0.18.0
 - Horaire de l'enfant : heures d'arrivée et de départ par jour (facultatives ; vides = heures d'ouverture). Elles
   s'impriment dans le tableau « Fréquentation de l'enfant » du contrat et s'affichent au parent à la signature.

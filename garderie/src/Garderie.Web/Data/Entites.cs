@@ -145,6 +145,9 @@ public class HoraireType
     public DayOfWeek Jour { get; set; }
     public bool Matin { get; set; }
     public bool Pm { get; set; }
+    /// <summary>Heures d'arrivee et de depart prevues (vide = heures d'ouverture) / Planned arrival and departure.</summary>
+    public TimeOnly? Arrivee { get; set; }
+    public TimeOnly? Depart { get; set; }
 }
 
 /// <summary>Document televerse, contenu chiffre dans /data/docs / Uploaded document, encrypted on disk.</summary>

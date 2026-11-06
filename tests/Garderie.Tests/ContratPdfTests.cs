@@ -29,6 +29,22 @@ public class ContratPdfTests
     };
 
     [Fact]
+    public void HeuresDeFrequentation()
+    {
+        var lundi = new DateOnly(2026, 1, 5);
+        List<HoraireType> h =
+        [
+            new() { DateEffective = lundi, Jour = DayOfWeek.Monday, Matin = true, Pm = true, Arrivee = new TimeOnly(8, 0), Depart = new TimeOnly(16, 15) },
+            new() { DateEffective = lundi, Jour = DayOfWeek.Tuesday, Matin = true, Pm = true },
+            new() { DateEffective = lundi, Jour = DayOfWeek.Saturday, Arrivee = new TimeOnly(8, 0), Depart = new TimeOnly(9, 0) },
+        ];
+        Assert.Equal([new HeuresJour("Lundi", "8 h", "16 h 15")], ContratsService.HeuresFrequentation(h, lundi));
+        var pdf = ContratPdf.Contrat(Exemple() with { HeuresFrequentation = [new("Lundi", "8 h", "16 h 15")] },
+            new SignaturesContrat(null, null, null, null, null, null, null, null, null, null));
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
+    }
+
+    [Fact]
     public void ChampsDuModeleBc()
     {
         Assert.Equal(("9165 rue Drolet, Québec (Québec)", "G2K 1J4"), ContratBcPdf.Adresse("9165 rue Drolet, Québec (Québec) g2k1j4"));

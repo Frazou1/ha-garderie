@@ -16,7 +16,7 @@
     </div>
     <table class="table table-sm align-middle horaire">
         <thead>
-            <tr><th>Jour</th><th class="text-center">Matin</th><th class="text-center">Après-midi</th></tr>
+            <tr><th>Jour</th><th class="text-center">Matin</th><th class="text-center">Après-midi</th><th>Arrivée</th><th>Départ</th></tr>
         </thead>
         <tbody>
             @foreach (var j in Affichage.JoursSemaine)
@@ -27,10 +27,13 @@
                     <td>@Affichage.Jour(j)</td>
                     <td class="text-center"><input type="checkbox" class="form-check-input case-horaire" name="Cases" value="@m" id="c@(m)" checked="@Model.Cases.Contains(m)" aria-label="@Affichage.Jour(j) matin" /></td>
                     <td class="text-center"><input type="checkbox" class="form-check-input case-horaire" name="Cases" value="@p" id="c@(p)" checked="@Model.Cases.Contains(p)" aria-label="@Affichage.Jour(j) après-midi" /></td>
+                    <td><input type="time" class="form-control form-control-sm" name="Arrivees[@((int)j)]" value="@Model.Arrivees.GetValueOrDefault((int)j)?.ToString("HH:mm")" aria-label="@Affichage.Jour(j) arrivée" /></td>
+                    <td><input type="time" class="form-control form-control-sm" name="Departs[@((int)j)]" value="@Model.Departs.GetValueOrDefault((int)j)?.ToString("HH:mm")" aria-label="@Affichage.Jour(j) départ" /></td>
                 </tr>
             }
         </tbody>
     </table>
+    <p class="form-text mt-n2 mb-3">Arrivée et départ : facultatifs. Vides = heures d'ouverture. Ils s'impriment dans le tableau de fréquentation du contrat.</p>
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">Enregistrer</button>
         <a class="btn btn-outline-secondary" asp-page="Dossier" asp-route-id="@Model.Id">Annuler</a>

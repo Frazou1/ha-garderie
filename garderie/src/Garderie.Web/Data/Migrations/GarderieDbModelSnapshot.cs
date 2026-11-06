@@ -435,7 +435,13 @@ namespace Garderie.Web.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<TimeOnly?>("Arrivee")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly>("DateEffective")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeOnly?>("Depart")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EnfantId")

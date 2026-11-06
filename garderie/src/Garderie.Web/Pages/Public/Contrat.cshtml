@@ -100,7 +100,7 @@ else
                     @if (i.Services is not null)
                     {
                         <h3 class="h6">Fréquentation et paiement</h3>
-                        <p class="small mb-1">Jours retenus : @(i.Frequentation is { Count: > 0 } j ? string.Join(", ", j) : "—"), aux heures d'ouverture.</p>
+                        <p class="small mb-1">Jours retenus : @(i.Frequentation is { Count: > 0 } j ? string.Join(", ", j) : "—")@(i.HeuresFrequentation is { Count: > 0 } hf ? " ; heures : " + string.Join(", ", hf.Select(x => $"{x.Jour} {x.De ?? i.HeureOuverture} à {x.A ?? i.HeureFermeture}")) + " (autres jours : heures d'ouverture)." : ", aux heures d'ouverture.")</p>
                         @if (i.Tarif is { } t)
                         {
                             <p class="small mb-1">Tarif : @Affichage.Argent(t) par jour, payable le @(i.JourPaiement ?? "—") de chaque semaine

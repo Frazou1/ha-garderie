@@ -20,6 +20,9 @@ public class HoraireModel(GarderieDb db, Journal journal) : PageModel
     [BindProperty] public DateOnly DateEffective { get; set; }
     /// <summary>Cases cochees : "1-M", "1-P" (jour 0-6, M = matin, P = apres-midi) / Checked boxes.</summary>
     [BindProperty] public List<string> Cases { get; set; } = new();
+    /// <summary>Heures par jour (cle = jour 0-6) / Hours per day (key = day 0-6).</summary>
+    [BindProperty] public Dictionary<int, TimeOnly?> Arrivees { get; set; } = new();
+    [BindProperty] public Dictionary<int, TimeOnly?> Departs { get; set; } = new();
 
     public Enfant Enfant { get; private set; } = null!;
     public List<DateOnly> Versions { get; private set; } = new();
@@ -38,6 +41,11 @@ public class HoraireModel(GarderieDb db, Journal journal) : PageModel
         Cases = e.Horaires.Where(h => h.DateEffective == base_)
             .SelectMany(h => new[] { h.Matin ? $"{(int)h.Jour}-M" : null, h.Pm ? $"{(int)h.Jour}-P" : null })
             .OfType<string>().ToList();
+        foreach (var h in e.Horaires.Where(h => h.DateEffective == base_))
+        {
+            Arrivees[(int)h.Jour] = h.Arrivee;
+            Departs[(int)h.Jour] = h.Depart;
+        }
         if (Versions.Count == 0)
         {
             // Defaut : lundi au vendredi, journee complete / Default: Mon-Fri, full day
@@ -60,9 +68,13 @@ public class HoraireModel(GarderieDb db, Journal journal) : PageModel
         {
             var m = Cases.Contains($"{(int)j}-M");
             var p = Cases.Contains($"{(int)j}-P");
-            db.Horaires.Add(new HoraireType { EnfantId = Id, DateEffective = DateEffective, Jour = j, Matin = m, Pm = p });
+            var a = m || p ? Arrivees.GetValueOrDefault((int)j) : null;
+            var d = m || p ? Departs.GetValueOrDefault((int)j) : null;
+            if (a is not null && d is not null && d <= a) (a, d) = (null, null);   // incoherent : ignore / inconsistent: ignored
+            db.Horaires.Add(new HoraireType { EnfantId = Id, DateEffective = DateEffective, Jour = j, Matin = m, Pm = p, Arrivee = a, Depart = d });
         }
-        journal.Noter("horaire.modifier", "Enfant", Id, $"En vigueur le {DateEffective:yyyy-MM-dd} : {string.Join(",", Cases.Order())}");
+        var heures = string.Join(",", Arrivees.Where(x => x.Value is not null).Select(x => $"{x.Key}:{x.Value:HH\\:mm}-{Departs.GetValueOrDefault(x.Key):HH\\:mm}"));
+        journal.Noter("horaire.modifier", "Enfant", Id, $"En vigueur le {DateEffective:yyyy-MM-dd} : {string.Join(",", Cases.Order())}{(heures.Length > 0 ? " ; heures " + heures : "")}");
         await db.SaveChangesAsync();
         TempData["Message"] = "Horaire enregistré.";
         return RedirectToPage("Dossier", new { id = Id });

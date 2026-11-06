@@ -119,6 +119,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien, VacancesParent = c.VacancesParent,
             EnfantPrenom = e.Prenom, EnfantNomFamille = e.Nom, ParentPrenom = lien?.Parent.Prenom, ParentNomFamille = lien?.Parent.Nom,
             ParentTelephoneAutre = lien?.Parent.TelephoneAutreParent,
+            HeuresFrequentation = HeuresFrequentation(e.Horaires, c.Debut),
         };
     }
 
@@ -152,6 +153,27 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             jours.Add(nom);
         }
         return (jours, total);
+    }
+
+    /// <summary>
+    /// Heures d'arrivee et de depart inscrites a l'horaire en vigueur la premiere semaine du contrat (jours sans heures omis).
+    /// Arrival / departure hours from the schedule in force the contract's first week (days without hours omitted).
+    /// </summary>
+    public static List<HeuresJour> HeuresFrequentation(List<HoraireType> horaires, DateOnly debut)
+    {
+        static string? H(TimeOnly? t) => t is { } x ? $"{x:H\\ \\h\\ mm}".Replace(" h 00", " h") : null;
+        var liste = new List<HeuresJour>();
+        foreach (var j in Semaine)
+        {
+            var d = debut.AddDays(((int)j - (int)debut.DayOfWeek + 7) % 7);
+            var versions = horaires.Where(h => h.DateEffective <= d).ToList();
+            if (versions.Count == 0) continue;
+            var v = versions.Max(h => h.DateEffective);
+            var h = versions.FirstOrDefault(x => x.DateEffective == v && x.Jour == j);
+            if (h is null || !(h.Matin || h.Pm) || (h.Arrivee is null && h.Depart is null)) continue;
+            liste.Add(new HeuresJour(Affichage.Jour(j), H(h.Arrivee), H(h.Depart)));
+        }
+        return liste;
     }
 
     /// <summary>Jours payes prevus sur la duree du contrat (les fermetures sont payables) / Paid days over the contract.</summary>

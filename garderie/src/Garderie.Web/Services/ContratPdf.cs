@@ -77,7 +77,12 @@ public sealed record InfosContrat
     public string? FraisNsf { get; init; }
     public string? RetardMontant { get; init; }
     public string? RetardMinutes { get; init; }
+    /// <summary>Heures prevues par jour de frequentation (0.18.0) / Planned hours per attendance day.</summary>
+    public List<HeuresJour>? HeuresFrequentation { get; init; }
 }
+
+/// <summary>Heures d'arrivee et de depart d'un jour (« Lundi », « 8 h », « 16 h 15 ») / A day's planned hours.</summary>
+public sealed record HeuresJour(string Jour, string? De, string? A);
 
 /// <summary>Une fermeture du contrat : un jour (ferie) ou une periode (vacances) / A closure: one day or a period.</summary>
 public sealed record FermetureContrat(string Motif, DateOnly Debut, DateOnly Fin, string? Demi);

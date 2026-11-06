@@ -73,6 +73,9 @@ public static partial class ContratBcPdf
         var freq = i.Frequentation ?? [];
         Semaine(sec, j =>
         {
+            var hj = i.HeuresFrequentation?.FirstOrDefault(x => x.Jour == j);
+            var (ouv, ferm) = (hj?.De ?? i.HeureOuverture, hj?.A ?? i.HeureFermeture);
+            if (hj is not null) return (ouv, ferm);
             if (freq.Contains(j)) return (i.HeureOuverture, i.HeureFermeture);
             if (freq.Contains(j + " (matin)")) return (i.HeureOuverture, "12 h");
             if (freq.Contains(j + " (après-midi)")) return ("12 h", i.HeureFermeture);

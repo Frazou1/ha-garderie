@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.0
+- Horaire de l'enfant : heures d'arrivée et de départ par jour (facultatives ; vides = heures d'ouverture). Elles
+  s'impriment dans le tableau « Fréquentation de l'enfant » du contrat et s'affichent au parent à la signature.
+
 ## 0.17.0
 - Contrat : PDF refait selon la mise en page du modèle du bureau coordonnateur (« Entente de services de garde
   éducatifs ») : identification du prestataire et du parent sur deux colonnes, encadré de l'enfant (portail),

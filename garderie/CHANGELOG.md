@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.13.2
+- Bouton « Archiver » : l'encadré s'ouvre juste sous le bouton (il s'affichait au bord droit de l'écran).
+
 ## 0.13.1
 - Dossier de l'enfant : bouton « Archiver » (à côté de « Modifier l'identité ») qui demande le dernier jour de
   fréquentation (hier par défaut). Le lendemain de ce jour, le dossier passe aux anciens, en lecture seule.

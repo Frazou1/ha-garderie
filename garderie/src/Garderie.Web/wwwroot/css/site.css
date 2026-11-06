@@ -249,4 +249,5 @@ span.code.verrou { min-height: 2.5rem; opacity: .85; }
 .apercu-logo { width: 4.5rem; height: 4.5rem; object-fit: contain; border: 1px solid var(--bs-border-color, #e5ddd3); border-radius: .5rem; background: #fff; }
 .archiver > summary { list-style: none; }
 .archiver > summary::-webkit-details-marker { display: none; }
-.archiver[open] > form { position: absolute; right: 1rem; z-index: 10; width: 18rem; }
+.archiver { position: relative; }
+.archiver[open] > form { position: absolute; right: 0; top: 100%; z-index: 10; width: 18rem; box-shadow: 0 8px 24px rgba(0,0,0,.12); }

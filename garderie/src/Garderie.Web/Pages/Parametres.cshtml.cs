@@ -49,6 +49,9 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         public string? HeureCollationMatin { get; set; }
         public string? HeureCollationPm { get; set; }
         public string? HeureDiner { get; set; }
+        public string? FraisNsf { get; set; }
+        public string? RetardMontant { get; set; }
+        public string? RetardMinutes { get; set; }
     }
 
     [BindProperty] public SaisieContrat Contrat { get; set; } = new();
@@ -95,6 +98,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
             ResiliationRsge = Donnees.ContratResiliationRsge ?? TextesContrat.ResiliationRsge,
             ResiliationParent = Donnees.ContratResiliationParent ?? TextesContrat.ResiliationParent,
             HeureCollationMatin = Donnees.HeureCollationMatin, HeureCollationPm = Donnees.HeureCollationPm, HeureDiner = Donnees.HeureDiner,
+            FraisNsf = Donnees.ContratFraisNsf, RetardMontant = Donnees.ContratRetardMontant, RetardMinutes = Donnees.ContratRetardMinutes,
         };
     }
 
@@ -200,6 +204,9 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         p.HeureCollationMatin = Heure(Contrat.HeureCollationMatin);
         p.HeureCollationPm = Heure(Contrat.HeureCollationPm);
         p.HeureDiner = Heure(Contrat.HeureDiner);
+        p.ContratFraisNsf = Heure(Contrat.FraisNsf);
+        p.ContratRetardMontant = Heure(Contrat.RetardMontant);
+        p.ContratRetardMinutes = Heure(Contrat.RetardMinutes);
         journal.Noter("parametres.contrat");
         await db.SaveChangesAsync();
         TempData["Message"] = "Textes du contrat enregistrés (ils s'appliquent aux contrats pas encore signés).";

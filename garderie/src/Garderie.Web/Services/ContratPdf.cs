@@ -65,6 +65,18 @@ public sealed record InfosContrat
     public string? ClausesFermeture { get; init; }
     public string? ResiliationRsge { get; init; }
     public string? ResiliationParent { get; init; }
+
+    // --- Mise en page du bureau coordonnateur (0.17.0) : champs separes / Coordinating office layout: split fields ---
+    public string? EnfantPrenom { get; init; }
+    public string? EnfantNomFamille { get; init; }
+    public string? ParentPrenom { get; init; }
+    public string? ParentNomFamille { get; init; }
+    public string? ParentTelephoneAutre { get; init; }
+    public string? HeureOuverture { get; init; }
+    public string? HeureFermeture { get; init; }
+    public string? FraisNsf { get; init; }
+    public string? RetardMontant { get; init; }
+    public string? RetardMinutes { get; init; }
 }
 
 /// <summary>Une fermeture du contrat : un jour (ferie) ou une periode (vacances) / A closure: one day or a period.</summary>
@@ -99,6 +111,8 @@ public static class ContratPdf
 
     public static byte[] Contrat(InfosContrat i, SignaturesContrat s)
     {
+        // Modele du bureau coordonnateur / Coordinating office template
+        if (i.Services is not null) return ContratBcPdf.Contrat(i, s);
         var doc = Nouveau("Entente de service");
         var sec = doc.LastSection;
 

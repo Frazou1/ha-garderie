@@ -234,6 +234,18 @@
             <label asp-for="Contrat.HeureCollationPm" class="form-label">Collation de l'après-midi vers</label>
             <input asp-for="Contrat.HeureCollationPm" class="form-control" placeholder="ex. 15 h 00" maxlength="20" />
         </div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.FraisNsf" class="form-label">Frais d'un chèque sans provision ($)</label>
+            <input asp-for="Contrat.FraisNsf" class="form-control" placeholder="ex. 25,00" maxlength="20" />
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.RetardMontant" class="form-label">Frais de retard : montant ($)</label>
+            <input asp-for="Contrat.RetardMontant" class="form-control" placeholder="ex. 5,00" maxlength="20" />
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.RetardMinutes" class="form-label">… par tranche de (minutes)</label>
+            <input asp-for="Contrat.RetardMinutes" class="form-control" placeholder="ex. 5" maxlength="20" />
+        </div>
         <div class="col-12">
             <label asp-for="Contrat.Services" class="form-label">Description des services fournis</label>
             <textarea asp-for="Contrat.Services" class="form-control" rows="3"></textarea>

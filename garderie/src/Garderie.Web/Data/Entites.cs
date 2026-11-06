@@ -236,6 +236,11 @@ public class Parametres
     [MaxLength(20)] public string? HeureCollationMatin { get; set; }
     [MaxLength(20)] public string? HeureCollationPm { get; set; }
     [MaxLength(20)] public string? HeureDiner { get; set; }
+    /// <summary>Frais d'un cheque sans provision (ex. « 25,00 ») / NSF cheque fee.</summary>
+    [MaxLength(20)] public string? ContratFraisNsf { get; set; }
+    /// <summary>Frais de retard : montant par tranche de minutes / Late fee: amount per block of minutes.</summary>
+    [MaxLength(20)] public string? ContratRetardMontant { get; set; }
+    [MaxLength(20)] public string? ContratRetardMinutes { get; set; }
 
     // --- Regie interne generee : sections modifiees (JSON cle -> texte) et valeurs / Generated internal rules ---
     [MaxLength(100000)] public string? RegieSections { get; set; }

@@ -683,6 +683,10 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ContratFraisNsf")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContratMentionLpc")
                         .HasMaxLength(6000)
                         .HasColumnType("TEXT");
@@ -709,6 +713,14 @@ namespace Garderie.Web.Data.Migrations
 
                     b.Property<string>("ContratResiliationRsge")
                         .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratRetardMinutes")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratRetardMontant")
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ContratServices")

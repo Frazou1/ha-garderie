@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0
+- Contrat : PDF refait selon la mise en page du modèle du bureau coordonnateur (« Entente de services de garde
+  éducatifs ») : identification du prestataire et du parent sur deux colonnes, encadré de l'enfant (portail),
+  tableaux d'horaire et de fréquentation, cases des jours fériés, vacances, modalités de paiement avec cases, frais de
+  retard, résiliation, mention LPC, signatures date / lieu, et la formule de résiliation en annexe. Les valeurs remplies
+  sont en bleu. Les contrats déjà signés gardent leur mise en page d'origine.
+- Réglages → Contrat : frais d'un chèque sans provision, et frais de retard (montant par tranche de minutes).
+
 ## 0.16.0
 - Fiche du parent : nouveau champ « Cellulaire papa (autre parent) », affiché dans le dossier de l'enfant.
 

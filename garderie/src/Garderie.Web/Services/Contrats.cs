@@ -76,6 +76,7 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
     {
         var p = await db.Parametres.AsNoTracking().FirstOrDefaultAsync() ?? new Parametres();
         var garderie = p.NomGarderie ?? "Garderie";
+        static string? H(TimeOnly? t) => t is { } x ? $"{x:H\\ \\h\\ mm}".Replace(" h 00", " h") : null;
         var heures = p.HeureOuverture is { } o && p.HeureFermeture is { } f ? $"de {o:H\\ \\h\\ mm} à {f:H\\ \\h\\ mm}".Replace(" h 00", " h") : null;
         return new InfosContrat
         {
@@ -95,6 +96,8 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             ResiliationRsge = p.ContratResiliationRsge ?? TextesContrat.ResiliationRsge,
             ResiliationParent = p.ContratResiliationParent ?? TextesContrat.ResiliationParent,
             Frequentation = Frequentation([], debut).Jours, DebutFrequentation = debut,
+            HeureOuverture = H(p.HeureOuverture), HeureFermeture = H(p.HeureFermeture),
+            FraisNsf = p.ContratFraisNsf, RetardMontant = p.ContratRetardMontant, RetardMinutes = p.ContratRetardMinutes,
         };
     }
 
@@ -114,6 +117,8 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             EnfantNom = e.NomComplet, EnfantAdresse = e.Adresse, EnfantTelephone = e.Telephone, EnfantNaissance = e.DateNaissance, EnfantSexe = e.Sexe,
             ParentNom = lien?.Parent.NomComplet ?? "", ParentAdresse = lien?.Parent.Adresse, ParentTelephone1 = lien?.Parent.Telephone1,
             ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien, VacancesParent = c.VacancesParent,
+            EnfantPrenom = e.Prenom, EnfantNomFamille = e.Nom, ParentPrenom = lien?.Parent.Prenom, ParentNomFamille = lien?.Parent.Nom,
+            ParentTelephoneAutre = lien?.Parent.TelephoneAutreParent,
         };
     }
 

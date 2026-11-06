@@ -24,7 +24,20 @@ public class ContratPdfTests
         Tarif = 45m, JourPaiement = "mercredi", ModesPaiement = TextesContrat.ModesPaiement, Versement = 202.5m, Total = 10_440m,
         FraisRetard = "5 $ pour les 10 premières minutes et ensuite 1 $ la minute", ClausesFermeture = TextesContrat.ClausesFermeture,
         ResiliationRsge = TextesContrat.ResiliationRsge, ResiliationParent = TextesContrat.ResiliationParent,
+        EnfantPrenom = "Léa", EnfantNomFamille = "Tremblay", ParentPrenom = "Julie", ParentNomFamille = "Tremblay",
+        ParentTelephoneAutre = "418-555-0199", HeureOuverture = "7 h 30", HeureFermeture = "17 h", FraisNsf = "25,00",
     };
+
+    [Fact]
+    public void ChampsDuModeleBc()
+    {
+        Assert.Equal(("9165 rue Drolet, Québec (Québec)", "G2K 1J4"), ContratBcPdf.Adresse("9165 rue Drolet, Québec (Québec) g2k1j4"));
+        Assert.Equal(("9040 rue Chauvet", null), ContratBcPdf.Adresse("9040 rue Chauvet"));
+        Assert.Equal(("Sonia", "Savard"), ContratBcPdf.Couper("Sonia Savard"));
+        // Reglages vides : montant et minutes lus dans le texte de la regie / Parsed from the rules text
+        Assert.Equal(("5", "10"), ContratBcPdf.Retard(Exemple()));
+        Assert.Equal(("5,00", "5"), ContratBcPdf.Retard(Exemple() with { RetardMontant = "5,00 $", RetardMinutes = "5" }));
+    }
 
     [Fact]
     public void FrequentationEtJoursPrevus()

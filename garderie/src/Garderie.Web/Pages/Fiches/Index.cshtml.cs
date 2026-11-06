@@ -33,8 +33,8 @@ public class IndexModel(GarderieDb db, FichesService fiches, Courriels courriels
     {
         var ancre = await fiches.AncreAsync();
         Courante = FichesService.DebutPeriode(Temps.Aujourdhui(), ancre);
-        // Par defaut : la periode precedente (celle qu'on fait signer) / Default: previous period (the one to sign)
-        Debut = FichesService.DebutPeriode(Periode ?? Courante.AddDays(-14), ancre);
+        // Par defaut : la periode en cours / Default: current period
+        Debut = FichesService.DebutPeriode(Periode ?? Courante, ancre);
         PapierJusquau = await fiches.PapierJusquauAsync();
         Papier = PapierJusquau is { } p && Fin <= p;
         Situations = Papier ? new() : await fiches.PeriodeAsync(Debut);

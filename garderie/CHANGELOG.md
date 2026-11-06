@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.0
+- Fiches : la page s'ouvre sur la période en cours (au lieu de la précédente). Les flèches mènent aux autres périodes.
+- Horaire : texte d'introduction à jour (l'horaire est repris dans le contrat).
+
 ## 0.19.0
 - Réglages : « Fiches signées sur papier jusqu'au ». Les périodes qui finissent au plus tard à cette date sont
   indiquées « signées sur papier » dans Fiches : aucun enfant à signer, et la signature électronique est refusée.

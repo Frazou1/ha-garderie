@@ -236,6 +236,7 @@ public class FichesParcoursTests(Appli appli) : IClassFixture<Appli>
         {
             ["__RequestVerificationToken"] = Jeton(html), ["signature"] = ModeleTest.Png, ["nom"] = "Julie F", ["atteste"] = "true",
         }));
+        Assert.False(Db(db => db.Journal.Any(j => j.Action == "fiche.signer_parent" && j.Details!.Contains("image"))));   // dessinee / drawn
         Assert.Contains("Merci", await r.Content.ReadAsStringAsync());
 
         fiche = Db(db => db.Fiches.Single(f => f.EnfantId == id));

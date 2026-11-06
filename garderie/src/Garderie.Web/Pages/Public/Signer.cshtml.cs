@@ -59,7 +59,7 @@ public class SignerModel(GarderieDb db, FichesService fiches, Courriels courriel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostSignerAsync(string? signature, [MaxLength(200)] string? nom, bool atteste)
+    public async Task<IActionResult> OnPostSignerAsync(string? signature, [MaxLength(200)] string? nom, bool atteste, string? methode)
     {
         if (!await ChargerAsync()) return Page();
         var png = FichesService.LireSignature(signature);
@@ -74,7 +74,7 @@ public class SignerModel(GarderieDb db, FichesService fiches, Courriels courriel
         var signees = await fiches.SignerParentAsync(Lien, png, signataire, HttpContext.IpClient());
         foreach (var (f, doc, _) in signees)
             journal.Noter("fiche.signer_parent", "Enfant", f.EnfantId,
-                $"{f.Debut:yyyy-MM-dd} : {signataire}{(surPlace ? " (sur place)" : "")} · PDF {doc.Sha256[..12]}");
+                $"{f.Debut:yyyy-MM-dd} : {signataire}{(surPlace ? " (sur place)" : "")}{ContratModel.Methode(methode)} · PDF {doc.Sha256[..12]}");
         await db.SaveChangesAsync();
 
         // Copie a la RSGE : un courriel, un PDF par enfant / Copy to the RSGE: one email, one PDF per child

@@ -77,7 +77,29 @@
 
         var form = c.closest("form");
         var bouton = form.querySelector(".effacer-signature");
-        if (bouton) bouton.addEventListener("click", function () { g.clearRect(0, 0, c.width, c.height); vide = true; });
+        var methode = form.querySelector(".methode-signature");
+        if (bouton) bouton.addEventListener("click", function () {
+            g.clearRect(0, 0, c.width, c.height); vide = true;
+            if (methode) methode.value = "dessin";
+        });
+        // Photo de la signature : fond retire, trait fonce garde / Signature photo: background removed, dark ink kept
+        var importer = form.querySelector(".importer-signature");
+        if (importer) importer.addEventListener("change", function () {
+            var f = importer.files && importer.files[0];
+            importer.value = "";
+            if (!f) return;
+            if (!window.createImageBitmap) { window.alert("Ce navigateur ne peut pas lire l'image."); return; }
+            createImageBitmap(f).then(function (img) {
+                var encre = extraireEncre(img);
+                if (!encre) { window.alert("Aucune signature trouvée dans l'image : prenez la photo d'une signature foncée sur papier blanc."); return; }
+                g.clearRect(0, 0, c.width, c.height);
+                var k = Math.min((c.width - 20) / encre.width, (c.height - 20) / encre.height);
+                var w = encre.width * k, h = encre.height * k;
+                g.drawImage(encre, (c.width - w) / 2, (c.height - h) / 2, w, h);
+                vide = false;
+                if (methode) methode.value = "image";
+            }).catch(function () { window.alert("Ce format d'image n'est pas lu ici. Essayez une photo JPG ou PNG."); });
+        });
         form.addEventListener("submit", function (e) {
             if (vide) {
                 e.preventDefault();
@@ -90,6 +112,25 @@
             form.classList.add("envoi");
         });
     });
+
+    // Garde les pixels fonces (encre) en transparence, recadres / Keeps dark pixels as ink, cropped
+    function extraireEncre(img) {
+        var r = Math.min(1, 1200 / Math.max(img.width, img.height));
+        var t = document.createElement("canvas");
+        t.width = Math.max(1, Math.round(img.width * r)); t.height = Math.max(1, Math.round(img.height * r));
+        var g = t.getContext("2d");
+        g.drawImage(img, 0, 0, t.width, t.height);
+        var im = g.getImageData(0, 0, t.width, t.height), d = im.data, encre = 0;
+        for (var i = 0; i < d.length; i += 4) {
+            var lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * d[i + 3] / 255 + (255 - d[i + 3]);
+            var a = lum < 110 ? 255 : lum < 170 ? Math.round((170 - lum) * 255 / 60) : 0;
+            d[i] = 29; d[i + 1] = 27; d[i + 2] = 43; d[i + 3] = a;
+            if (a > 0) encre++;
+        }
+        if (encre < 30) return null;
+        g.putImageData(im, 0, 0);
+        return recadrer(t);
+    }
 
     // Recadre la signature autour du trait (elle remplit mieux la case du PDF) / Crop around the ink
     function recadrer(c) {

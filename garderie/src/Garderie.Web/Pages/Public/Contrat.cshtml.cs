@@ -63,7 +63,7 @@ public class ContratModel(ContratsService contrats, Journal journal) : PageModel
         return this.Fichier(pdf, "application/pdf", "Régie interne.pdf", !telecharger);
     }
 
-    public async Task<IActionResult> OnPostSignerAsync(string? signature, string? nom, bool atteste)
+    public async Task<IActionResult> OnPostSignerAsync(string? signature, string? nom, bool atteste, string? methode)
     {
         if (!await ChargerAsync()) return Page();
         var png = FichesService.LireSignature(signature);
@@ -78,7 +78,7 @@ public class ContratModel(ContratsService contrats, Journal journal) : PageModel
         {
             await contrats.SignerResiliationAsync(Lien!, png, signataire, ip);
             await journal.NoterMaintenantAsync("contrat.resiliation_signee", "Enfant", Lien!.Contrat.EnfantId,
-                $"{Lien.Contrat.ResilieLe:yyyy-MM-dd} : {signataire}{(Lien.SurPlace ? " (sur place)" : "")}");
+                $"{Lien.Contrat.ResilieLe:yyyy-MM-dd} : {signataire}{(Lien.SurPlace ? " (sur place)" : "")}{Methode(methode)}");
         }
         else
         {
@@ -89,9 +89,12 @@ public class ContratModel(ContratsService contrats, Journal journal) : PageModel
                 return Page();
             }
             await journal.NoterMaintenantAsync("contrat.signer_parent", "Enfant", Lien!.Contrat.EnfantId,
-                $"{Lien.Contrat.Debut:yyyy-MM-dd} : {signataire}{(Lien.SurPlace ? " (sur place)" : "")}");
+                $"{Lien.Contrat.Debut:yyyy-MM-dd} : {signataire}{(Lien.SurPlace ? " (sur place)" : "")}{Methode(methode)}");
         }
         Termine = true;
         return Page();
     }
+
+    /// <summary>Mention au journal quand la signature vient d'une image importee / Journal note for an imported image.</summary>
+    internal static string Methode(string? methode) => methode == "image" ? " · signature importée (image)" : "";
 }

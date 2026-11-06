@@ -65,6 +65,9 @@ Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du P
 6. **Résilier** (contrat signé) : choisir la date, puis faire signer la formule au parent ; la date de fin de l'enfant
    est mise à jour (dossier archivé).
 
+Sur la page de signature, le parent peut signer avec le doigt ou importer une photo de sa signature
+(bouton « Importer une image »). Le journal garde la méthode utilisée.
+
 ## Relevés 24 (Revenu Québec)
 
 1. **Réglages → Relevé 24** : téléverser le RL-24 et le RL-24.S en « PDF remplissable à l'écran » (revenuquebec.ca),

@@ -90,9 +90,14 @@ else
                 <label class="form-label small mb-0" for="nom">Votre nom</label>
                 <input class="form-control mb-2" id="nom" name="nom" value="@premiere.NomParent" maxlength="200" required autocomplete="name" />
                 <canvas class="pad-signature" width="600" height="200" aria-label="Signez ici avec le doigt"></canvas>
+                <p class="small text-muted mb-0 mt-1">Signez avec le doigt, ou importez une photo de votre signature (encre foncée sur papier blanc).</p>
                 <input type="hidden" name="signature" class="valeur-signature" />
-                <div class="d-flex gap-2 mt-2">
+                <input type="hidden" name="methode" class="methode-signature" value="dessin" />
+                <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
                     <button type="button" class="btn btn-sm btn-outline-secondary effacer-signature">Effacer</button>
+                    <label class="btn btn-sm btn-outline-secondary mb-0">Importer une image
+                        <input type="file" accept="image/*" class="importer-signature" hidden />
+                    </label>
                     <button type="submit" class="btn btn-primary btn-lg ms-auto">Signer</button>
                 </div>
             </form>

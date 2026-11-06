@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.16.0
+- Fiche du parent : nouveau champ « Cellulaire papa (autre parent) », affiché dans le dossier de l'enfant.
+
 ## 0.15.0
 - Signature du parent (contrat, résiliation, fiche d'assiduité) : bouton « Importer une image » à côté de « Effacer ».
   Le parent peut prendre en photo sa signature (encre foncée sur papier blanc) : le fond est retiré, le trait est

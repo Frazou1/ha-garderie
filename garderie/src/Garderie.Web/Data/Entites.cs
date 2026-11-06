@@ -65,6 +65,8 @@ public class Parent
     [MaxLength(200)] public string? Courriel { get; set; }
     [MaxLength(30)] public string? Telephone1 { get; set; }
     [MaxLength(30)] public string? Telephone2 { get; set; }
+    /// <summary>Cellulaire de l'autre parent (ex. papa) non inscrit / Other parent's cell phone.</summary>
+    [MaxLength(30)] public string? TelephoneAutreParent { get; set; }
     [MaxLength(300)] public string? Adresse { get; set; }
     /// <summary>NAS chiffre (contexte nas:parent), pour le releve 24 / Encrypted SIN.</summary>
     public byte[]? NasChiffre { get; set; }

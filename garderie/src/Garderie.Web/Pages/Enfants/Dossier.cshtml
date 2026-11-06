@@ -155,6 +155,7 @@
                                 <div class="small">
                                     @if (p.Telephone1 is not null) { <a href="tel:@p.Telephone1">@p.Telephone1</a> }
                                     @if (p.Telephone2 is not null) { <span> · <a href="tel:@p.Telephone2">@p.Telephone2</a></span> }
+                                    @if (p.TelephoneAutreParent is not null) { <span> · papa : <a href="tel:@p.TelephoneAutreParent">@p.TelephoneAutreParent</a></span> }
                                     @if (p.Courriel is not null) { <span> · @p.Courriel</span> }
                                 </div>
                                 <div class="small text-muted">NAS : @(p.NasChiffre is null ? "non saisi" : "enregistré (chiffré)")</div>

@@ -24,6 +24,7 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         [EmailAddress(ErrorMessage = "Courriel invalide"), MaxLength(200)] public string? Courriel { get; set; }
         [MaxLength(30)] public string? Telephone1 { get; set; }
         [MaxLength(30)] public string? Telephone2 { get; set; }
+        [MaxLength(30)] public string? TelephoneAutreParent { get; set; }
         [MaxLength(300)] public string? Adresse { get; set; }
         /// <summary>Nouveau NAS (vide = inchange) / New SIN (empty = unchanged).</summary>
         [MaxLength(15)] public string? Nas { get; set; }
@@ -67,7 +68,7 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         Donnees = new Saisie
         {
             Prenom = p.Prenom, Nom = p.Nom, Lien = lien.Lien, EstPayeur = lien.EstPayeur, Courriel = p.Courriel,
-            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, Adresse = p.Adresse, ConsentementRl24 = p.ConsentRl24Le is not null,
+            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, TelephoneAutreParent = p.TelephoneAutreParent, Adresse = p.Adresse, ConsentementRl24 = p.ConsentRl24Le is not null,
         };
         NasEnregistre = p.NasChiffre is not null;
         (ConsentLe, ConsentSource) = (p.ConsentRl24Le, p.ConsentRl24Source);
@@ -84,7 +85,7 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         Donnees = new Saisie
         {
             Prenom = p.Prenom, Nom = p.Nom, Lien = lien.Lien, EstPayeur = lien.EstPayeur, Courriel = p.Courriel,
-            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, Adresse = p.Adresse,
+            Telephone1 = p.Telephone1, Telephone2 = p.Telephone2, TelephoneAutreParent = p.TelephoneAutreParent, Adresse = p.Adresse,
         };
         ModelState.Clear();
         NasEnregistre = p.NasChiffre is not null;
@@ -143,6 +144,7 @@ public class ParentModel(GarderieDb db, Chiffreur chiffreur, Journal journal) : 
         p.Courriel = Vide(Donnees.Courriel);
         p.Telephone1 = Vide(Donnees.Telephone1);
         p.Telephone2 = Vide(Donnees.Telephone2);
+        p.TelephoneAutreParent = Vide(Donnees.TelephoneAutreParent);
         p.Adresse = Vide(Donnees.Adresse);
         p.ModifieLe = DateTime.UtcNow;
         if (nas is not null) p.NasChiffre = chiffreur.ChiffrerTexte(nas, Contextes.NasParent);

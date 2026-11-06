@@ -879,6 +879,10 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TelephoneAutreParent")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("Parents");

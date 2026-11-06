@@ -329,60 +329,84 @@
         </div>
     </section>
 
-    <!-- Documents -->
+    <!-- Documents : liste simple (nom, type et date), actions dans le menu « ⋯ » / Simple list, actions in a menu -->
     <section class="col-12">
         <div class="card">
-            <div class="card-header">Documents <span class="small text-muted fw-normal">(chiffrés sur le serveur)</span></div>
-            <ul class="list-group list-group-flush">
-                @foreach (var d in e.Documents.OrderByDescending(d => d.TeleverseLe))
+            <div class="card-header">Documents</div>
+            <ul class="liste-docs">
+                @foreach (var d in e.Documents.OrderBy(d => d.Type == TypeDocument.Photo).ThenByDescending(d => d.TeleverseLe))
                 {
-                    <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
-                        <span class="badge text-bg-light border">@Affichage.Nom(d.Type)</span>
-                        <a class="me-auto" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id, afficher = true })" target="_blank" rel="noopener">@d.NomOriginal</a>
-                        <a class="btn btn-sm btn-doux" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id, afficher = true })" target="_blank" rel="noopener">Afficher</a>
-                        <a class="btn btn-sm btn-doux" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">Télécharger</a>
-                        <span class="small text-muted">@Affichage.Taille(d.Taille) · @Affichage.Horodatage(d.TeleverseLe)</span>
-                        @if (d.Note is not null) { <span class="small w-100">@d.Note</span> }
-                        @if (d.Type == TypeDocument.Releve24 && Model.Archives.Contains(d.Id))
-                        {
-                            <a class="btn btn-sm btn-outline-secondary" asp-page="/Releves/Index" title="Les relevés se gèrent dans l'onglet Relevés 24">Relevés 24</a>
-                        }
-                        else if (Model.Archives.Contains(d.Id))
-                        {
-                            <span class="badge text-bg-light border" title="Archive signée : elle ne se supprime pas seule">archive signée</span>
-                        }
-                        else
-                        {
-                            <form method="post" asp-page-handler="SupprimerDocument" asp-route-id="@e.Id" class="confirmer" data-confirmer="Supprimer définitivement « @d.NomOriginal » ?">
-                                <input type="hidden" name="documentId" value="@d.Id" />
-                                <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
-                            </form>
-                        }
+                    var archive = Model.Archives.Contains(d.Id);
+                    var nom = System.IO.Path.GetFileNameWithoutExtension(d.NomOriginal);
+                    var afficher = Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id, afficher = true });
+                    var icone = d.TypeContenu.StartsWith("image/") ? "M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9h.01" : "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4";
+                    var meta = Affichage.Nom(d.Type) + " · " + Affichage.Date(DateOnly.FromDateTime(Temps.VersLocal(d.TeleverseLe))) + (d.Note is null ? "" : " · " + d.Note);
+                    <li class="doc">
+                        <svg class="doc-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="@icone" /></svg>
+                        <div class="doc-texte">
+                            <a class="doc-nom" href="@afficher" target="_blank" rel="noopener">@nom</a>
+                            <div class="doc-meta">@meta</div>
+                        </div>
+                        <details class="doc-menu">
+                            <summary aria-label="Options de « @nom »">⋯</summary>
+                            <div class="doc-panneau">
+                                <a class="btn btn-sm btn-doux w-100" href="@afficher" target="_blank" rel="noopener">Afficher</a>
+                                <a class="btn btn-sm btn-doux w-100" href="@Url.Page("Dossier", "Document", new { id = e.Id, documentId = d.Id })">Télécharger</a>
+                                @if (d.Type == TypeDocument.Releve24 && archive)
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary w-100" asp-page="/Releves/Index">Gérer dans Relevés 24</a>
+                                }
+                                else if (archive)
+                                {
+                                    <p class="small text-muted mb-0">Archive signée : elle reste au dossier.</p>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="ModifierDocument" asp-route-id="@e.Id" class="d-grid gap-1">
+                                        <input type="hidden" name="documentId" value="@d.Id" />
+                                        <label class="small mb-0" for="nom-@d.Id">Nom</label>
+                                        <input class="form-control form-control-sm" id="nom-@d.Id" name="nom" value="@nom" maxlength="200" required />
+                                        <label class="small mb-0" for="note-@d.Id">Note</label>
+                                        <input class="form-control form-control-sm" id="note-@d.Id" name="note" value="@d.Note" maxlength="500" />
+                                        <button class="btn btn-sm btn-primary" type="submit">Enregistrer</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="SupprimerDocument" asp-route-id="@e.Id" class="confirmer" data-confirmer="Supprimer définitivement « @nom » ?">
+                                        <input type="hidden" name="documentId" value="@d.Id" />
+                                        <button class="btn btn-sm btn-outline-danger w-100" type="submit">Supprimer</button>
+                                    </form>
+                                }
+                            </div>
+                        </details>
                     </li>
                 }
-                <li class="list-group-item">
-                    <form method="post" asp-page-handler="Document" asp-route-id="@e.Id" enctype="multipart/form-data" class="row g-2 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label small mb-0" for="doc-type">Type</label>
-                            <select name="type" id="doc-type" class="form-select form-select-sm">
-                                @foreach (var t in Enum.GetValues<TypeDocument>())
-                                {
-                                    <option value="@t">@Affichage.Nom(t)</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small mb-0" for="doc-fichier">Fichier (PDF, JPG, PNG, HEIC — 15 Mo max)</label>
-                            <input type="file" name="fichier" id="doc-fichier" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.heic,application/pdf,image/*" required />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small mb-0" for="doc-note">Note</label>
-                            <input name="note" id="doc-note" class="form-control form-control-sm" maxlength="500" />
-                        </div>
-                        <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" type="submit">Téléverser</button></div>
-                    </form>
-                </li>
+                @if (e.Documents.Count == 0)
+                {
+                    <li class="doc doc-vide">Aucun document.</li>
+                }
             </ul>
+            <details class="doc-ajout">
+                <summary>+ Ajouter un document</summary>
+                <form method="post" asp-page-handler="Document" asp-route-id="@e.Id" enctype="multipart/form-data" class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0" for="doc-type">Type</label>
+                        <select name="type" id="doc-type" class="form-select form-select-sm">
+                            @foreach (var t in Enum.GetValues<TypeDocument>())
+                            {
+                                <option value="@t">@Affichage.Nom(t)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-0" for="doc-fichier">Fichier (PDF, JPG, PNG, HEIC — 15 Mo max)</label>
+                        <input type="file" name="fichier" id="doc-fichier" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.heic,application/pdf,image/*" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-0" for="doc-note">Note (facultatif)</label>
+                        <input name="note" id="doc-note" class="form-control form-control-sm" maxlength="500" />
+                    </div>
+                    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" type="submit">Ajouter</button></div>
+                </form>
+            </details>
         </div>
     </section>
 </div>

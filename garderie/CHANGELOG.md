@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.0
+- Dossier de l'enfant : liste des documents simplifiée. Une ligne par document (nom, type, date, note) ; un toucher sur
+  le nom l'affiche ; le menu « ⋯ » regroupe Afficher, Télécharger, Renommer / note et Supprimer. L'ajout d'un document
+  est replié sous « + Ajouter un document ».
+- Renommer un document et modifier sa note (sauf archive signée et relevé 24) ; l'extension est gardée.
+
 ## 0.20.0
 - Fiches : la page s'ouvre sur la période en cours (au lieu de la précédente). Les flèches mènent aux autres périodes.
 - Horaire : texte d'introduction à jour (l'horaire est repris dans le contrat).

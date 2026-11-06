@@ -407,6 +407,30 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
         return await RetourAsync("Document supprimé.");
     }
 
+    /// <summary>Renomme un document et change sa note (sauf archive signee) / Renames a document and edits its note.</summary>
+    public async Task<IActionResult> OnPostModifierDocumentAsync(int documentId, string? nom, string? note)
+    {
+        var d = await db.Documents.FirstOrDefaultAsync(x => x.Id == documentId && x.EnfantId == Id);
+        if (d is null) return NotFound();
+        if (await EstArchiveSigneeAsync(d.Id) || await db.Releves.AnyAsync(r => r.DocumentId == d.Id))
+        {
+            TempData["Erreur"] = "Une archive signée ou un relevé 24 ne se renomme pas.";
+            return RedirectToPage(new { id = Id });
+        }
+        var n = (nom ?? "").Trim();
+        foreach (var c in Path.GetInvalidFileNameChars().Concat(['/', '\\'])) n = n.Replace(c, ' ');
+        n = System.Text.RegularExpressions.Regex.Replace(n, @"\s+", " ").Trim();
+        if (n.Length == 0) { TempData["Erreur"] = "Le nom est requis."; return RedirectToPage(new { id = Id }); }
+        var ext = Path.GetExtension(d.NomOriginal);
+        var ancien = d.NomOriginal;
+        d.NomOriginal = (n.Length > 200 ? n[..200] : n) + ext;
+        var t = note?.Trim();
+        d.Note = string.IsNullOrEmpty(t) ? null : t[..Math.Min(500, t.Length)];
+        journal.Noter("document.modifier", "Enfant", Id, ancien == d.NomOriginal ? d.NomOriginal : $"{ancien} → {d.NomOriginal}");
+        await db.SaveChangesAsync();
+        return await RetourAsync("Document mis à jour.");
+    }
+
     /// <summary>
     /// Telechargement (pieces jointes) ou apercu de la photo (image seulement).
     /// Download (attachment) or photo preview (images only).

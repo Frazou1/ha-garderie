@@ -146,6 +146,27 @@
     </div>
 </section>
 
+<section class="carte" id="aide">
+    <h2 class="h5">Vidéo d'aide</h2>
+    <p class="small text-muted">Montrée dans l'onglet « Aide ». MP4, 15 Mo maximum.</p>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        @if (Model.VideoAidePresente)
+        {
+            <a class="btn btn-outline-secondary" asp-page="/Aide">Voir</a>
+        }
+        <form method="post" asp-page-handler="VideoAide" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+            <input type="file" name="video" accept="video/mp4" class="form-control w-auto" required aria-label="Vidéo d'aide" />
+            <button type="submit" class="btn btn-doux">Téléverser</button>
+        </form>
+        @if (Model.VideoAidePresente)
+        {
+            <form method="post" asp-page-handler="RetirerVideoAide" class="confirmer" data-confirmer="Retirer la vidéo d'aide ?">
+                <button type="submit" class="btn btn-outline-secondary">Retirer</button>
+            </form>
+        }
+    </div>
+</section>
+
 <section class="carte">
     <h2 class="h5">Formulaire FO-0310 (fiche d'assiduité vierge)</h2>
     @if (Model.ModeleDisponible)

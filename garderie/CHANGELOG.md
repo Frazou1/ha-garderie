@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0
+- Onglet « Aide » : la vidéo du tour de la plateforme, lisible sur place (iPad compris) ou dans un nouvel onglet.
+  La vidéo se téléverse dans Réglages → Vidéo d'aide (MP4, 15 Mo maximum) ; elle reste dans les données du module,
+  jamais dans le dépôt.
+
 ## 0.13.2
 - Bouton « Archiver » : l'encadré s'ouvre juste sous le bouton (il s'affichait au bord droit de l'écran).
 

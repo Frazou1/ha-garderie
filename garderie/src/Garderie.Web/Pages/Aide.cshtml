@@ -1,0 +1,25 @@
+@page
+@model Garderie.Web.Pages.AideModel
+@{
+    ViewData["Title"] = "Aide";
+}
+<div class="entete-page">
+    <div>
+        <h1 class="titre-page">Aide</h1>
+        <p class="sous-titre">Petit tour de la plateforme : présences, enfants, fiches, contrats et relevés 24</p>
+    </div>
+</div>
+
+<section class="carte">
+    @if (Model.Version > 0)
+    {
+        <video class="video-aide" controls preload="metadata" playsinline src="@Url.Page("/Aide", "Video", new { v = Model.Version })">
+            Votre navigateur ne peut pas lire cette vidéo.
+        </video>
+        <p class="mt-2 mb-0"><a asp-page="/Aide" asp-page-handler="Video" asp-route-v="@Model.Version" target="_blank">Ouvrir la vidéo dans un nouvel onglet</a></p>
+    }
+    else
+    {
+        <p class="mb-0 text-muted">Aucune vidéo pour l'instant. Elle s'ajoute dans Réglages → Vidéo d'aide.</p>
+    }
+</section>

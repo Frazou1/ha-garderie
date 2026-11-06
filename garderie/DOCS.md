@@ -83,6 +83,11 @@ Le journal garde chaque étape (signatures, IP du parent, empreinte SHA-256 du P
 Le formulaire protégé de Revenu Québec est rempli sans être modifié : seules les valeurs des champs sont ajoutées
 (comme Acrobat Reader). Ouvrir les PDF dans Acrobat Reader pour imprimer.
 
+## Aide
+
+L'onglet « Aide » montre la vidéo du tour de la plateforme. Téléversez-la (ou remplacez-la) dans
+Réglages → Vidéo d'aide : MP4, 15 Mo maximum. Elle n'est visible que dans Home Assistant, pas sur le port public.
+
 ## Nginx Proxy Manager (pages des parents)
 
 Dans l'hôte proxy existant (votre domaine), onglet **Custom locations** :

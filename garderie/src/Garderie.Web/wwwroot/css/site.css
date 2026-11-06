@@ -251,3 +251,5 @@ span.code.verrou { min-height: 2.5rem; opacity: .85; }
 .archiver > summary::-webkit-details-marker { display: none; }
 .archiver { position: relative; }
 .archiver[open] > form { position: absolute; right: 0; top: 100%; z-index: 10; width: 18rem; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+
+.video-aide { width: 100%; max-height: 75vh; border-radius: 12px; background: #000; }

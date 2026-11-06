@@ -374,6 +374,38 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         return RedirectToPage(null, null, "logo");
     }
 
+    public bool VideoAidePresente => System.IO.File.Exists(options.FichierVideoAide);
+
+    /// <summary>Video d'aide (MP4) montree dans l'onglet Aide / Help video shown in the Aide tab.</summary>
+    public async Task<IActionResult> OnPostVideoAideAsync(IFormFile? video)
+    {
+        if (video is null || video.Length == 0 || video.Length > 15 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez une vidéo MP4 (15 Mo maximum).";
+            return RedirectToPage(null, null, "aide");
+        }
+        using var ms = new MemoryStream();
+        await video.CopyToAsync(ms);
+        if (!AideModel.EstMp4(ms.ToArray()))
+        {
+            TempData["Erreur"] = "La vidéo doit être au format MP4.";
+            return RedirectToPage(null, null, "aide");
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierVideoAide)!);
+        await System.IO.File.WriteAllBytesAsync(options.FichierVideoAide, ms.ToArray());
+        await journal.NoterMaintenantAsync("parametres.video_aide", details: $"{ms.Length} octets");
+        TempData["Message"] = "Vidéo d'aide enregistrée.";
+        return RedirectToPage(null, null, "aide");
+    }
+
+    public async Task<IActionResult> OnPostRetirerVideoAideAsync()
+    {
+        if (System.IO.File.Exists(options.FichierVideoAide)) System.IO.File.Delete(options.FichierVideoAide);
+        await journal.NoterMaintenantAsync("parametres.video_aide_retiree");
+        TempData["Message"] = "Vidéo d'aide retirée.";
+        return RedirectToPage(null, null, "aide");
+    }
+
     /// <summary>Apercu du modele de contrat (champs de l'enfant et du parent a remplir) / Contract template preview.</summary>
     public async Task<IActionResult> OnGetContratModeleAsync(bool telecharger = false) =>
         this.Fichier(await contrats.ModelePdfAsync(), "application/pdf", "Modèle de contrat.pdf", !telecharger);

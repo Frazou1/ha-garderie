@@ -71,6 +71,8 @@ public sealed class GarderieOptions
     public string FichierRl24S => Path.Combine(DataDir, "modeles", "RL-24.S.pdf");
     /// <summary>Logo de la garderie (PNG ou JPG) / Daycare logo.</summary>
     public string FichierLogo => Path.Combine(DataDir, "modeles", "logo");
+    /// <summary>Video d'aide (MP4) de la page Aide / Help video (MP4).</summary>
+    public string FichierVideoAide => Path.Combine(DataDir, "modeles", "aide.mp4");
 
     public bool EstProxyDeConfiance(IPAddress? ip) =>
         ip is not null && ProxyDeConfiance.Any(p => IPAddress.TryParse(p, out var a) && Normaliser(a).Equals(Normaliser(ip)));

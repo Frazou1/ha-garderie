@@ -41,6 +41,30 @@ public sealed record InfosContrat
     public string? Ville { get; init; }
     public DateOnly Debut { get; init; }
     public DateOnly Fin { get; init; }
+
+    // --- Sections du modele du bureau coordonnateur (null dans les contrats signes avant) ---
+    // Coordinating office template sections (null in contracts signed before)
+    public string? RsgeCourriel { get; init; }
+    public string? ParentCourriel { get; init; }
+    public string? EnfantPortail { get; init; }
+    public string? Services { get; init; }
+    public string? HeureCollationMatin { get; init; }
+    public string? HeureCollationPm { get; init; }
+    public string? HeureDiner { get; init; }
+    /// <summary>Jours de frequentation (ex. « Lundi », « Mercredi (matin) ») / Attendance days.</summary>
+    public List<string>? Frequentation { get; init; }
+    public DateOnly? DebutFrequentation { get; init; }
+    public decimal? Tarif { get; init; }
+    public string? JourPaiement { get; init; }
+    public string? ModesPaiement { get; init; }
+    /// <summary>Montant de chaque versement hebdomadaire / Each weekly payment.</summary>
+    public decimal? Versement { get; init; }
+    /// <summary>Somme totale de l'entente / Agreement total.</summary>
+    public decimal? Total { get; init; }
+    public string? FraisRetard { get; init; }
+    public string? ClausesFermeture { get; init; }
+    public string? ResiliationRsge { get; init; }
+    public string? ResiliationParent { get; init; }
 }
 
 /// <summary>Une fermeture du contrat : un jour (ferie) ou une periode (vacances) / A closure: one day or a period.</summary>
@@ -96,6 +120,8 @@ public static class ContratPdf
         n.AddText(Ins(i.EnfantSexe == Sexe.M ? "( X )" : "(    )"));
         n.AddText(Ins("     F "));
         n.AddText(Ins(i.EnfantSexe == Sexe.F ? "( X )" : "(    )"));
+        var bc = i.Services is not null;   // contrat au modele du bureau coordonnateur / coordinating office template
+        if (bc) Champ(sec, "Numéro d'inscription au portail : ", i.EnfantPortail, 20);
         Vide(sec);
         Vide(sec);
 
@@ -106,6 +132,7 @@ public static class ContratPdf
         tel.AddText(" Téléphone 2: ");
         Valeur(tel, i.ParentTelephone2, 18);
         Champ(sec, "Lien avec l'enfant: ", i.ParentLien, 17);
+        if (bc) Champ(sec, "Courriel : ", i.ParentCourriel, 40);
         Champ(sec, "NAS du parent pour le relevé 24 (impôt) : ", s.Nas is { Length: 9 } nas ? $"{nas[..3]} {nas[3..6]} {nas[6..]}" : s.Nas, 26);
         Vide(sec);
 
@@ -114,7 +141,28 @@ public static class ContratPdf
         Champ(sec, "Adresse: ", i.AdresseGarderie, 40);
         Champ(sec, "Téléphone: ", i.TelephoneGarderie, 19);
         Champ(sec, "Heure d'ouverture : ", i.Heures, 20);
+        if (bc) Champ(sec, "Courriel : ", i.RsgeCourriel, 40);
         Vide(sec);
+
+        if (bc)
+        {
+            TitreSection(sec, "Description des services fournis", retrait: false);
+            Texte12(sec, "Pendant la durée de la présente entente, l'éducatrice s'engage à fournir à l'enfant ce qui suit :");
+            foreach (var l in Lignes(i.Services!)) Texte12(sec, l);
+            var col = Texte12(sec, "Les collations sont servies vers ");
+            Valeur(col, i.HeureCollationMatin, 10);
+            col.AddText(" le matin et vers ");
+            Valeur(col, i.HeureCollationPm, 10);
+            col.AddText(" l'après-midi. Le repas du midi est servi vers ");
+            Valeur(col, i.HeureDiner, 10);
+            col.AddText(".");
+            Vide(sec);
+            TitreSection(sec, "Horaire du service de garde", retrait: false);
+            var h = Texte12(sec, "Le service de garde est ouvert du lundi au vendredi, ");
+            Valeur(h, i.Heures, 20);
+            h.AddText(". Il est fermé le samedi et le dimanche.");
+            Vide(sec);
+        }
 
         TitreSection(sec, "Fermeture prévue du service de garde", retrait: false);
         var feries = i.FermeturesDetail.Where(f => f.Debut == f.Fin).ToList();
@@ -152,11 +200,52 @@ public static class ContratPdf
         if (!string.IsNullOrWhiteSpace(i.VacancesParent)) vp.AddFormattedText(i.VacancesParent, TextFormat.Underline);
         else vp.AddText("____________________");
         Vide(sec);
+        if (bc)
+        {
+            foreach (var l in Lignes(i.ClausesFermeture ?? "")) Texte12(sec, l).Format.SpaceAfter = Unit.FromPoint(4);
+            Vide(sec);
+
+            TitreSection(sec, "Fréquentation de l'enfant", retrait: false);
+            var fr = Texte12(sec, "Le parent retient les services de garde pour son enfant les jours suivants, selon les heures d'ouverture (");
+            Valeur(fr, i.Heures, 16);
+            fr.AddText(") : ");
+            Valeur(fr, i.Frequentation is { Count: > 0 } j ? string.Join(", ", j) : null, 30);
+            fr.AddText(".");
+            Champ(sec, "Date de début de fréquentation : ", D(i.DebutFrequentation), 12);
+            Vide(sec);
+
+            TitreSection(sec, "Modalités de paiement", retrait: false);
+            var t = Texte12(sec, "Le tarif payable par le parent est de ");
+            Valeur(t, Argent(i.Tarif), 8);
+            t.AddText(" par jour de garde. Le versement se fera le ");
+            Valeur(t, i.JourPaiement, 10);
+            t.AddText(" de chaque semaine. Chaque versement sera de ");
+            Valeur(t, Argent(i.Versement), 8);
+            t.AddText(" et se fera ");
+            Valeur(t, i.ModesPaiement, 20);
+            t.AddText(". La somme totale déboursée en vertu de cette entente de services de garde est de ");
+            Valeur(t, Argent(i.Total), 10);
+            t.AddText(" (jours de garde prévus, fermetures comprises).");
+            Vide(sec);
+
+            TitreSection(sec, "Frais de retard", retrait: false);
+            var r = Texte12(sec, "Si le parent arrive après l'heure de fermeture du service de garde, les frais suivants seront exigés : ");
+            Valeur(r, i.FraisRetard, 30);
+            r.AddText(".");
+            Vide(sec);
+        }
 
         TitreClauses(sec, "Les obligations de l'éducatrice ", SousTitre);
         BlocClauses(sec, i.ObligationsRsge);
         TitreClauses(sec, "Les obligations du parent ou de la personne responsable de l'enfant", Clauses);
         BlocClauses(sec, i.ObligationsParent);
+        if (bc)
+        {
+            TitreClauses(sec, "Résiliation de l'entente par l'éducatrice", SousTitre);
+            BlocClauses(sec, i.ResiliationRsge ?? "");
+            TitreClauses(sec, "Résiliation de l'entente par le parent", SousTitre);
+            BlocClauses(sec, i.ResiliationParent ?? "");
+        }
         TitreClauses(sec, "Mention exigée par la loi sur la protection du consommateur ", SousTitre);
         BlocClauses(sec, i.MentionLpc);
 
@@ -182,6 +271,16 @@ public static class ContratPdf
         nom.Format.KeepWithNext = true;
         Valeur(nom, s.NomParent?.ToUpperInvariant(), 24);
         Signature(sec, "Signature du parent : ", s.SignatureParent).Format.KeepWithNext = true;
+        if (bc)
+        {
+            // Date et lieu de la signature de l'educatrice (modele du BC) / RSGE signature date and place
+            var se = sec.AddParagraph(Ins("Signé à   "));
+            se.Format.SpaceBefore = Unit.FromPoint(6);
+            se.Format.KeepWithNext = true;
+            Valeur(se, s.SignatureRsge is null ? null : i.Ville, 12);
+            se.AddText(Ins("      le  "));
+            Valeur(se, D(s.DateRsge), 12);
+        }
         Signature(sec, "Signature de l'éducatrice : ", s.SignatureRsge);
         Vide(sec);
 
@@ -258,6 +357,19 @@ public static class ContratPdf
     }
 
     private static Paragraph Vide(Section sec) => sec.AddParagraph();
+
+    /// <summary>Paragraphe de texte justifie (Comic Sans 12) / Justified text paragraph.</summary>
+    private static Paragraph Texte12(Section sec, string texte)
+    {
+        var p = sec.AddParagraph(texte);
+        p.Format.Alignment = ParagraphAlignment.Justify;
+        return p;
+    }
+
+    private static IEnumerable<string> Lignes(string texte) =>
+        texte.Replace("\r\n", "\n").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0);
+
+    private static string? Argent(decimal? m) => m is { } v ? Affichage.Argent(v) : null;
 
     /// <summary>Espaces -> espaces insecables (conserves a l'affichage) / Spaces -> non-breaking spaces.</summary>
     private static string Ins(string s) => s.Replace(' ', '\u00A0');

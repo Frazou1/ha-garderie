@@ -200,6 +200,37 @@
             <label asp-for="Contrat.NonRespect" class="form-label">Non-respect de l'entente</label>
             <textarea asp-for="Contrat.NonRespect" class="form-control" rows="3"></textarea>
         </div>
+        <div class="col-12 small fw-bold mt-4">Sections du modèle du bureau coordonnateur</div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.HeureCollationMatin" class="form-label">Collation du matin vers</label>
+            <input asp-for="Contrat.HeureCollationMatin" class="form-control" placeholder="ex. 9 h 00" maxlength="20" />
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.HeureDiner" class="form-label">Dîner vers</label>
+            <input asp-for="Contrat.HeureDiner" class="form-control" placeholder="ex. 11 h 00" maxlength="20" />
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Contrat.HeureCollationPm" class="form-label">Collation de l'après-midi vers</label>
+            <input asp-for="Contrat.HeureCollationPm" class="form-control" placeholder="ex. 15 h 00" maxlength="20" />
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.Services" class="form-label">Description des services fournis</label>
+            <textarea asp-for="Contrat.Services" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.ClausesFermeture" class="form-label">Fermetures : avis des vacances et frais</label>
+            <textarea asp-for="Contrat.ClausesFermeture" class="form-control" rows="5"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.ResiliationRsge" class="form-label">Résiliation de l'entente par l'éducatrice</label>
+            <textarea asp-for="Contrat.ResiliationRsge" class="form-control" rows="6"></textarea>
+        </div>
+        <div class="col-12">
+            <label asp-for="Contrat.ResiliationParent" class="form-label">Résiliation de l'entente par le parent</label>
+            <textarea asp-for="Contrat.ResiliationParent" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="col-12 form-text mt-0">Le tarif, le jour de paiement, les modes de paiement et les frais de retard viennent de la régie interne, plus bas ;
+            les jours de fréquentation viennent de l'horaire de l'enfant, aux heures d'ouverture.</div>
         <div class="col-12"><button type="submit" class="btn btn-primary">Enregistrer les textes</button>
             <span class="small text-muted ms-2">Enregistrez avant l'aperçu pour voir vos changements.</span></div>
     </form>
@@ -223,6 +254,10 @@
             <div class="col-md-3">
                 <label asp-for="RegieJourPaiement" class="form-label">Jour de paiement</label>
                 <input asp-for="RegieJourPaiement" class="form-control" placeholder="ex. mercredi" maxlength="30" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="RegieModesPaiement" class="form-label">Modes de paiement</label>
+                <input asp-for="RegieModesPaiement" class="form-control" maxlength="100" />
             </div>
             <div class="col-md-6">
                 <label asp-for="RegieFraisRetard" class="form-label">Frais de retard (fin de journée)</label>

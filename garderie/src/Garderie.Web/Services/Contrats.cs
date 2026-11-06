@@ -87,20 +87,74 @@ public sealed class ContratsService(GarderieDb db, GarderieOptions options, Docu
             Attestation = TextesContrat.Remplir(p.ContratAttestation ?? TextesContrat.Attestation, garderie, p.NomRsge),
             NonRespect = TextesContrat.Remplir(p.ContratNonRespect ?? TextesContrat.NonRespect, garderie, p.NomRsge),
             Regie = RegieInterne.Composer(p), Ville = p.VilleSignature, Debut = debut, Fin = fin,
+            RsgeCourriel = p.CourrielRsge, Services = p.ContratServices ?? TextesContrat.Services,
+            HeureCollationMatin = p.HeureCollationMatin, HeureCollationPm = p.HeureCollationPm, HeureDiner = p.HeureDiner,
+            Tarif = RelevesService.Tarif(p.RegieTarif), JourPaiement = p.RegieJourPaiement,
+            ModesPaiement = p.RegieModesPaiement ?? TextesContrat.ModesPaiement, FraisRetard = p.RegieFraisRetard,
+            ClausesFermeture = p.ContratClausesFermeture ?? TextesContrat.ClausesFermeture,
+            ResiliationRsge = p.ContratResiliationRsge ?? TextesContrat.ResiliationRsge,
+            ResiliationParent = p.ContratResiliationParent ?? TextesContrat.ResiliationParent,
+            Frequentation = Frequentation([], debut).Jours, DebutFrequentation = debut,
         };
     }
 
     /// <summary>Renseignements actuels (avant la signature du parent) / Current info (before the parent signs).</summary>
     public async Task<InfosContrat> InfosActuellesAsync(Contrat c)
     {
-        var e = await db.Enfants.AsNoTracking().FirstAsync(x => x.Id == c.EnfantId);
+        var e = await db.Enfants.AsNoTracking().Include(x => x.Horaires).FirstAsync(x => x.Id == c.EnfantId);
         var lien = await LienParentAsync(c);
-        return await InfosGarderieAsync(c.Debut, c.Fin) with
+        var infos = await InfosGarderieAsync(c.Debut, c.Fin);
+        var (jours, versement) = Frequentation(e.Horaires, c.Debut);
+        return infos with
         {
+            EnfantPortail = e.NumeroPortail, ParentCourriel = lien?.Parent.Courriel, Frequentation = jours,
+            DebutFrequentation = e.DateDebut > c.Debut ? e.DateDebut : c.Debut,
+            Versement = infos.Tarif is { } t ? versement * t : null,
+            Total = infos.Tarif is { } t2 ? Math.Round(JoursPrevus(e.Horaires, c.Debut, c.Fin) * t2, 2) : null,
             EnfantNom = e.NomComplet, EnfantAdresse = e.Adresse, EnfantTelephone = e.Telephone, EnfantNaissance = e.DateNaissance, EnfantSexe = e.Sexe,
             ParentNom = lien?.Parent.NomComplet ?? "", ParentAdresse = lien?.Parent.Adresse, ParentTelephone1 = lien?.Parent.Telephone1,
             ParentTelephone2 = lien?.Parent.Telephone2, ParentLien = lien?.Lien, VacancesParent = c.VacancesParent,
         };
+    }
+
+    private static readonly DayOfWeek[] Semaine =
+        [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday];
+
+    /// <summary>Poids d'un jour selon l'horaire : 1 journee, 0,5 demi-journee / Day weight from the schedule.</summary>
+    private static decimal Poids(List<HoraireType> horaires, DateOnly jour)
+    {
+        if (horaires.Count == 0) return jour.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? 0 : 1;
+        var (m, p) = PresencesService.HorairePrevu(horaires, jour);
+        return (m ? 0.5m : 0) + (p ? 0.5m : 0);
+    }
+
+    /// <summary>
+    /// Jours de frequentation de la semaine qui commence le contrat (sans horaire : lundi au vendredi) et jours payes
+    /// par semaine. / Attendance days of the contract's first week (no schedule: Mon-Fri) and paid days per week.
+    /// </summary>
+    public static (List<string> Jours, decimal ParSemaine) Frequentation(List<HoraireType> horaires, DateOnly debut)
+    {
+        var jours = new List<string>();
+        decimal total = 0;
+        foreach (var j in Semaine)
+        {
+            var d = debut.AddDays(((int)j - (int)debut.DayOfWeek + 7) % 7);
+            var poids = Poids(horaires, d);
+            if (poids == 0) continue;
+            total += poids;
+            var nom = Affichage.Jour(j);
+            if (poids < 1) nom += PresencesService.HorairePrevu(horaires, d).Matin ? " (matin)" : " (après-midi)";
+            jours.Add(nom);
+        }
+        return (jours, total);
+    }
+
+    /// <summary>Jours payes prevus sur la duree du contrat (les fermetures sont payables) / Paid days over the contract.</summary>
+    public static decimal JoursPrevus(List<HoraireType> horaires, DateOnly debut, DateOnly fin)
+    {
+        decimal n = 0;
+        for (var d = debut; d <= fin; d = d.AddDays(1)) n += Poids(horaires, d);
+        return n;
     }
 
     /// <summary>

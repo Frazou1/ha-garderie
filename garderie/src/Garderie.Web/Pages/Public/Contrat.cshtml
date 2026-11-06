@@ -97,12 +97,33 @@ else
                         @if (i.Fermetures.Count == 0) { <li>Aucune inscrite.</li> }
                     </ul>
                     @if (i.NoteVacances is not null) { <p class="small">@i.NoteVacances</p> }
+                    @if (i.Services is not null)
+                    {
+                        <h3 class="h6">Fréquentation et paiement</h3>
+                        <p class="small mb-1">Jours retenus : @(i.Frequentation is { Count: > 0 } j ? string.Join(", ", j) : "—"), aux heures d'ouverture.</p>
+                        @if (i.Tarif is { } t)
+                        {
+                            <p class="small mb-1">Tarif : @Affichage.Argent(t) par jour, payable le @(i.JourPaiement ?? "—") de chaque semaine
+                                @(i.ModesPaiement)@(i.Versement is { } v ? $" ({Affichage.Argent(v)} par versement)" : "").
+                                @if (i.Total is { } tot) { <text>Total de l'entente : @Affichage.Argent(tot).</text> }</p>
+                        }
+                    }
                     <details>
-                        <summary class="fw-bold">Obligations, mention de la Loi sur la protection du consommateur</summary>
+                        <summary class="fw-bold">Services, obligations, résiliation et mention de la Loi sur la protection du consommateur</summary>
                         <h3 class="h6 mt-2">Les obligations de l'éducatrice</h3>
                         <div class="small texte-libre">@i.ObligationsRsge</div>
                         <h3 class="h6 mt-2">Les obligations du parent</h3>
                         <div class="small texte-libre">@i.ObligationsParent</div>
+                        @if (i.Services is not null)
+                        {
+                            <h3 class="h6 mt-2">Services fournis</h3>
+                            <div class="small texte-libre">@i.Services</div>
+                            <h3 class="h6 mt-2">Fermetures</h3>
+                            <div class="small texte-libre">@i.ClausesFermeture</div>
+                            <h3 class="h6 mt-2">Résiliation de l'entente</h3>
+                            <div class="small texte-libre">@i.ResiliationRsge</div>
+                            <div class="small texte-libre mt-1">@i.ResiliationParent</div>
+                        }
                         <h3 class="h6 mt-2">Mention exigée par la Loi sur la protection du consommateur</h3>
                         <div class="small texte-libre">@i.MentionLpc</div>
                     </details>

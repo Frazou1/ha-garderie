@@ -35,15 +35,49 @@ public static class TextesContrat
         - Informer l'éducatrice au moins un mois à l'avance de sa ou ses périodes de vacances.
         """;
 
+    /// <summary>
+    /// Mention exigee par la Loi sur la protection du consommateur : libelle officiel (modele du bureau coordonnateur).
+    /// Consumer Protection Act mandatory notice: official wording (coordinating office template).
+    /// </summary>
     public const string MentionLpc = """
-        - Le consommateur (parent ou personne responsable de l'enfant) peut résilier le contrat à tout moment en signant la partie ci-dessous du présent document ou en rédigeant un autre avis écrit.
-        - Le contrat est résilié, sans autre formalité, dès la remise de la formule ou de l'avis.
-        - Si le consommateur résilie le présent contrat avant que le commerçant (éducatrice-propriétaire) n'ait commencé à exécuter son obligation principale (avant le premier jour de garde), le consommateur n'a aucuns frais de pénalité à payer.
-        - Si le consommateur résilie le contrat après que le commerçant a commencé à exécuter son obligation principale, le consommateur n'a qu'à payer : le prix des services qui lui ont été fournis, calculé au taux stipulé dans le contrat, en plus de 50 $ ou une somme d'au plus 10 % du prix des services qui ne lui ont pas été fournis.
-        - Dans les dix jours qui suivent la résiliation du contrat, le commerçant doit restituer au consommateur la somme qu'il lui doit et vice versa.
-        Le consommateur aura avantage à consulter les articles 190 à 196 de la Loi sur la protection du consommateur et, au besoin, à communiquer avec l'Office de la protection du consommateur.
-        Malgré la mention exigée par la Loi sur la protection du consommateur, un avis de deux semaines serait grandement apprécié pour permettre à l'une ou l'autre des parties de s'organiser.
+        (Contrat de service à exécution successive relatif à un enseignement, un entraînement ou une assistance)
+        « Le consommateur peut résilier le présent contrat à tout moment en envoyant la formule ci-annexée ou un autre avis à cet effet au commerçant. Le contrat est résilié, sans autre formalité, dès l'envoi de la formule ou de l'avis. Si le consommateur résilie le présent contrat avant que le commerçant n'ait commencé à exécuter son obligation principale, le consommateur n'a aucuns frais ni pénalité à payer. Si le consommateur résilie le contrat après que le commerçant ait commencé à exécuter son obligation principale, le consommateur n'a à payer que :
+        - le prix des services qui lui ont été fournis, calculé au taux stipulé dans le contrat; et
+        - la moins élevée des deux sommes suivantes : soit 50 $, soit une somme représentant au plus 10 % du prix des services qui ne lui ont pas été fournis.
+        Dans les 10 jours qui suivent la résiliation du contrat, le commerçant doit restituer au consommateur l'argent qu'il lui doit. Le consommateur aura avantage à consulter les articles 190 à 196 de la Loi sur la protection du consommateur (chapitre P-40.1) et, au besoin, à communiquer avec l'Office de la protection du consommateur ».
         """;
+
+    /// <summary>Description des services fournis (modele du bureau coordonnateur) / Services provided.</summary>
+    public const string Services = """
+        - Des services de garde éducatifs;
+        - Le matériel utilisé pour les activités éducatives;
+        - Un repas et 2 collations basés sur le Guide alimentaire canadien.
+        """;
+
+    /// <summary>Fermetures : avis des vacances et frais (modele du bureau coordonnateur) / Closures clauses.</summary>
+    public const string ClausesFermeture = """
+        Dans le cas où les jours de vacances ne sont pas déterminés au moment de la signature de l'entente de services, la prestataire s'engage à informer le parent de ces dates de vacances estivales au plus tard le 1er juin et 30 jours à l'avance à tout autre moment, sauf pour des circonstances exceptionnelles.
+        Le parent doit acquitter les frais pour chaque jour de fermeture du service de garde prévu à cette entente.
+        Dans le cas où la prestataire de services doit fermer son service de garde pour des raisons hors de son contrôle, le parent en sera avisé dans les plus brefs délais. Le parent devra débourser les frais attribuables à la première journée de fermeture imprévue.
+        Dans le cas où l'enfant s'absente pour des raisons de maladie ou de vacances, le parent doit acquitter les frais selon le tarif journalier.
+        """;
+
+    /// <summary>Resiliation par la prestataire (modele du bureau coordonnateur) / Termination by the provider.</summary>
+    public const string ResiliationRsge = """
+        La prestataire peut mettre fin à l'entente dans les cas suivants :
+        1. Lorsque le parent, malgré qu'il en ait été avisé par écrit par la prestataire, refuse ou néglige de payer la contribution que la prestataire est en droit d'exiger.
+        2. Lorsque le parent, de façon répétée, ne respecte pas les règles de fonctionnement du service de garde inscrites au document décrivant l'organisation du service de garde (régie interne) qui a été remis au parent et qui est annexé à la présente entente.
+        3. Lorsque, à la suite d'un plan d'intervention établi en collaboration avec le parent pour répondre aux besoins particuliers de l'enfant, il devient manifeste que les ressources de la prestataire ne peuvent répondre, de façon adéquate, à ces besoins particuliers ou que le parent ne collabore pas à l'application du plan d'intervention.
+        La prestataire, avant de mettre fin à l'entente, doit donner un avis préalable de deux semaines au parent. Cependant, la prestataire peut mettre fin à la présente entente en tout temps et sans avis préalable lorsque la santé ou la sécurité des enfants reçus ou du personnel du service de garde est menacée.
+        """;
+
+    /// <summary>Modes de paiement par defaut (regie de la RSGE) / Default payment methods.</summary>
+    public const string ModesPaiement = "en argent comptant ou par virement Interac";
+
+    /// <summary>Resiliation par le parent (modele du bureau coordonnateur) / Termination by the parent.</summary>
+    public const string ResiliationParent =
+        "Les parents signataires de la présente entente peuvent, ensemble, mettre fin en tout temps à l'entente en envoyant un avis " +
+        "à la prestataire conformément aux dispositions de la Loi sur la protection du consommateur.";
 
     public const string Attestation =
         "J'atteste avoir lu et compris l'entente de service (contrat) ainsi que la régie interne du service de garde {garderie} " +

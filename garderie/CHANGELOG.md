@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0
+- Contrat complété selon le modèle du bureau coordonnateur (dans la mise en page du modèle Word de la RSGE) :
+  numéro d'inscription au portail (fiche de l'enfant), courriels du parent et de l'éducatrice, description des services
+  fournis et heures des collations et du dîner, horaire du service de garde, clauses de fermeture (avis des vacances,
+  frais), fréquentation de l'enfant (jours de son horaire, aux heures d'ouverture) et date de début, modalités de
+  paiement (tarif, jour, modes, montant de chaque versement, total de l'entente), frais de retard, résiliation par
+  l'éducatrice et par le parent, date et lieu de la signature de l'éducatrice.
+- Mention de la Loi sur la protection du consommateur : libellé officiel (aussi repris dans la régie interne).
+- Réglages : nouvelles sections modifiables du contrat ; modes de paiement dans la régie interne.
+- Les contrats déjà signés gardent leur contenu d'origine.
+
 ## 0.12.3
 - Dossier de l'enfant : le PDF d'un relevé 24 n'a plus de bouton « Supprimer » (bouton « Relevés 24 » à la place) ;
   un relevé se supprime dans l'onglet Relevés 24, qui ajuste aussi le sommaire et la numérotation.

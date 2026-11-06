@@ -17,7 +17,35 @@ public class ContratPdfTests
         ObligationsRsge = TextesContrat.ObligationsRsge, ObligationsParent = TextesContrat.ObligationsParent, MentionLpc = TextesContrat.MentionLpc,
         Attestation = TextesContrat.Remplir(TextesContrat.Attestation, "Les petits moussaillons", "Sonia (test)"), NonRespect = TextesContrat.NonRespect,
         Ville = "Québec", Debut = new DateOnly(2026, 9, 1), Fin = new DateOnly(2027, 8, 31),
+        // Modele du bureau coordonnateur / Coordinating office template
+        RsgeCourriel = "rsge@exemple.test", ParentCourriel = "julie@exemple.test", EnfantPortail = "123456",
+        Services = TextesContrat.Services, HeureCollationMatin = "9 h 00", HeureCollationPm = "15 h 00", HeureDiner = "11 h 00",
+        Frequentation = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi (matin)"], DebutFrequentation = new DateOnly(2026, 9, 1),
+        Tarif = 45m, JourPaiement = "mercredi", ModesPaiement = TextesContrat.ModesPaiement, Versement = 202.5m, Total = 10_440m,
+        FraisRetard = "5 $ pour les 10 premières minutes et ensuite 1 $ la minute", ClausesFermeture = TextesContrat.ClausesFermeture,
+        ResiliationRsge = TextesContrat.ResiliationRsge, ResiliationParent = TextesContrat.ResiliationParent,
     };
+
+    [Fact]
+    public void FrequentationEtJoursPrevus()
+    {
+        var lundi = new DateOnly(2026, 11, 2);
+        // Sans horaire : lundi au vendredi / No schedule: Monday to Friday
+        var (jours, parSemaine) = ContratsService.Frequentation([], lundi);
+        Assert.Equal(["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"], jours);
+        Assert.Equal(5m, parSemaine);
+        Assert.Equal(10m, ContratsService.JoursPrevus([], lundi, lundi.AddDays(13)));
+        // Horaire : lundi complet, mercredi matin / Schedule: full Monday, Wednesday morning
+        List<HoraireType> h =
+        [
+            new() { DateEffective = lundi, Jour = DayOfWeek.Monday, Matin = true, Pm = true },
+            new() { DateEffective = lundi, Jour = DayOfWeek.Wednesday, Matin = true },
+        ];
+        (jours, parSemaine) = ContratsService.Frequentation(h, lundi);
+        Assert.Equal(["Lundi", "Mercredi (matin)"], jours);
+        Assert.Equal(1.5m, parSemaine);
+        Assert.Equal(3m, ContratsService.JoursPrevus(h, lundi, lundi.AddDays(13)));
+    }
 
     [Fact]
     public void GenereContratEtResiliation()

@@ -277,6 +277,10 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("NumeroPortail")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("PhotoDocumentId")
                         .HasColumnType("INTEGER");
 
@@ -675,6 +679,10 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ContratClausesFermeture")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContratMentionLpc")
                         .HasMaxLength(6000)
                         .HasColumnType("TEXT");
@@ -695,11 +703,35 @@ namespace Garderie.Web.Data.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ContratResiliationParent")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratResiliationRsge")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContratServices")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CourrielRsge")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<DateOnly?>("DebutPeriodes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HeureCollationMatin")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HeureCollationPm")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HeureDiner")
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<TimeOnly?>("HeureFermeture")
@@ -730,6 +762,10 @@ namespace Garderie.Web.Data.Migrations
 
                     b.Property<string>("RegieJourPaiement")
                         .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegieModesPaiement")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("RegieModifieeLe")

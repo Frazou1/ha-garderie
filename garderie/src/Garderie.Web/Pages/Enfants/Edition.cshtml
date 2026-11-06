@@ -33,9 +33,13 @@
         <label asp-for="Donnees.Telephone" class="form-label">Téléphone</label>
         <input asp-for="Donnees.Telephone" type="tel" class="form-control" />
     </div>
-    <div class="col-12">
+    <div class="col-md-8">
         <label asp-for="Donnees.Adresse" class="form-label">Adresse</label>
         <input asp-for="Donnees.Adresse" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Donnees.NumeroPortail" class="form-label">N° d'inscription au portail (La Place 0-5)</label>
+        <input asp-for="Donnees.NumeroPortail" class="form-control" maxlength="30" />
     </div>
     <div class="col-md-6">
         <label asp-for="Donnees.Nam" class="form-label">N° d'assurance maladie (NAM)</label>

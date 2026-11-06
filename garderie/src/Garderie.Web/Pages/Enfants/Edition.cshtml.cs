@@ -20,6 +20,7 @@ public class EditionModel(GarderieDb db, Chiffreur chiffreur, Journal journal) :
         public Sexe? Sexe { get; set; }
         [MaxLength(300)] public string? Adresse { get; set; }
         [MaxLength(30)] public string? Telephone { get; set; }
+        [MaxLength(30)] public string? NumeroPortail { get; set; }
         /// <summary>Nouveau NAM (vide = inchange) / New health number (empty = unchanged).</summary>
         [MaxLength(20)] public string? Nam { get; set; }
         public bool EffacerNam { get; set; }
@@ -45,7 +46,7 @@ public class EditionModel(GarderieDb db, Chiffreur chiffreur, Journal journal) :
         Donnees = new Saisie
         {
             Prenom = e.Prenom, Nom = e.Nom, DateNaissance = e.DateNaissance, Sexe = e.Sexe, Adresse = e.Adresse,
-            Telephone = e.Telephone, DateDebut = e.DateDebut, DateFin = e.DateFin, NotesSante = e.NotesSante, Notes = e.Notes,
+            Telephone = e.Telephone, NumeroPortail = e.NumeroPortail, DateDebut = e.DateDebut, DateFin = e.DateFin, NotesSante = e.NotesSante, Notes = e.Notes,
         };
         NamMasque = Masque(e);
         return Page();
@@ -79,6 +80,7 @@ public class EditionModel(GarderieDb db, Chiffreur chiffreur, Journal journal) :
         e.Sexe = Donnees.Sexe;
         e.Adresse = Vide(Donnees.Adresse);
         e.Telephone = Vide(Donnees.Telephone);
+        e.NumeroPortail = Vide(Donnees.NumeroPortail);
         e.DateDebut = Donnees.DateDebut!.Value;
         e.DateFin = Donnees.DateFin;
         e.NotesSante = Vide(Donnees.NotesSante);

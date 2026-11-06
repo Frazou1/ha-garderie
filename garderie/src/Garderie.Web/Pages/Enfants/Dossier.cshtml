@@ -72,6 +72,7 @@
                     <dt class="col-5">Adresse</dt><dd class="col-7">@(e.Adresse ?? "—")</dd>
                     <dt class="col-5">Téléphone</dt><dd class="col-7">@(e.Telephone ?? "—")</dd>
                     <dt class="col-5">NAM</dt><dd class="col-7">@(Model.NamMasque ?? "—")</dd>
+                    <dt class="col-5">Portail (La Place 0-5)</dt><dd class="col-7">@(e.NumeroPortail ?? "—")</dd>
                     <dt class="col-5">Fréquentation</dt><dd class="col-7">du @Affichage.Date(e.DateDebut) @(e.DateFin is null ? "" : $"au {Affichage.Date(e.DateFin)}")</dd>
                     @if (e.Notes is not null)
                     {

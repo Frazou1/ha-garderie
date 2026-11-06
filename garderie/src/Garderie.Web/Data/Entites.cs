@@ -30,6 +30,8 @@ public class Enfant
     public Sexe? Sexe { get; set; }
     [MaxLength(300)] public string? Adresse { get; set; }
     [MaxLength(30)] public string? Telephone { get; set; }
+    /// <summary>Numero d'inscription au portail (La Place 0-5) / Registration number on the waiting-list portal.</summary>
+    [MaxLength(30)] public string? NumeroPortail { get; set; }
     /// <summary>NAM chiffre (contexte nam:enfant) / Encrypted health insurance number.</summary>
     public byte[]? NamChiffre { get; set; }
     public DateOnly DateDebut { get; set; }
@@ -223,11 +225,22 @@ public class Parametres
     [MaxLength(2000)] public string? ContratNonRespect { get; set; }
     /// <summary>Note sur les vacances (ex. conge des fetes a confirmer) / Holiday note.</summary>
     [MaxLength(1000)] public string? ContratNoteVacances { get; set; }
+    // Sections du modele du bureau coordonnateur (null = texte par defaut) / Coordinating office template sections
+    [MaxLength(4000)] public string? ContratServices { get; set; }
+    [MaxLength(4000)] public string? ContratClausesFermeture { get; set; }
+    [MaxLength(4000)] public string? ContratResiliationRsge { get; set; }
+    [MaxLength(2000)] public string? ContratResiliationParent { get; set; }
+    /// <summary>Heures des collations et du diner (ex. « 9 h 00 ») / Snack and lunch times.</summary>
+    [MaxLength(20)] public string? HeureCollationMatin { get; set; }
+    [MaxLength(20)] public string? HeureCollationPm { get; set; }
+    [MaxLength(20)] public string? HeureDiner { get; set; }
 
     // --- Regie interne generee : sections modifiees (JSON cle -> texte) et valeurs / Generated internal rules ---
     [MaxLength(100000)] public string? RegieSections { get; set; }
     [MaxLength(50)] public string? RegieTarif { get; set; }
     [MaxLength(30)] public string? RegieJourPaiement { get; set; }
+    /// <summary>Modes de paiement (ex. « en argent comptant ou par virement Interac ») / Payment methods.</summary>
+    [MaxLength(100)] public string? RegieModesPaiement { get; set; }
     [MaxLength(200)] public string? RegieFraisRetard { get; set; }
     public DateTime? RegieModifieeLe { get; set; }
 

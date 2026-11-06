@@ -27,6 +27,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
     [BindProperty] public string? RegieTarif { get; set; }
     [BindProperty] public string? RegieJourPaiement { get; set; }
     [BindProperty] public string? RegieFraisRetard { get; set; }
+    [BindProperty] public string? RegieModesPaiement { get; set; }
     public DateTime? RegieModifieeLe { get; private set; }
     /// <summary>Sections modifiees (differentes du texte par defaut) / Edited sections.</summary>
     public HashSet<string> RegieModifiees { get; private set; } = new();
@@ -41,6 +42,13 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         public string MentionLpc { get; set; } = "";
         public string Attestation { get; set; } = "";
         public string NonRespect { get; set; } = "";
+        public string Services { get; set; } = "";
+        public string ClausesFermeture { get; set; } = "";
+        public string ResiliationRsge { get; set; } = "";
+        public string ResiliationParent { get; set; } = "";
+        public string? HeureCollationMatin { get; set; }
+        public string? HeureCollationPm { get; set; }
+        public string? HeureDiner { get; set; }
     }
 
     [BindProperty] public SaisieContrat Contrat { get; set; } = new();
@@ -63,6 +71,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         RegieTarif = Donnees.RegieTarif;
         RegieJourPaiement = Donnees.RegieJourPaiement;
         RegieFraisRetard = Donnees.RegieFraisRetard;
+        RegieModesPaiement = Donnees.RegieModesPaiement ?? TextesContrat.ModesPaiement;
         RegieModifieeLe = Donnees.RegieModifieeLe;
         Rl24 = new SaisieRl24
         {
@@ -81,6 +90,11 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
             MentionLpc = Donnees.ContratMentionLpc ?? TextesContrat.MentionLpc,
             Attestation = Donnees.ContratAttestation ?? TextesContrat.Attestation,
             NonRespect = Donnees.ContratNonRespect ?? TextesContrat.NonRespect,
+            Services = Donnees.ContratServices ?? TextesContrat.Services,
+            ClausesFermeture = Donnees.ContratClausesFermeture ?? TextesContrat.ClausesFermeture,
+            ResiliationRsge = Donnees.ContratResiliationRsge ?? TextesContrat.ResiliationRsge,
+            ResiliationParent = Donnees.ContratResiliationParent ?? TextesContrat.ResiliationParent,
+            HeureCollationMatin = Donnees.HeureCollationMatin, HeureCollationPm = Donnees.HeureCollationPm, HeureDiner = Donnees.HeureDiner,
         };
     }
 
@@ -178,6 +192,14 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         p.ContratMentionLpc = T(Contrat.MentionLpc, TextesContrat.MentionLpc, 6000);
         p.ContratAttestation = T(Contrat.Attestation, TextesContrat.Attestation, 2000);
         p.ContratNonRespect = T(Contrat.NonRespect, TextesContrat.NonRespect, 2000);
+        p.ContratServices = T(Contrat.Services, TextesContrat.Services, 4000);
+        p.ContratClausesFermeture = T(Contrat.ClausesFermeture, TextesContrat.ClausesFermeture, 4000);
+        p.ContratResiliationRsge = T(Contrat.ResiliationRsge, TextesContrat.ResiliationRsge, 4000);
+        p.ContratResiliationParent = T(Contrat.ResiliationParent, TextesContrat.ResiliationParent, 2000);
+        static string? Heure(string? h) => Vide(h) is { } v ? v[..Math.Min(20, v.Length)] : null;
+        p.HeureCollationMatin = Heure(Contrat.HeureCollationMatin);
+        p.HeureCollationPm = Heure(Contrat.HeureCollationPm);
+        p.HeureDiner = Heure(Contrat.HeureDiner);
         journal.Noter("parametres.contrat");
         await db.SaveChangesAsync();
         TempData["Message"] = "Textes du contrat enregistrés (ils s'appliquent aux contrats pas encore signés).";
@@ -199,6 +221,7 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         p.RegieTarif = Court(RegieTarif, 50);
         p.RegieJourPaiement = Court(RegieJourPaiement, 30);
         p.RegieFraisRetard = Court(RegieFraisRetard, 200);
+        p.RegieModesPaiement = Court(RegieModesPaiement, 100) is { } mp && mp != TextesContrat.ModesPaiement ? mp : null;
         p.RegieModifieeLe = DateTime.UtcNow;
         try { RegieInterne.Pdf(p); }
         catch (Exception ex) { TempData["Erreur"] = $"Le PDF n'a pas pu être généré ({ex.GetType().Name})."; return RedirectToPage(null, null, "regie"); }

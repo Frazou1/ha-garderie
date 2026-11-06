@@ -45,7 +45,21 @@
     </div>
     @if (!Model.Archive)
     {
-        <a class="btn btn-outline-primary" asp-page="Edition" asp-route-id="@e.Id">Modifier l'identité</a>
+        <div class="d-flex flex-wrap gap-2 align-items-start">
+            <a class="btn btn-outline-primary" asp-page="Edition" asp-route-id="@e.Id">Modifier l'identité</a>
+            <details class="archiver">
+                <summary class="btn btn-outline-secondary">Archiver</summary>
+                <form method="post" asp-page-handler="Archiver" asp-route-id="@e.Id" class="carte mt-2 confirmer"
+                      data-confirmer="Archiver le dossier de @e.NomComplet ? Il passera en lecture seule après le dernier jour.">
+                    <label class="form-label small mb-1" for="dernierJour">Dernier jour de fréquentation</label>
+                    <input class="form-control mb-2" type="date" id="dernierJour" name="dernierJour" required
+                           min="@e.DateDebut.ToString("yyyy-MM-dd")" value="@Model.Aujourdhui.AddDays(-1).ToString("yyyy-MM-dd")" />
+                    <p class="small text-muted mb-2">Le lendemain, le dossier passe aux anciens (lecture seule), conservé pour l'impôt.
+                        « Réactiver » l'annule.</p>
+                    <button type="submit" class="btn btn-primary btn-sm">Archiver le dossier</button>
+                </form>
+            </details>
+        </div>
     }
 </div>
 

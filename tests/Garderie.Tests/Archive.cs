@@ -84,6 +84,23 @@ public class ArchiveTests(Appli appli) : IClassFixture<Appli>
     }
 
     [Fact]
+    public async Task BoutonArchiver()
+    {
+        var (id, _) = await CreerAsync(null);
+        var c = Client();
+        var dossier = $"/Enfants/Dossier/{id}";
+        Assert.Contains("Archiver le dossier", await c.GetStringAsync(dossier));
+        await Poster(c, dossier, $"{dossier}?handler=Archiver", new() { ["dernierJour"] = "2024-08-01" });   // avant le debut : refuse
+        Assert.Null(Lire(db => db.Enfants.Single(x => x.Id == id).DateFin));
+        await Poster(c, dossier, $"{dossier}?handler=Archiver", new() { ["dernierJour"] = "2025-06-27" });
+        Assert.Equal(new DateOnly(2025, 6, 27), Lire(db => db.Enfants.Single(x => x.Id == id).DateFin));
+        var page = await c.GetStringAsync(dossier);
+        Assert.Contains("Dossier archivé", page);   // lecture seule / read-only
+        Assert.DoesNotContain("Archiver le dossier", page);
+        Assert.True(Lire(db => db.Journal.Any(j => j.Action == "enfant.archiver" && j.EntiteId == id)));
+    }
+
+    [Fact]
     public async Task ReactiverPuisModifier()
     {
         var (id, _) = await CreerAsync(new DateOnly(2025, 6, 27));

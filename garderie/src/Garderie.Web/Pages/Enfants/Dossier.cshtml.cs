@@ -261,6 +261,27 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
     // --- Archive / Archived record ---
     public bool Archive => Enfant.EstAncienLe(Aujourdhui);
 
+    /// <summary>
+    /// Archive le dossier : inscrit le dernier jour de frequentation ; le lendemain, le dossier passe aux anciens
+    /// (lecture seule). / Archives the record: sets the last attendance day; the next day it becomes read-only.
+    /// </summary>
+    public async Task<IActionResult> OnPostArchiverAsync(DateOnly? dernierJour)
+    {
+        var e = await db.Enfants.FindAsync(Id);
+        if (e is null) return NotFound();
+        string? erreur = dernierJour is not { } j ? "Choisissez le dernier jour de fréquentation."
+            : j < e.DateDebut ? "Le dernier jour précède le début de fréquentation." : null;
+        if (erreur is not null) { TempData["Erreur"] = erreur; return RedirectToPage(new { id = Id }); }
+        var fin = dernierJour!.Value;
+        e.DateFin = fin;
+        e.ModifieLe = DateTime.UtcNow;
+        journal.Noter("enfant.archiver", "Enfant", Id, $"Dernier jour : {fin:yyyy-MM-dd}");
+        await db.SaveChangesAsync();
+        return await RetourAsync(fin < Aujourdhui
+            ? "Dossier archivé : il est maintenant en lecture seule, dans « Voir aussi les anciens »."
+            : $"Dernier jour inscrit ({Affichage.Date(fin)}) : le dossier sera archivé le lendemain.");
+    }
+
     /// <summary>Reactive un dossier archive (retire la date de fin) / Reactivates an archived record.</summary>
     public async Task<IActionResult> OnPostReactiverAsync()
     {

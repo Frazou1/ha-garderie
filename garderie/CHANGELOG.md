@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1
+- Dossier de l'enfant : bouton « Archiver » (à côté de « Modifier l'identité ») qui demande le dernier jour de
+  fréquentation (hier par défaut). Le lendemain de ce jour, le dossier passe aux anciens, en lecture seule.
+
 ## 0.13.0
 - Contrat complété selon le modèle du bureau coordonnateur (dans la mise en page du modèle Word de la RSGE) :
   numéro d'inscription au portail (fiche de l'enfant), courriels du parent et de l'éducatrice, description des services

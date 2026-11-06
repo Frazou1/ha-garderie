@@ -141,6 +141,27 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         await Poster(admin, $"/Enfants/Dossier/{id}", $"/Enfants/Dossier/{id}?handler=SupprimerDocument", [new("documentId", $"{contrat.DocumentId}")]);
         Assert.True(Db(db => db.Documents.Any(d => d.Id == contrat.DocumentId)));
 
+        // Copie manuelle au 2e parent de l'enfant ; un parent d'ailleurs est refuse / Manual copy to the 2nd parent
+        int deuxieme, etranger;
+        using (var scope = appli.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<GarderieDb>();
+            var m = DateTime.UtcNow;
+            var p2 = new Parent { Prenom = "Marc", Nom = "Deux", Courriel = "marc@exemple.test", CreeLe = m, ModifieLe = m };
+            var px = new Parent { Prenom = "Autre", Nom = "Famille", Courriel = "intrus@exemple.test", CreeLe = m, ModifieLe = m };
+            db.EnfantParents.Add(new EnfantParent { EnfantId = id, Parent = p2, Lien = "Père" });
+            db.Parents.Add(px);
+            await db.SaveChangesAsync();
+            (deuxieme, etranger) = (p2.Id, px.Id);
+        }
+        var pageContrat = $"/Contrats/Contrat/{contratId}";
+        Assert.Contains("Envoyer une copie à Marc Deux", await admin.GetStringAsync(pageContrat));
+        await Poster(admin, pageContrat, pageContrat + "?handler=Copie", [new("pour", "autre"), new("parentId", $"{etranger}")]);
+        Assert.DoesNotContain(Courriels(), t => t.Contains("intrus@exemple.test"));
+        await Poster(admin, pageContrat, pageContrat + "?handler=Copie", [new("pour", "autre"), new("parentId", $"{deuxieme}")]);
+        Assert.Contains(Courriels(), t => t.Contains("marc@exemple.test") && t.Contains("application/pdf"));
+        Assert.True(Db(db => db.Journal.Any(j => j.Action == "contrat.copie_envoyee" && j.Details == "marc@exemple.test")));
+
         // Chaque formulaire POST de la page porte son jeton antiforgery / Every POST form carries its token
         JetonsPartout(await admin.GetStringAsync($"/Contrats/Contrat/{contratId}"));
         JetonsPartout(await admin.GetStringAsync("/Contrats"));

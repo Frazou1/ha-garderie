@@ -127,6 +127,19 @@ else
     @if (c.DocumentId is not null)
     {
         <div class="mb-3"><partial name="_Copies" model="copies" /></div>
+        @if (Model.AutresParents.Count > 0)
+        {
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                @foreach (var p in Model.AutresParents)
+                {
+                    <form method="post" asp-page-handler="Copie" asp-route-id="@c.Id">
+                        <input type="hidden" name="pour" value="autre" />
+                        <input type="hidden" name="parentId" value="@p.Id" />
+                        <button class="btn btn-sm btn-outline-primary" type="submit" disabled="@(!Model.CourrielConfigure)">Envoyer une copie à @p.Prenom @p.Nom</button>
+                    </form>
+                }
+            </div>
+        }
     }
     <dl class="row small-dl small mb-0">
         <dt class="col-sm-4">Parent</dt><dd class="col-sm-8">@(string.IsNullOrEmpty(i.ParentNom) ? "—" : i.ParentNom) @(i.ParentLien is null ? "" : $"({i.ParentLien})")</dd>

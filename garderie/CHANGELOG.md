@@ -4,6 +4,8 @@
 - Signature du parent (contrat, résiliation, fiche d'assiduité) : bouton « Importer une image » à côté de « Effacer ».
   Le parent peut prendre en photo sa signature (encre foncée sur papier blanc) : le fond est retiré, le trait est
   recadré dans le cadre, et il peut encore l'effacer avant de signer. Le journal indique « signature importée (image) ».
+- Contrat signé : bouton « Envoyer une copie à [nom] » pour chaque autre parent de l'enfant qui a un courriel
+  (deuxième parent). Seuls les parents liés à l'enfant peuvent la recevoir ; l'envoi est noté au journal.
 
 ## 0.14.0
 - Onglet « Aide » : la vidéo du tour de la plateforme, lisible sur place (iPad compris) ou dans un nouvel onglet.

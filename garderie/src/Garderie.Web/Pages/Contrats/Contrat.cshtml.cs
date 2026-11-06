@@ -20,8 +20,11 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
     public InfosContrat Infos { get; private set; } = null!;
     public EnfantParent? Parent { get; private set; }
     public bool EnvoiPossible => courriels.EstConfigure && !string.IsNullOrWhiteSpace(options.UrlPublique);
+    public bool CourrielConfigure => courriels.EstConfigure;
     public bool UrlPubliqueConfiguree => !string.IsNullOrWhiteSpace(options.UrlPublique);
     public bool LienActif { get; private set; }
+    /// <summary>Autres parents de l'enfant (avec courriel) pour une copie / Other parents of the child for a copy.</summary>
+    public List<Parent> AutresParents { get; private set; } = [];
 
     private async Task<bool> ChargerAsync()
     {
@@ -30,6 +33,9 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
         Contrat = c;
         Infos = await contrats.InfosAsync(c);
         Parent = await contrats.LienParentAsync(c);
+        AutresParents = await db.EnfantParents.AsNoTracking()
+            .Where(x => x.EnfantId == c.EnfantId && x.ParentId != (Parent == null ? 0 : Parent.ParentId) && x.Parent.Courriel != null && x.Parent.Courriel != "")
+            .Select(x => x.Parent).OrderBy(x => x.Prenom).ToListAsync();
         LienActif = await db.LiensContrats.AnyAsync(l => l.ContratId == Id && l.UtiliseLe == null && l.AnnuleLe == null && l.ExpireLe > DateTime.UtcNow);
         return true;
     }
@@ -155,15 +161,26 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
     /// Renvoie une copie du contrat signe (et de la resiliation) au parent ou a la RSGE.
     /// Re-sends a copy of the signed contract (and termination) to the parent or the RSGE.
     /// </summary>
-    public async Task<IActionResult> OnPostCopieAsync(string pour)
+    public async Task<IActionResult> OnPostCopieAsync(string pour, int? parentId)
     {
         if (!await ChargerAsync()) return NotFound();
         if (!courriels.EstConfigure) return Retour(erreur: "Le courriel n'est pas configuré dans le module.");
         var ids = new[] { Contrat.DocumentId, Contrat.DocumentResiliationId }.OfType<int>().ToList();
         if (ids.Count == 0) return Retour(erreur: "Le contrat n'est pas encore signé par les deux parties.");
         var reglages = await db.Parametres.AsNoTracking().FirstOrDefaultAsync();
-        var a = pour == "parent" ? Parent?.Parent.Courriel : reglages?.CourrielRsge;
-        if (a is null) return Retour(erreur: pour == "parent" ? "Le parent n'a pas de courriel." : "Le courriel de la RSGE n'est pas dans Réglages.");
+        // 2e parent : seulement un parent de cet enfant / 2nd parent: only a parent of this child
+        var a = pour switch
+        {
+            "parent" => Parent?.Parent.Courriel,
+            "autre" => AutresParents.FirstOrDefault(x => x.Id == parentId)?.Courriel,
+            _ => reglages?.CourrielRsge,
+        };
+        if (a is null) return Retour(erreur: pour switch
+        {
+            "parent" => "Le parent n'a pas de courriel.",
+            "autre" => "Ce parent n'est pas lié à l'enfant ou n'a pas de courriel.",
+            _ => "Le courriel de la RSGE n'est pas dans Réglages.",
+        });
         var docs = HttpContext.RequestServices.GetRequiredService<DocumentsService>();
         var pieces = new List<(string, byte[])>();
         foreach (var d in await db.Documents.AsNoTracking().Where(d => ids.Contains(d.Id)).ToListAsync())
@@ -173,7 +190,7 @@ public class ContratModel(GarderieDb db, ContratsService contrats, Courriels cou
             await courriels.EnvoyerAsync(a, $"Copie : entente de service de {Contrat.Enfant.NomComplet}",
                 $"Voici une copie de l'entente de service de {Contrat.Enfant.NomComplet} (du {Affichage.Date(Contrat.Debut)} au {Affichage.Date(Contrat.Fin)})" +
                 (Contrat.DocumentResiliationId is null ? "." : ", avec la formule de résiliation.") +
-                (pour == "parent" && Affichage.PiedFacebook(reglages) is { Length: > 0 } fb ? "\n\n" + fb.TrimEnd() : ""), pieces);
+                (pour != "rsge" && Affichage.PiedFacebook(reglages) is { Length: > 0 } fb ? "\n\n" + fb.TrimEnd() : ""), pieces);
         }
         catch (Exception ex) { return Retour(erreur: $"L'envoi a échoué ({ex.GetType().Name})."); }
         await journal.NoterMaintenantAsync("contrat.copie_envoyee", "Enfant", Contrat.EnfantId, a);

@@ -97,6 +97,18 @@ public static class Affichage
         h.Matin && h.Pm ? "journée" : h.Matin ? "matin" : h.Pm ? "après-midi" : "—";
 
     /// <summary>Montant en dollars a la quebecoise : 9 540,00 $ / Amount, Quebec style.</summary>
+    /// <summary>
+    /// Nom du fichier montre a l'ouverture : « titre - enfant.ext » (sans repeter l'enfant deja nomme).
+    /// File name shown when opening: "title - child.ext" (child not repeated if already named).
+    /// </summary>
+    public static string NomFichier(string nomOriginal, string prenom, string nomComplet)
+    {
+        var ext = Path.GetExtension(nomOriginal);
+        var titre = Path.GetFileNameWithoutExtension(nomOriginal).Trim();
+        if (!titre.Contains(prenom, StringComparison.CurrentCultureIgnoreCase)) titre = $"{titre} - {nomComplet}";
+        return titre + ext;
+    }
+
     public static string Argent(decimal m) => m.ToString("#,##0.00", new System.Globalization.CultureInfo("fr-CA")) + " $";
 
     /// <summary>Lien Facebook valide (https, facebook.com) sinon null / Valid Facebook link, else null.</summary>

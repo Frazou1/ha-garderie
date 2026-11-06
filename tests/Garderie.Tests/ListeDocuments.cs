@@ -9,6 +9,13 @@ namespace Garderie.Tests;
 public class ListeDocumentsTests(Appli appli) : IClassFixture<Appli>
 {
     [Fact]
+    public void NomFichierAvecEnfant()
+    {
+        Assert.Equal("Certificat de naissance - Léa Tremblay.pdf", Garderie.Web.Services.Affichage.NomFichier("Certificat de naissance.pdf", "Léa", "Léa Tremblay"));
+        Assert.Equal("Contrat 2025 - Léa.pdf", Garderie.Web.Services.Affichage.NomFichier("Contrat 2025 - Léa.pdf", "Léa", "Léa Tremblay"));
+    }
+
+    [Fact]
     public async Task RenommerEtNote()
     {
         int id, doc;
@@ -31,6 +38,7 @@ public class ListeDocumentsTests(Appli appli) : IClassFixture<Appli>
         var html = await c.GetStringAsync($"/Enfants/Dossier/{id}");
         Assert.Contains("class=\"doc-nom\"", html);
         Assert.Contains("+ Ajouter un document", html);
+        Assert.Contains($"/Enfants/Fichier/{id}/{doc}/", html);   // adresse lisible / readable URL
         var jeton = Regex.Match(html, "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"").Groups[1].Value;
         await c.PostAsync($"/Enfants/Dossier/{id}?handler=ModifierDocument", new FormUrlEncodedContent(new Dictionary<string, string>
         {

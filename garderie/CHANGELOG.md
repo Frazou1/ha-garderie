@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.0
+- Documents du dossier : à l'ouverture, l'onglet et le fichier enregistré portent le titre du document et le nom de
+  l'enfant (« Certificat de naissance - Jeanne Claden.pdf ») au lieu d'un numéro. Le téléchargement aussi.
+- PDF du contrat : titre « Entente de services - [enfant] ».
+
 ## 0.21.0
 - Dossier de l'enfant : liste des documents simplifiée. Une ligne par document (nom, type, date, note) ; un toucher sur
   le nom l'affiche ; le menu « ⋯ » regroupe Afficher, Télécharger, Renommer / note et Supprimer. L'ajout d'un document

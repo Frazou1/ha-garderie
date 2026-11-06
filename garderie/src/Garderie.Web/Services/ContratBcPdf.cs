@@ -37,6 +37,7 @@ public static partial class ContratBcPdf
     public static byte[] Contrat(InfosContrat i, SignaturesContrat s)
     {
         var doc = Nouveau();
+        doc.Info.Title = $"Entente de services - {i.EnfantNom}";   // titre de l'onglet / tab title
         var sec = doc.LastSection;
 
         var titre = sec.AddParagraph("ENTENTE DE SERVICES DE GARDE ÉDUCATIFS");

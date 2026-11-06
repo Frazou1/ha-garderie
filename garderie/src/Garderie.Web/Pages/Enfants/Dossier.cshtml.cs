@@ -445,6 +445,7 @@ public class DossierModel(GarderieDb db, Chiffreur chiffreur, Journal journal, D
             return File(contenu, d.TypeContenu);
         var lisible = d.TypeContenu is "application/pdf" or "image/jpeg" or "image/png";
         await journal.NoterMaintenantAsync(afficher && lisible ? "document.afficher" : "document.telecharger", "Enfant", Id, d.NomOriginal);
-        return this.Fichier(contenu, d.TypeContenu, d.NomOriginal, afficher && lisible);
+        var e = await db.Enfants.AsNoTracking().FirstAsync(x => x.Id == Id);
+        return this.Fichier(contenu, d.TypeContenu, Affichage.NomFichier(d.NomOriginal, e.Prenom, e.NomComplet), afficher && lisible);
     }
 }

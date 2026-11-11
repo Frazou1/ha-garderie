@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.23.0
+- Réglages → courriel de test : en cas d'échec, la réponse exacte du serveur (ex. « 5.7.139 … ») est affichée.
+
 ## 0.22.0
 - Documents du dossier : à l'ouverture, l'onglet et le fichier enregistré portent le titre du document et le nom de
   l'enfant (« Certificat de naissance - Jeanne Claden.pdf ») au lieu d'un numéro. Le téléchargement aussi.

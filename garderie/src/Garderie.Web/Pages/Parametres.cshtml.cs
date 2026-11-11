@@ -441,7 +441,11 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         }
         catch (Exception ex)
         {
-            TempData["Erreur"] = $"Échec de l'envoi ({ex.GetType().Name}) : vérifiez le compte et le mot de passe d'application.";
+            // Reponse du serveur (ex. « 5.7.139 ... ») : aide a diagnostiquer ; jamais le mot de passe
+            // Server reply (e.g. "5.7.139 ..."): helps diagnose; never contains the password
+            var detail = (ex.InnerException?.Message ?? ex.Message).ReplaceLineEndings(" ");
+            if (detail.Length > 300) detail = detail[..300] + "…";
+            TempData["Erreur"] = $"Échec de l'envoi ({ex.GetType().Name}) : vérifiez le compte et le mot de passe d'application. Réponse du serveur : {detail}";
         }
         return RedirectToPage();
     }

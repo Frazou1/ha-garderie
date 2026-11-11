@@ -3,6 +3,7 @@
 ## 0.24.0
 - Courriels : l'en-tête « Répondre à » est le courriel de la RSGE (Réglages). Quand un parent répond à un courriel
   de la plateforme, sa réponse va directement à l'éducatrice, pas au compte qui envoie.
+- Module : icône et logo des petits moussaillons dans la boutique et la page du module de Home Assistant.
 
 ## 0.23.0
 - Réglages → courriel de test : en cas d'échec, la réponse exacte du serveur (ex. « 5.7.139 … ») est affichée.

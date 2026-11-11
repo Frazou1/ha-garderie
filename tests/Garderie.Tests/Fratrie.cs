@@ -123,7 +123,7 @@ public class FratrieTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal(2, Db(db => db.Documents.Count(d => (d.EnfantId == lea || d.EnfantId == noah) && d.Type == TypeDocument.FicheAssiduite)));
 
         // Un courriel a la RSGE avec les 2 PDF / One email to the RSGE with both PDFs
-        var aRsge = Courriels().Single(t => t.Contains("rsge@exemple.test"));
+        var aRsge = Courriels().Single(t => t.Contains("\nTo: rsge@exemple.test"));
         Assert.Equal(2, Regex.Matches(aRsge, "Content-Type: application/pdf").Count);
 
         // « Envoyer aux parents » ne renvoie plus rien a Julie / Nothing more to send to Julie

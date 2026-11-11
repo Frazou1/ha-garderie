@@ -245,7 +245,7 @@ public class FichesParcoursTests(Appli appli) : IClassFixture<Appli>
         var doc = Db(db => db.Documents.Single(d => d.Id == fiche.DocumentId));
         Assert.Equal(TypeDocument.FicheAssiduite, doc.Type);
         Assert.Equal(fiche.PdfSha256, doc.Sha256);
-        Assert.Contains(Directory.GetFiles(Courriels, "*.eml").Select(File.ReadAllText), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
+        Assert.Contains(Directory.GetFiles(Courriels, "*.eml").Select(File.ReadAllText), t => t.Contains("\nTo: rsge@exemple.test") && t.Contains("application/pdf"));
 
         // Lien a usage unique : un 2e envoi (double toucher) remercie au lieu d'une erreur, sans re-signer
         // One-time link: a 2nd submission thanks instead of an error, without signing again

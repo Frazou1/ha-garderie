@@ -134,7 +134,9 @@ public class ContratsTests(Appli appli) : IClassFixture<Appli>
         Assert.Equal(EtatContrat.Signe, contrat.Etat);
         Assert.Equal(TypeDocument.Contrat, Db(db => db.Documents.Single(d => d.Id == contrat.DocumentId).Type));
         Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("application/pdf"));   // copie au parent (LPC)
-        Assert.Contains(Courriels(), t => t.Contains("rsge@exemple.test") && t.Contains("application/pdf"));
+        Assert.Contains(Courriels(), t => t.Contains("\nTo: rsge@exemple.test") && t.Contains("application/pdf"));
+        // Reponse du parent dirigee vers la RSGE / Parent reply goes to the RSGE
+        Assert.Contains(Courriels(), t => t.Contains("julie@exemple.test") && t.Contains("Reply-To:") && t.Contains("rsge@exemple.test"));
 
         // L'archive signee ne se supprime pas seule depuis le dossier / The signed archive cannot be deleted alone
         Assert.Contains("Archive signée", await admin.GetStringAsync($"/Enfants/Dossier/{id}"));

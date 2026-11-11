@@ -20,6 +20,22 @@
     }
     else
     {
-        <p class="mb-0 text-muted">Aucune vidéo pour l'instant. Elle s'ajoute dans Réglages → Vidéo d'aide.</p>
+        <p class="mb-0 text-muted">Aucune vidéo pour l'instant. Elle s'ajoute dans Réglages → Aide.</p>
+    }
+</section>
+
+<section class="carte">
+    <h2 class="h5">Feuille pour les parents</h2>
+    <p class="mb-2">Ce que les parents reçoivent par courriel et quoi faire, avec des captures. À imprimer ou à leur transmettre.</p>
+    @if (Model.FeuillePresente)
+    {
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" asp-page="/Aide" asp-page-handler="Feuille" target="_blank" rel="noopener">Afficher</a>
+            <a class="btn btn-doux" asp-page="/Aide" asp-page-handler="Feuille" asp-route-telecharger="true">Télécharger</a>
+        </div>
+    }
+    else
+    {
+        <p class="mb-0 text-muted">Aucune feuille pour l'instant. Elle s'ajoute dans Réglages → Aide.</p>
     }
 </section>

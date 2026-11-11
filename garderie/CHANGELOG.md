@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.0
+- Onglet Aide : la feuille pour les parents (PDF) à afficher, imprimer ou transmettre. Elle se téléverse dans
+  Réglages → Aide, comme la vidéo ; elle reste dans les données du module, jamais dans le dépôt.
+
 ## 0.24.0
 - Courriels : l'en-tête « Répondre à » est le courriel de la RSGE (Réglages). Quand un parent répond à un courriel
   de la plateforme, sa réponse va directement à l'éducatrice, pas au compte qui envoie.

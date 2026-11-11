@@ -32,6 +32,25 @@ public class AideTests(Appli appli) : IClassFixture<Appli>
     }
 
     [Fact]
+    public async Task FeuilleAuxParentsDansAide()
+    {
+        var admin = Client("8090", "172.30.32.2");
+        Assert.Contains("Aucune feuille", WebUtility.HtmlDecode(await admin.GetStringAsync("/Aide")));
+        var form = new MultipartFormDataContent { { new StringContent(Jeton(await admin.GetStringAsync("/Parametres"))), "__RequestVerificationToken" } };
+        var f = new ByteArrayContent("%PDF-1.4 feuille"u8.ToArray());
+        f.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        form.Add(f, "feuille", "feuille.pdf");
+        await admin.PostAsync("/Parametres?handler=FeuilleParents", form);
+        Assert.Contains("handler=Feuille", await admin.GetStringAsync("/Aide"));
+        var r = await admin.GetAsync("/Aide?handler=Feuille");
+        Assert.Equal("application/pdf", r.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("aide aux parents", Uri.UnescapeDataString(r.Content.Headers.ContentDisposition?.ToString() ?? ""));
+        await admin.PostAsync("/Parametres?handler=RetirerFeuilleParents",
+            new FormUrlEncodedContent([new("__RequestVerificationToken", Jeton(await admin.GetStringAsync("/Parametres")))]));
+        Assert.Contains("Aucune feuille", WebUtility.HtmlDecode(await admin.GetStringAsync("/Aide")));
+    }
+
+    [Fact]
     public async Task VideoDansAide()
     {
         var admin = Client("8090", "172.30.32.2");

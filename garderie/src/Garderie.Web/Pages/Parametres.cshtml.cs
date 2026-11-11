@@ -406,6 +406,38 @@ public class ParametresModel(GarderieDb db, Journal journal, GarderieOptions opt
         return RedirectToPage(null, null, "aide");
     }
 
+    public bool FeuilleParentsPresente => System.IO.File.Exists(options.FichierFeuilleParents);
+
+    /// <summary>Feuille aux parents (PDF) offerte dans l'onglet Aide / Parent handout shown in the Aide tab.</summary>
+    public async Task<IActionResult> OnPostFeuilleParentsAsync(IFormFile? feuille)
+    {
+        if (feuille is null || feuille.Length == 0 || feuille.Length > 10 * 1024 * 1024)
+        {
+            TempData["Erreur"] = "Choisissez un PDF (10 Mo maximum).";
+            return RedirectToPage(null, null, "aide");
+        }
+        using var ms = new MemoryStream();
+        await feuille.CopyToAsync(ms);
+        if (DocumentsService.DetecterType(ms.ToArray()) != "application/pdf")
+        {
+            TempData["Erreur"] = "La feuille doit être un PDF.";
+            return RedirectToPage(null, null, "aide");
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(options.FichierFeuilleParents)!);
+        await System.IO.File.WriteAllBytesAsync(options.FichierFeuilleParents, ms.ToArray());
+        await journal.NoterMaintenantAsync("parametres.feuille_parents", details: $"{ms.Length} octets");
+        TempData["Message"] = "Feuille aux parents enregistrée.";
+        return RedirectToPage(null, null, "aide");
+    }
+
+    public async Task<IActionResult> OnPostRetirerFeuilleParentsAsync()
+    {
+        if (System.IO.File.Exists(options.FichierFeuilleParents)) System.IO.File.Delete(options.FichierFeuilleParents);
+        await journal.NoterMaintenantAsync("parametres.feuille_parents_retiree");
+        TempData["Message"] = "Feuille aux parents retirée.";
+        return RedirectToPage(null, null, "aide");
+    }
+
     public async Task<IActionResult> OnPostRetirerVideoAideAsync()
     {
         if (System.IO.File.Exists(options.FichierVideoAide)) System.IO.File.Delete(options.FichierVideoAide);
